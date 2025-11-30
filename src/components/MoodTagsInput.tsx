@@ -1,15 +1,16 @@
 import { useState } from "react";
+import { X, Plus } from "lucide-react";
 
-interface MoodTagsProps {
+interface MoodTagsInputProps {
   tags: string[];
   onUpdate: (tags: string[]) => void;
 }
 
-export function MoodTags({ tags, onUpdate }: MoodTagsProps) {
+export function MoodTagsInput({ tags, onUpdate }: MoodTagsInputProps) {
   const [newTag, setNewTag] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
-  const handleAddTag = () => {
+  const handleAdd = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {
       onUpdate([...tags, newTag.trim()]);
       setNewTag("");
@@ -17,34 +18,34 @@ export function MoodTags({ tags, onUpdate }: MoodTagsProps) {
     }
   };
 
+  const handleRemove = (tag: string) => {
+    onUpdate(tags.filter((t) => t !== tag));
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
-      handleAddTag();
+      e.preventDefault();
+      handleAdd();
     } else if (e.key === "Escape") {
       setIsAdding(false);
       setNewTag("");
     }
   };
 
-  const removeTag = (tagToRemove: string) => {
-    onUpdate(tags.filter((t) => t !== tagToRemove));
-  };
-
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
+    <div className="flex flex-wrap items-center gap-2">
       {tags.map((tag) => (
-        <span key={tag} className="tag-pill group">
+        <span key={tag} className="tag-pill group pr-1.5">
           {tag}
           <button
-            onClick={() => removeTag(tag)}
-            className="ml-1.5 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-            aria-label={`Remove ${tag}`}
+            onClick={() => handleRemove(tag)}
+            className="ml-1.5 opacity-50 hover:opacity-100 transition-opacity"
           >
-            ×
+            <X className="w-3 h-3" />
           </button>
         </span>
       ))}
-      
+
       {isAdding ? (
         <input
           type="text"
@@ -56,14 +57,15 @@ export function MoodTags({ tags, onUpdate }: MoodTagsProps) {
           }}
           placeholder="Tag name"
           autoFocus
-          className="input-inline text-xs w-20 px-2 py-0.5 border border-border rounded-full"
+          className="input-inline text-xs px-2 py-1 w-24 bg-secondary rounded-full"
         />
       ) : (
         <button
           onClick={() => setIsAdding(true)}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="tag-pill opacity-60 hover:opacity-100 transition-opacity"
         >
-          + Add tag
+          <Plus className="w-3 h-3 mr-1" />
+          Add tag
         </button>
       )}
     </div>
