@@ -5,7 +5,7 @@ interface AudioPlayerProps {
   src: string;
   onTimeUpdate?: (time: number) => void;
 }
-
+ //comment
 export function AudioPlayer({ src, onTimeUpdate }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
