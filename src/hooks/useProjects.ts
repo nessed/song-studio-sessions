@@ -1,80 +1,117 @@
-import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { Project } from "@/lib/types";
 
 export function useProjects() {
   const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchProjects = useCallback(async () => {
-    if (!user) {
-      setProjects([]);
-      setLoading(false);
-      return;
-    }
+  const {
+    data: projects = [],
+    isLoading: loading,
+    refetch,
+  } = useQuery({
+    queryKey: ["projects", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
 
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
 
-    if (error) {
-      console.error("Error fetching projects:", error);
-    } else {
-      setProjects((data as Project[]) || []);
-    }
-    setLoading(false);
-  }, [user]);
+      if (error) {
+        console.error("Error fetching projects:", error);
+        throw error;
+      }
 
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
+      return (data as Project[]) || [];
+    },
+    enabled: !!user,
+  });
+
+  const createProjectMutation = useMutation({
+    mutationFn: async ({ title }: { title: string }) => {
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from("projects")
+        .insert({ user_id: user.id, title })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Error creating project:", error);
+        throw error;
+      }
+
+      return data as Project;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+
+  const updateProjectMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Omit<Project, "id" | "user_id" | "created_at">> }) => {
+      const { error } = await supabase
+        .from("projects")
+        .update(updates)
+        .eq("id", id);
+
+      if (error) {
+        console.error("Error updating project:", error);
+        throw error;
+      }
+
+      return { error };
+    },
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project", id] });
+    },
+  });
+
+  const deleteProjectMutation = useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const { error } = await supabase.from("projects").delete().eq("id", id);
+
+      if (error) {
+        console.error("Error deleting project:", error);
+        throw error;
+      }
+
+      return { error };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
 
   const createProject = async (title: string): Promise<Project | null> => {
-    if (!user) return null;
-
-    const { data, error } = await supabase
-      .from("projects")
-      .insert({ user_id: user.id, title })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Error creating project:", error);
+    try {
+      return await createProjectMutation.mutateAsync({ title });
+    } catch {
       return null;
     }
-
-    const newProject = data as Project;
-    setProjects((prev) => [newProject, ...prev]);
-    return newProject;
   };
 
   const updateProject = async (id: string, updates: Partial<Omit<Project, "id" | "user_id" | "created_at">>) => {
-    const { error } = await supabase
-      .from("projects")
-      .update(updates)
-      .eq("id", id);
-
-    if (!error) {
-      setProjects((prev) =>
-        prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
-      );
+    try {
+      return await updateProjectMutation.mutateAsync({ id, updates });
+    } catch (error) {
+      return { error };
     }
-
-    return { error };
   };
 
   const deleteProject = async (id: string) => {
-    const { error } = await supabase.from("projects").delete().eq("id", id);
-
-    if (!error) {
-      setProjects((prev) => prev.filter((p) => p.id !== id));
+    try {
+      return await deleteProjectMutation.mutateAsync({ id });
+    } catch (error) {
+      return { error };
     }
-
-    return { error };
   };
 
   const uploadCoverArt = async (projectId: string, file: File): Promise<string | null> => {
@@ -99,21 +136,16 @@ export function useProjects() {
     return url;
   };
 
-  return { projects, loading, createProject, updateProject, deleteProject, uploadCoverArt, refetch: fetchProjects };
+  return { projects, loading, createProject, updateProject, deleteProject, uploadCoverArt, refetch };
 }
 
 export function useProject(id: string | undefined) {
-  const [project, setProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!id) {
-      setProject(null);
-      setLoading(false);
-      return;
-    }
-
-    const fetchProject = async () => {
+  const {
+    data: project,
+    isLoading: loading,
+  } = useQuery({
+    queryKey: ["project", id],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
         .select("*")
@@ -122,14 +154,13 @@ export function useProject(id: string | undefined) {
 
       if (error) {
         console.error("Error fetching project:", error);
-      } else {
-        setProject(data as Project | null);
+        throw error;
       }
-      setLoading(false);
-    };
 
-    fetchProject();
-  }, [id]);
+      return data as Project | null;
+    },
+    enabled: !!id,
+  });
 
-  return { project, loading, setProject };
+  return { project: project ?? null, loading };
 }

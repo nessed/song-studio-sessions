@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useProject, useProjects } from "@/hooks/useProjects";
 import { useSongs } from "@/hooks/useSongs";
@@ -7,11 +8,13 @@ import { CoverBackground } from "@/components/CoverBackground";
 import { SongListItem } from "@/components/SongListItem";
 import { ArrowLeft, Trash2, Plus, Music } from "lucide-react";
 import { toast } from "sonner";
+import { Project } from "@/lib/types";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { project, loading, setProject } = useProject(id);
+  const queryClient = useQueryClient();
+  const { project, loading } = useProject(id);
   const { updateProject, deleteProject, uploadCoverArt } = useProjects();
   const { songs, createSong } = useSongs(id);
 
@@ -20,6 +23,13 @@ export default function ProjectDetail() {
   const [newSongTitle, setNewSongTitle] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+
+  const setLocalProject = (updates: Partial<Project>) => {
+    if (!id) return;
+    queryClient.setQueryData(["project", id], (prev: Project | null) =>
+      prev ? { ...prev, ...updates } : prev
+    );
+  };
 
   useEffect(() => {
     if (project) {
@@ -49,7 +59,7 @@ export default function ProjectDetail() {
   const handleTagsUpdate = (tags: string[]) => {
     if (id && project) {
       updateProject(id, { mood_tags: tags });
-      setProject({ ...project, mood_tags: tags });
+      setLocalProject({ mood_tags: tags });
     }
   };
 
@@ -59,7 +69,7 @@ export default function ProjectDetail() {
 
     const url = await uploadCoverArt(id, file);
     if (url && project) {
-      setProject({ ...project, cover_art_url: url });
+      setLocalProject({ cover_art_url: url });
       toast.success("Cover uploaded");
     }
   };
