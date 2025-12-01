@@ -1,14 +1,16 @@
 import { useState } from "react";
-import { useSongNotes } from "@/hooks/useSongNotes";
 import { Plus, Trash2 } from "lucide-react";
+import { SongNote } from "@/lib/types";
 
 interface TimelineNotesProps {
-  songId: string;
   currentTime: number;
+  notes: SongNote[];
+  onCreate: (timestampSeconds: number, body: string) => Promise<SongNote | null>;
+  onDelete: (id: string) => Promise<{ error: unknown }>;
+  onSeek?: (time: number) => void;
 }
 
-export function TimelineNotes({ songId, currentTime }: TimelineNotesProps) {
-  const { notes, createNote, deleteNote } = useSongNotes(songId);
+export function TimelineNotes({ currentTime, notes, onCreate, onDelete, onSeek }: TimelineNotesProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [noteText, setNoteText] = useState("");
 
@@ -20,20 +22,13 @@ export function TimelineNotes({ songId, currentTime }: TimelineNotesProps) {
 
   const handleAdd = async () => {
     if (!noteText.trim()) return;
-    await createNote(currentTime, noteText.trim());
+    await onCreate(currentTime, noteText.trim());
     setNoteText("");
     setIsAdding(false);
   };
 
   const handleSeek = (timestamp: number) => {
-    // Find the audio element and seek
-    const audio = document.querySelector("audio") as HTMLAudioElement & { seekTo?: (time: number) => void };
-    if (audio?.seekTo) {
-      audio.seekTo(timestamp);
-    } else if (audio) {
-      audio.currentTime = timestamp;
-      audio.play();
-    }
+    onSeek?.(timestamp);
   };
 
   return (
@@ -96,7 +91,7 @@ export function TimelineNotes({ songId, currentTime }: TimelineNotesProps) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteNote(note.id);
+                  onDelete(note.id);
                 }}
                 className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-1"
               >

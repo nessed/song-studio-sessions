@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import type WaveSurfer from "wavesurfer.js";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useSong, useSongs } from "@/hooks/useSongs";
 import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
+import { useSongNotes } from "@/hooks/useSongNotes";
 import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
 import { CoverBackground } from "@/components/CoverBackground";
 import { MoodTagsInput } from "@/components/MoodTagsInput";
 import { TaskSection } from "@/components/TaskSection";
-import { AudioPlayer } from "@/components/AudioPlayer";
 import { TimelineNotes } from "@/components/TimelineNotes";
 import { LyricsEditor } from "@/components/LyricsEditor";
-import { ArrowLeft, Trash2, ExternalLink, Upload, Image } from "lucide-react";
+import { WaveformPlayer } from "@/components/WaveformPlayer";
+import { ArrowLeft, Trash2, ExternalLink, Image } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SongDetail() {
@@ -22,7 +24,9 @@ export default function SongDetail() {
   const { updateSong, deleteSong, uploadCoverArt, uploadMp3 } = useSongs();
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
   const { projects } = useProjects();
+  const { notes, createNote, deleteNote } = useSongNotes(id);
 
+  const waveformRef = useRef<WaveSurfer | null>(null);
   const [title, setTitle] = useState("");
   const [bpm, setBpm] = useState("");
   const [songKey, setSongKey] = useState("");
@@ -133,6 +137,14 @@ export default function SongDetail() {
       debouncedUpdate({ lyrics: lyrics || null });
       if (song) setLocalSong({ lyrics });
     }
+  };
+
+  const handleSeek = (time: number) => {
+    if (!waveformRef.current) return;
+    const duration = waveformRef.current.getDuration?.() || 0;
+    if (duration === 0) return;
+    waveformRef.current.seekTo(time / duration);
+    waveformRef.current.play();
   };
 
   if (loading) {
@@ -298,21 +310,34 @@ export default function SongDetail() {
             <div className="glass-panel-subtle p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="section-heading mb-0">Demo</h3>
-                <button onClick={() => audioInputRef.current?.click()} className="btn-ghost text-xs flex items-center gap-1">
-                  <Upload className="w-3 h-3" />
-                  Upload MP3
-                </button>
               </div>
 
               {song.mp3_url ? (
-                <>
-                  <AudioPlayer src={song.mp3_url} onTimeUpdate={setCurrentTime} />
-                  <div className="mt-6">
-                    <TimelineNotes songId={song.id} currentTime={currentTime} />
-                  </div>
-                </>
+                <WaveformPlayer
+                  key={song.mp3_url}
+                  url={song.mp3_url}
+                  notes={notes}
+                  onTimeUpdate={setCurrentTime}
+                  onInstance={(instance) => {
+                    waveformRef.current = instance;
+                  }}
+                />
               ) : (
-                <p className="text-sm text-muted-foreground">No demo attached yet</p>
+                <div className="h-24 bg-muted/20 rounded-xl flex items-center justify-center">
+                  <p className="text-sm text-muted-foreground">Loading audio...</p>
+                </div>
+              )}
+
+              {song.mp3_url && (
+                <div className="mt-6">
+                  <TimelineNotes
+                    currentTime={currentTime}
+                    notes={notes}
+                    onCreate={createNote}
+                    onDelete={deleteNote}
+                    onSeek={handleSeek}
+                  />
+                </div>
               )}
             </div>
 
