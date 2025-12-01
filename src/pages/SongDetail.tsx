@@ -1,17 +1,18 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useSong, useSongs } from "@/hooks/useSongs";
 import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
-import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
+import { SONG_SECTIONS, SONG_STATUSES, Song, SongStatus } from "@/lib/types";
 import { CoverBackground } from "@/components/CoverBackground";
 import { MoodTagsInput } from "@/components/MoodTagsInput";
 import { TaskSection } from "@/components/TaskSection";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { TimelineNotes } from "@/components/TimelineNotes";
 import { LyricsEditor } from "@/components/LyricsEditor";
-import { ArrowLeft, Trash2, ExternalLink, Upload, Image } from "lucide-react";
+import { UploadBar } from "@/components/UploadBar";
+import { ArrowLeft, ExternalLink, Image, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SongDetail() {
@@ -305,12 +306,10 @@ export default function SongDetail() {
               </div>
 
               {song.mp3_url ? (
-                <>
-                  <AudioPlayer src={song.mp3_url} onTimeUpdate={setCurrentTime} />
-                  <div className="mt-6">
-                    <TimelineNotes songId={song.id} currentTime={currentTime} />
-                  </div>
-                </>
+                <div className="space-y-4 text-sm text-muted-foreground">
+                  <p>Player is docked bottom—use it to scrub and loop while leaving this view uncluttered.</p>
+                  <TimelineNotes songId={song.id} currentTime={currentTime} />
+                </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No demo attached yet</p>
               )}
@@ -341,6 +340,12 @@ export default function SongDetail() {
           </div>
         </div>
       </main>
+
+      {song.mp3_url ? (
+        <AudioPlayer url={song.mp3_url} onTimeUpdate={setCurrentTime} />
+      ) : (
+        <UploadBar onClick={() => audioInputRef.current?.click()} />
+      )}
     </div>
   );
 }

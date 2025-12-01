@@ -329,3 +329,44 @@
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* Force the player container to be transparent */
+.rhap_container {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 10px !important;
+}
+/* Style the Play/Pause button to look like a floating circle */
+.rhap_play-pause-button {
+  font-size: 40px !important;
+  color: white !important;
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
+  transition: transform 0.2s;
+}
+.rhap_play-pause-button:hover {
+  transform: scale(1.1);
+}
+/* Slim Progress Bar */
+.rhap_progress-bar {
+  height: 4px !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 99px !important;
+}
+.rhap_progress-filled {
+  background-color: white !important; /* or your brand color */
+  border-radius: 99px !important;
+}
+.rhap_progress-indicator {
+  background: white !important;
+  width: 12px !important;
+  height: 12px !important;
+  top: -4px !important;
+  box-shadow: 0 0 10px rgba(255,255,255,0.5) !important;
+}
+/* Mono Time Font */
+.rhap_time, .rhap_current-time, .rhap_total-time {
+  color: #a1a1aa !important; /* muted gray */
+  font-family: 'Space Grotesk', monospace !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+}
