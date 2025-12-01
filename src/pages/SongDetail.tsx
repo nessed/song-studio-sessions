@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useSong, useSongs } from "@/hooks/useSongs";
 import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
-import { SONG_STATUSES, SongStatus, SONG_SECTIONS } from "@/lib/types";
+import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
 import { CoverBackground } from "@/components/CoverBackground";
 import { MoodTagsInput } from "@/components/MoodTagsInput";
 import { TaskSection } from "@/components/TaskSection";
@@ -16,7 +17,8 @@ import { toast } from "sonner";
 export default function SongDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { song, loading, setSong, refetch } = useSong(id);
+  const queryClient = useQueryClient();
+  const { song, loading } = useSong(id);
   const { updateSong, deleteSong, uploadCoverArt, uploadMp3 } = useSongs();
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
   const { projects } = useProjects();
@@ -30,6 +32,13 @@ export default function SongDetail() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+
+  const setLocalSong = (updates: Partial<Song>) => {
+    if (!id) return;
+    queryClient.setQueryData(["song", id], (prev: Song | null) =>
+      prev ? { ...prev, ...updates } : prev
+    );
+  };
 
   useEffect(() => {
     if (song) {
@@ -71,21 +80,21 @@ export default function SongDetail() {
 
   const handleStatusChange = (status: SongStatus) => {
     if (id) updateSong(id, { status });
-    if (song) setSong({ ...song, status });
+    if (song) setLocalSong({ status });
   };
 
   const handleProjectChange = (projectId: string) => {
     if (id) {
       const newProjectId = projectId === "none" ? null : projectId;
       updateSong(id, { project_id: newProjectId });
-      if (song) setSong({ ...song, project_id: newProjectId });
+      if (song) setLocalSong({ project_id: newProjectId });
     }
   };
 
   const handleTagsUpdate = (tags: string[]) => {
     if (id && song) {
       updateSong(id, { mood_tags: tags });
-      setSong({ ...song, mood_tags: tags });
+      setLocalSong({ mood_tags: tags });
     }
   };
 
@@ -95,7 +104,7 @@ export default function SongDetail() {
 
     const url = await uploadCoverArt(id, file);
     if (url && song) {
-      setSong({ ...song, cover_art_url: url });
+      setLocalSong({ cover_art_url: url });
       toast.success("Cover uploaded");
     }
   };
@@ -108,7 +117,7 @@ export default function SongDetail() {
     const url = await uploadMp3(id, file);
     toast.dismiss();
     if (url && song) {
-      setSong({ ...song, mp3_url: url });
+      setLocalSong({ mp3_url: url });
       toast.success("Audio uploaded");
     }
   };
@@ -122,7 +131,7 @@ export default function SongDetail() {
   const handleLyricsChange = (lyrics: string) => {
     if (id) {
       debouncedUpdate({ lyrics: lyrics || null });
-      if (song) setSong({ ...song, lyrics });
+      if (song) setLocalSong({ lyrics });
     }
   };
 

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { Toaster } from "sonner";
@@ -38,14 +39,18 @@ function AppRoutes() {
   );
 }
 
+const queryClient = new QueryClient();
+
 const App = () => (
   <ThemeProvider>
-    <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-        <Toaster position="bottom-center" />
-      </BrowserRouter>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppRoutes />
+          <Toaster position="bottom-center" />
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
   </ThemeProvider>
 );
 
