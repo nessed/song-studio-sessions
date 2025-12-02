@@ -126,7 +126,7 @@ export default function SongDetail() {
   const handleDelete = async () => {
     if (!id || !window.confirm("Delete this song and all its tasks?")) return;
     await deleteSong(id);
-    navigate("/");
+    navigate("/dashboard");
   };
 
   const handleLyricsChange = (lyrics: string) => {
@@ -149,7 +149,7 @@ export default function SongDetail() {
       <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
         <div className="text-center">
           <p className="text-white/40 mb-4">Song not found</p>
-          <Link to="/" className="text-sm text-white underline">
+          <Link to="/dashboard" className="text-sm text-white underline">
             Back to dashboard
           </Link>
         </div>
