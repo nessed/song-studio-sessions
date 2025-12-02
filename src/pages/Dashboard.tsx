@@ -36,75 +36,90 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[#09090b]">
         <AppHeader />
-        <main className="max-w-4xl mx-auto px-6 py-12">
-          <div className="text-muted-foreground">Loading...</div>
+        <main className="max-w-5xl mx-auto px-6 py-12">
+          <div className="text-white/40">Loading...</div>
         </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#09090b]">
       <AppHeader />
 
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-5xl mx-auto px-6 py-12">
+        {/* Recent Projects */}
         {recentProjects.length > 0 && (
           <section className="mb-12 animate-fade-in">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="section-heading mb-0">Recent Projects</h2>
-              <Link to="/projects" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-white/40">Recent Projects</h2>
+              <Link to="/projects" className="text-sm text-white/40 hover:text-white transition-colors">
                 View all
               </Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               {recentProjects.map((project) => (
-                <Link key={project.id} to={`/project/${project.id}`} className="p-4 rounded-xl bg-card/40 hover:bg-card/70 border border-border/50 hover:border-border transition-all">
-                  <div className="w-full aspect-square rounded-lg bg-muted overflow-hidden mb-3">
+                <Link key={project.id} to={`/project/${project.id}`} className="group">
+                  <div className="aspect-square rounded-xl overflow-hidden bg-white/5 shadow-lg group-hover:scale-[1.02] transition-transform duration-300">
                     {project.cover_art_url ? (
                       <img src={project.cover_art_url} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Folder className="w-8 h-8 text-muted-foreground/50" />
+                        <Folder className="w-10 h-10 text-white/20" />
                       </div>
                     )}
                   </div>
-                  <p className="text-sm font-medium truncate">{project.title}</p>
+                  <p className="mt-3 text-sm font-medium text-white truncate group-hover:text-white/80 transition-colors">{project.title}</p>
                 </Link>
               ))}
             </div>
           </section>
         )}
 
+        {/* All Songs */}
         <section className="animate-slide-up">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-foreground mb-2">All Songs</h2>
-            <p className="text-sm text-muted-foreground">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold tracking-tight text-white mb-2">All Songs</h1>
+            <p className="text-sm text-white/40">
               {songs.length === 0 ? "Start by creating your first song" : `${songs.length} song${songs.length !== 1 ? "s" : ""}`}
             </p>
           </div>
 
+          {/* Create song */}
           <div className="mb-8">
             <div className="flex items-center gap-3">
-              <input type="text" placeholder="New song title..." value={newSongTitle} onChange={(e) => setNewSongTitle(e.target.value)} onKeyDown={handleKeyDown} className="input-minimal flex-1" />
-              <button onClick={handleCreateSong} disabled={!newSongTitle.trim()} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+              <input
+                type="text"
+                placeholder="New song title..."
+                value={newSongTitle}
+                onChange={(e) => setNewSongTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="flex-1 px-4 py-3 text-sm bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-white/20 transition-colors"
+              />
+              <button
+                onClick={handleCreateSong}
+                disabled={!newSongTitle.trim()}
+                className="px-5 py-3 text-sm font-medium bg-white text-black rounded-xl hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
                 <Plus className="w-4 h-4" />
                 Create
               </button>
             </div>
           </div>
 
+          {/* Song List */}
           {sortedSongs.length > 0 ? (
-            <div className="space-y-2">
+            <div className="border-t border-white/5">
               {sortedSongs.map((song) => (
                 <SongListItem key={song.id} song={song} showProject />
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 glass-panel-subtle">
-              <Music className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
-              <p className="text-sm text-muted-foreground">No songs yet. Enter a title above to get started.</p>
+            <div className="text-center py-20">
+              <Music className="w-16 h-16 text-white/10 mx-auto mb-4" />
+              <p className="text-sm text-white/40">No songs yet. Enter a title above to get started.</p>
             </div>
           )}
         </section>
