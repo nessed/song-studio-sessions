@@ -6,7 +6,7 @@ interface AudioPlayerProps {
   url?: string;
   onTimeUpdate?: (time: number) => void;
 }
-
+//comments
 export function AudioPlayer({ url, onTimeUpdate }: AudioPlayerProps) {
   if (!url) {
     return <UploadBar />;
