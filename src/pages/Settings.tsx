@@ -17,6 +17,7 @@ export default function Settings() {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
@@ -54,8 +55,16 @@ export default function Settings() {
   };
 
   const handleSignOut = async () => {
-    await signOut();
-    navigate("/auth");
+    setSigningOut(true);
+    try {
+      await signOut();
+      navigate("/auth", { replace: true });
+    } catch (error) {
+      console.error("Failed to sign out", error);
+      toast.error("Failed to sign out. Please try again.");
+    } finally {
+      setSigningOut(false);
+    }
   };
 
   return (
@@ -166,9 +175,10 @@ export default function Settings() {
             <h2 className="text-lg font-medium mb-4">Account</h2>
             <button
               onClick={handleSignOut}
-              className="text-sm text-destructive hover:underline"
+              disabled={signingOut}
+              className="text-sm text-destructive hover:underline disabled:opacity-60"
             >
-              Sign out
+              {signingOut ? "Signing out..." : "Sign out"}
             </button>
           </section>
         </div>

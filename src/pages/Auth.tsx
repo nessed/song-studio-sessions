@@ -22,7 +22,7 @@ export default function Auth() {
         if (error) {
           toast.error(error.message || "Failed to sign in");
         } else {
-          navigate("/");
+          navigate("/dashboard", { replace: true });
         }
       } else {
         const { error } = await signUp(email, password, displayName);
