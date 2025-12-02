@@ -16,7 +16,7 @@ export function AppHeader() {
         <div className="flex items-center gap-8">
           <Link to="/" className="flex items-center gap-2 text-white">
             <Music2 className="w-5 h-5" />
-            <span className="text-lg font-bold tracking-tight">Songbook</span>
+            <span className="text-lg font-bold tracking-tight">Sessions</span>
           </Link>
           
           <nav className="hidden sm:flex items-center gap-1">
