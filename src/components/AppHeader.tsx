@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { User, Folder, Music, Music2 } from "lucide-react";
+import { User } from "lucide-react";
+import { SessionsLogo } from "@/components/SessionsLogo";
 
 export function AppHeader() {
   const { user } = useAuth();
@@ -14,11 +15,8 @@ export function AppHeader() {
     <header className="sticky top-0 z-10 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/5">
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center gap-2 text-white">
-            <Music2 className="w-5 h-5" />
-            <span className="text-lg font-bold tracking-tight">Sessions</span>
-          </Link>
-          
+          <SessionsLogo />
+
           <nav className="hidden sm:flex items-center gap-1">
             <Link
               to="/dashboard"

@@ -12,6 +12,7 @@ import { AudioPlayer } from "@/components/AudioPlayer";
 import { TimelineNotes } from "@/components/TimelineNotes";
 import { LyricsEditor } from "@/components/LyricsEditor";
 import { ArrowLeft, Trash2, ExternalLink, Upload, Image, PanelRight, PanelRightClose } from "lucide-react";
+import { Card, CardBody, Input, Button } from "@nextui-org/react";
 import { toast } from "sonner";
 
 export default function SongDetail() {
@@ -27,6 +28,7 @@ export default function SongDetail() {
   const [bpm, setBpm] = useState("");
   const [songKey, setSongKey] = useState("");
   const [referenceLink, setReferenceLink] = useState("");
+  const [isEditingReference, setIsEditingReference] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [showTasks, setShowTasks] = useState(true);
 
@@ -47,6 +49,7 @@ export default function SongDetail() {
       setBpm(song.bpm?.toString() || "");
       setSongKey(song.key || "");
       setReferenceLink(song.reference_link || "");
+      setIsEditingReference(!song.reference_link);
     }
   }, [song]);
 
@@ -77,6 +80,9 @@ export default function SongDetail() {
   const handleReferenceLinkChange = (value: string) => {
     setReferenceLink(value);
     debouncedUpdate({ reference_link: value || null });
+    if (value === "") {
+      setIsEditingReference(true);
+    }
   };
 
   const handleStatusChange = (status: SongStatus) => {
@@ -198,11 +204,11 @@ export default function SongDetail() {
         <div className="flex-1 overflow-y-auto pb-40 transition-all duration-300">
           <div className="max-w-2xl mx-auto py-12 px-6">
             {/* Song header */}
-            <div className="flex flex-col sm:flex-row gap-6 mb-12 animate-fade-in">
+            <div className="flex flex-col sm:flex-row gap-6 items-end mb-12 animate-fade-in">
               {/* Cover art */}
               <button
                 onClick={() => coverInputRef.current?.click()}
-                className="w-40 h-40 sm:w-48 sm:h-48 flex-shrink-0 relative group cursor-pointer rounded-2xl overflow-hidden shadow-2xl"
+                className="w-40 h-40 flex-shrink-0 relative group cursor-pointer rounded-lg overflow-hidden shadow-2xl"
               >
                 {song.cover_art_url ? (
                   <img src={song.cover_art_url} alt="Cover" className="w-full h-full object-cover" />
@@ -220,16 +226,16 @@ export default function SongDetail() {
               </button>
 
               {/* Meta */}
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 space-y-3">
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   placeholder="Untitled"
-                  className="bg-transparent border-none outline-none text-3xl sm:text-4xl font-bold tracking-tight text-white w-full placeholder:text-white/20"
+                  className="bg-transparent border-none outline-none text-4xl font-bold tracking-tight text-white w-full placeholder:text-white/20 mb-2"
                 />
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 text-muted-foreground font-mono text-sm">
                   <select
                     value={song.status}
                     onChange={(e) => handleStatusChange(e.target.value as SongStatus)}
@@ -281,28 +287,65 @@ export default function SongDetail() {
             </div>
 
             {/* Reference link */}
-            <div className="mb-8 p-4 bg-white/[0.02] border border-white/5 rounded-xl">
-              <label className="text-xs font-semibold uppercase tracking-wider text-white/40 block mb-2">Reference Link</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="url"
-                  value={referenceLink}
-                  onChange={(e) => handleReferenceLinkChange(e.target.value)}
-                  placeholder="https://drive.google.com/..."
-                  className="bg-transparent border-none outline-none flex-1 text-sm text-white/60 placeholder:text-white/20"
-                />
-                {referenceLink && (
-                  <a
-                    href={referenceLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 text-white/40 hover:text-white transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
+            <Card
+              radius="lg"
+              shadow="sm"
+              className="mb-8 bg-content1/60 backdrop-blur-lg border border-divider"
+            >
+              <CardBody className="gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                    Reference Link
+                  </span>
+                  {referenceLink && (
+                    <Button
+                      size="sm"
+                      variant="light"
+                      className="opacity-80"
+                      onPress={() => setIsEditingReference((prev) => !prev)}
+                    >
+                      {isEditingReference ? "View" : "Edit"}
+                    </Button>
+                  )}
+                </div>
+
+                {isEditingReference || !referenceLink ? (
+                  <div className="flex gap-2">
+                    <Input
+                      value={referenceLink}
+                      onValueChange={(value) => handleReferenceLinkChange(value)}
+                      onBlur={() => referenceLink && setIsEditingReference(false)}
+                      placeholder="https://…"
+                      variant="faded"
+                      radius="lg"
+                      classNames={{
+                        inputWrapper: "shadow-inner bg-content2/50 border border-divider backdrop-blur-sm",
+                        input: "font-mono text-sm text-primary",
+                      }}
+                    />
+                    <Button
+                      isIconOnly
+                      variant="flat"
+                      onPress={() => referenceLink && window.open(referenceLink, "_blank", "noreferrer")}
+                      isDisabled={!referenceLink}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      isIconOnly
+                      variant="flat"
+                      onPress={() => window.open(referenceLink, "_blank", "noreferrer")}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm font-mono text-primary truncate">{referenceLink}</span>
+                  </div>
                 )}
-              </div>
-            </div>
+              </CardBody>
+            </Card>
 
             {/* Upload audio button if no audio */}
             {!song.mp3_url && (
