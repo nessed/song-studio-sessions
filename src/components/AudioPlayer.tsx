@@ -119,7 +119,7 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray }: AudioPlayerProps) {
       )}
 
       {/* Main Player - Ultra Glass */}
-      <div className="relative h-20 rounded-full overflow-hidden shadow-2xl shadow-black/50">
+      <div className="relative h-20 rounded-full overflow-visible shadow-2xl shadow-black/50">
         {/* Glass layers */}
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.08] to-white/[0.02]" />
         <div className="absolute inset-0 bg-[#0a0a0c]/70 backdrop-blur-3xl" />
