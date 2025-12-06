@@ -63,7 +63,7 @@ export function LyricsEditor({ value, onChange, onContextChange, onRequestAddNot
   };
 
   return (
-    <div className="relative w-full h-[600px] overflow-hidden rounded-3xl border border-white/5 bg-[#0a0a0a]">
+    <div className="relative w-full h-[600px] overflow-hidden rounded-3xl border border-white/5" style={{ background: "var(--bg-card)" }}>
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.04] via-transparent to-transparent" />
       <div className="absolute inset-x-0 top-0 h-px bg-white/10" />
 

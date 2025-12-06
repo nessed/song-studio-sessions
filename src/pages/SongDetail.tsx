@@ -15,6 +15,7 @@ import { HeroStrip } from "@/components/HeroStrip";
 import { ReferencePill } from "@/components/ReferencePill";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
+import { SessionThemeProvider } from "@/components/SessionThemeProvider";
 import { ArrowLeft, Trash2, PanelRight, PanelRightClose, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -174,7 +175,8 @@ export default function SongDetail() {
   const currentProject = projects.find((p) => p.id === song.project_id);
 
   return (
-    <div className="min-h-screen relative bg-background">
+    <SessionThemeProvider coverUrl={song.cover_art_url}>
+    <div className="min-h-screen relative">
       <CoverBackground imageUrl={song.cover_art_url} />
 
       {/* Hidden inputs */}
@@ -182,7 +184,7 @@ export default function SongDetail() {
       <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-background/70 backdrop-blur-xl border-b border-border">
+      <header className="sticky top-0 z-20 backdrop-blur-xl border-b border-white/10" style={{ background: "var(--bg-card)" }}>
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             to={song.project_id ? `/project/${song.project_id}` : "/dashboard"}
@@ -213,7 +215,7 @@ export default function SongDetail() {
           <div className="max-w-6xl mx-auto py-10 px-6 space-y-8">
             
             {/* Console Grid */}
-            <section className="rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-[0_10px_60px_rgba(0,0,0,0.4)] p-6 space-y-4">
+            <section className="rounded-3xl theme-card backdrop-blur-xl shadow-[0_10px_60px_rgba(0,0,0,0.4)] p-6 space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-6 items-start">
                 <HeroStrip
                   coverUrl={song.cover_art_url}
@@ -345,5 +347,6 @@ export default function SongDetail() {
         }
       />
     </div>
+    </SessionThemeProvider>
   );
 }

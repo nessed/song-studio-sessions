@@ -33,7 +33,7 @@ export function TaskSection({
   };
 
   return (
-    <div className="rounded-2xl bg-[#0a0a0a] border border-white/5 p-5 mb-4">
+    <div className="rounded-2xl theme-card p-5 mb-4">
       <h4 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
         {section}
       </h4>
