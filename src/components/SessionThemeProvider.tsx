@@ -70,8 +70,7 @@ export function SessionThemeProvider({ coverUrl, children }: SessionThemeProvide
         return;
       }
       try {
-        const vibModule = await import("node-vibrant");
-        const Vibrant = (vibModule as any).default ?? vibModule;
+        const { Vibrant } = await import("node-vibrant/browser");
         if (!Vibrant?.from) {
           setTheme(DEFAULT_THEME);
           return;
