@@ -2,25 +2,29 @@ import { useState, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useSong, useSongs } from "@/hooks/useSongs";
+import { useSongVersions } from "@/hooks/useSongVersions";
 import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
 import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
 import { CoverBackground } from "@/components/CoverBackground";
 import { MoodTagsInput } from "@/components/MoodTagsInput";
 import { TaskSection } from "@/components/TaskSection";
-import { AudioPlayer } from "@/components/AudioPlayer";
 import { TimelineNotes } from "@/components/TimelineNotes";
-import { LyricsEditor } from "@/components/LyricsEditor";
-import { ArrowLeft, Trash2, ExternalLink, Upload, Image, PanelRight, PanelRightClose } from "lucide-react";
-import { Card, CardBody, Input, Button } from "@nextui-org/react";
+import { HeroStrip } from "@/components/HeroStrip";
+import { ReferencePill } from "@/components/ReferencePill";
+import { GlassAudioPlayer } from "@/components/GlassAudioPlayer";
+import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
+import { ArrowLeft, Trash2, PanelRight, PanelRightClose, Upload } from "lucide-react";
 import { toast } from "sonner";
+import { motion } from "framer-motion";
 
 export default function SongDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { song, loading } = useSong(id);
-  const { updateSong, deleteSong, uploadCoverArt, uploadMp3 } = useSongs();
+  const { updateSong, deleteSong, uploadCoverArt } = useSongs();
+  const { versions, currentVersion, uploadVersion, setCurrentVersion, isUploading } = useSongVersions(id);
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
   const { projects } = useProjects();
 
@@ -28,7 +32,6 @@ export default function SongDetail() {
   const [bpm, setBpm] = useState("");
   const [songKey, setSongKey] = useState("");
   const [referenceLink, setReferenceLink] = useState("");
-  const [isEditingReference, setIsEditingReference] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [showTasks, setShowTasks] = useState(true);
 
@@ -49,7 +52,6 @@ export default function SongDetail() {
       setBpm(song.bpm?.toString() || "");
       setSongKey(song.key || "");
       setReferenceLink(song.reference_link || "");
-      setIsEditingReference(!song.reference_link);
     }
   }, [song]);
 
@@ -80,9 +82,6 @@ export default function SongDetail() {
   const handleReferenceLinkChange = (value: string) => {
     setReferenceLink(value);
     debouncedUpdate({ reference_link: value || null });
-    if (value === "") {
-      setIsEditingReference(true);
-    }
   };
 
   const handleStatusChange = (status: SongStatus) => {
@@ -121,12 +120,18 @@ export default function SongDetail() {
     if (!file || !id) return;
 
     toast.loading("Uploading...");
-    const url = await uploadMp3(id, file);
+    await uploadVersion(file, `Mix v${versions.length + 1}`);
     toast.dismiss();
-    if (url && song) {
-      setLocalSong({ mp3_url: url });
-      toast.success("Audio uploaded");
+    toast.success("Version uploaded");
+  };
+
+  const handleVersionSelect = async (version: typeof currentVersion) => {
+    if (!version) return;
+    await setCurrentVersion(version.id);
+    if (song) {
+      setLocalSong({ mp3_url: version.file_url });
     }
+    toast.success(`Loaded ${version.description || `v${version.version_number}`}`);
   };
 
   const handleDelete = async () => {
@@ -144,18 +149,18 @@ export default function SongDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
-        <p className="text-white/40">Loading...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
 
   if (!song) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-white/40 mb-4">Song not found</p>
-          <Link to="/dashboard" className="text-sm text-white underline">
+          <p className="text-muted-foreground mb-4">Song not found</p>
+          <Link to="/dashboard" className="text-sm text-foreground underline">
             Back to dashboard
           </Link>
         </div>
@@ -165,8 +170,23 @@ export default function SongDetail() {
 
   const currentProject = projects.find((p) => p.id === song.project_id);
 
+  // Determine accent color based on mood tags
+  const getAccentColor = () => {
+    const tags = song.mood_tags || [];
+    if (tags.some(t => t.toLowerCase().includes("chill") || t.toLowerCase().includes("ambient"))) {
+      return "77, 208, 225"; // Cyan
+    }
+    if (tags.some(t => t.toLowerCase().includes("energetic") || t.toLowerCase().includes("upbeat"))) {
+      return "251, 146, 60"; // Orange
+    }
+    if (tags.some(t => t.toLowerCase().includes("dark") || t.toLowerCase().includes("moody"))) {
+      return "139, 92, 246"; // Purple
+    }
+    return "99, 102, 241"; // Indigo default
+  };
+
   return (
-    <div className="min-h-screen relative bg-[#09090b]">
+    <div className="min-h-screen relative bg-background">
       <CoverBackground imageUrl={song.cover_art_url} />
 
       {/* Hidden inputs */}
@@ -174,11 +194,11 @@ export default function SongDetail() {
       <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-[#09090b]/60 backdrop-blur-xl border-b border-white/5">
+      <header className="sticky top-0 z-20 bg-background/60 backdrop-blur-xl border-b border-border">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             to={song.project_id ? `/project/${song.project_id}` : "/dashboard"}
-            className="flex items-center gap-2 text-white/50 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm">{currentProject?.title || "Dashboard"}</span>
@@ -187,11 +207,11 @@ export default function SongDetail() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowTasks(!showTasks)}
-              className="p-2 text-white/50 hover:text-white transition-colors rounded-lg hover:bg-white/5"
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-white/5"
             >
               {showTasks ? <PanelRightClose className="w-5 h-5" /> : <PanelRight className="w-5 h-5" />}
             </button>
-            <button onClick={handleDelete} className="p-2 text-white/50 hover:text-red-400 transition-colors rounded-lg hover:bg-white/5">
+            <button onClick={handleDelete} className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-white/5">
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
@@ -202,204 +222,140 @@ export default function SongDetail() {
       <div className="flex h-[calc(100vh-64px)] overflow-hidden">
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto pb-40 transition-all duration-300">
-          <div className="max-w-2xl mx-auto py-12 px-6">
-            {/* Song header */}
-            <div className="flex flex-col sm:flex-row gap-6 items-end mb-12 animate-fade-in">
-              {/* Cover art */}
-              <button
-                onClick={() => coverInputRef.current?.click()}
-                className="w-40 h-40 flex-shrink-0 relative group cursor-pointer rounded-lg overflow-hidden shadow-2xl"
-              >
-                {song.cover_art_url ? (
-                  <img src={song.cover_art_url} alt="Cover" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-white/5 gap-2">
-                    <Image className="w-8 h-8 text-white/30" />
-                    <span className="text-xs text-white/30">Add cover</span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                  <span className="text-xs text-transparent group-hover:text-white transition-colors font-medium">
-                    Change
-                  </span>
-                </div>
-              </button>
+          <div className="max-w-2xl mx-auto py-8 px-6">
+            
+            {/* Hero Strip */}
+            <HeroStrip
+              coverUrl={song.cover_art_url}
+              title={title}
+              onTitleChange={handleTitleChange}
+              bpm={bpm}
+              onBpmChange={handleBpmChange}
+              songKey={songKey}
+              onKeyChange={handleKeyChange}
+              status={song.status}
+              onStatusChange={(s) => handleStatusChange(s as SongStatus)}
+              statuses={SONG_STATUSES}
+              versions={versions}
+              currentVersion={currentVersion}
+              onSelectVersion={handleVersionSelect}
+              onCoverClick={() => coverInputRef.current?.click()}
+              onVersionUpload={uploadVersion}
+              isUploading={isUploading}
+            />
 
-              {/* Meta */}
-              <div className="flex-1 space-y-3">
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => handleTitleChange(e.target.value)}
-                  placeholder="Untitled"
-                  className="bg-transparent border-none outline-none text-4xl font-bold tracking-tight text-white w-full placeholder:text-white/20 mb-2"
-                />
-
-                <div className="flex flex-wrap items-center gap-3 text-muted-foreground font-mono text-sm">
-                  <select
-                    value={song.status}
-                    onChange={(e) => handleStatusChange(e.target.value as SongStatus)}
-                    className="px-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white/80 focus:outline-none cursor-pointer"
-                  >
-                    {SONG_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value} className="bg-[#09090b]">
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  <input
-                    type="text"
-                    value={bpm}
-                    onChange={(e) => handleBpmChange(e.target.value)}
-                    placeholder="BPM"
-                    className="bg-transparent border-none outline-none text-sm w-16 text-white/50 placeholder:text-white/30"
-                  />
-
-                  <input
-                    type="text"
-                    value={songKey}
-                    onChange={(e) => handleKeyChange(e.target.value)}
-                    placeholder="Key"
-                    className="bg-transparent border-none outline-none text-sm w-16 text-white/50 placeholder:text-white/30"
-                  />
-                </div>
-
-                {/* Project selector */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-white/40">Project:</span>
-                  <select
-                    value={song.project_id || "none"}
-                    onChange={(e) => handleProjectChange(e.target.value)}
-                    className="px-2 py-1 text-sm bg-transparent border-none text-white/60 focus:outline-none cursor-pointer"
-                  >
-                    <option value="none" className="bg-[#09090b]">None</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id} className="bg-[#09090b]">
-                        {p.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <MoodTagsInput tags={song.mood_tags} onUpdate={handleTagsUpdate} />
-              </div>
-            </div>
-
-            {/* Reference link */}
-            <Card
-              radius="lg"
-              shadow="sm"
-              className="mb-8 bg-content1/60 backdrop-blur-lg border border-divider"
+            {/* Sub-controls row */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="flex flex-wrap items-center gap-4 mb-8"
             >
-              <CardBody className="gap-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
-                    Reference Link
-                  </span>
-                  {referenceLink && (
-                    <Button
-                      size="sm"
-                      variant="light"
-                      className="opacity-80"
-                      onPress={() => setIsEditingReference((prev) => !prev)}
-                    >
-                      {isEditingReference ? "View" : "Edit"}
-                    </Button>
-                  )}
-                </div>
+              {/* Project selector */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted-foreground text-xs">Project:</span>
+                <select
+                  value={song.project_id || "none"}
+                  onChange={(e) => handleProjectChange(e.target.value)}
+                  className="bg-transparent border-none text-foreground/70 text-sm focus:outline-none cursor-pointer hover:text-foreground transition-colors"
+                >
+                  <option value="none" className="bg-background">None</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id} className="bg-background">
+                      {p.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {isEditingReference || !referenceLink ? (
-                  <div className="flex gap-2">
-                    <Input
-                      value={referenceLink}
-                      onValueChange={(value) => handleReferenceLinkChange(value)}
-                      onBlur={() => referenceLink && setIsEditingReference(false)}
-                      placeholder="https://…"
-                      variant="faded"
-                      radius="lg"
-                      classNames={{
-                        inputWrapper: "shadow-inner bg-content2/50 border border-divider backdrop-blur-sm",
-                        input: "font-mono text-sm text-primary",
-                      }}
-                    />
-                    <Button
-                      isIconOnly
-                      variant="flat"
-                      onPress={() => referenceLink && window.open(referenceLink, "_blank", "noreferrer")}
-                      isDisabled={!referenceLink}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      isIconOnly
-                      variant="flat"
-                      onPress={() => window.open(referenceLink, "_blank", "noreferrer")}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm font-mono text-primary truncate">{referenceLink}</span>
-                  </div>
-                )}
-              </CardBody>
-            </Card>
+              <div className="h-4 w-px bg-border" />
+
+              {/* Reference Pill */}
+              <ReferencePill
+                value={referenceLink}
+                onChange={handleReferenceLinkChange}
+              />
+            </motion.div>
+
+            {/* Mood Tags */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.15 }}
+              className="mb-8"
+            >
+              <MoodTagsInput tags={song.mood_tags} onUpdate={handleTagsUpdate} />
+            </motion.div>
 
             {/* Upload audio button if no audio */}
-            {!song.mp3_url && (
-              <div className="mb-8">
+            {!song.mp3_url && versions.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mb-8"
+              >
                 <button
                   onClick={() => audioInputRef.current?.click()}
-                  className="w-full py-4 border border-dashed border-white/10 rounded-xl text-white/40 hover:text-white/60 hover:border-white/20 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-6 border border-dashed border-border rounded-xl text-muted-foreground hover:text-foreground hover:border-white/20 transition-colors flex items-center justify-center gap-3 group"
                 >
-                  <Upload className="w-4 h-4" />
-                  Upload Demo MP3
+                  <div className="relative">
+                    <Upload className="w-5 h-5" />
+                    <div className="absolute inset-0 blur-md bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                  <span>Upload your first mix</span>
                 </button>
-              </div>
+              </motion.div>
             )}
 
             {/* Lyrics */}
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-4">Lyrics</h3>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.25 }}
+            >
+              <h3 className="section-heading">Lyrics</h3>
               <LyricsEditor value={song.lyrics || ""} onChange={handleLyricsChange} />
-            </div>
+            </motion.div>
           </div>
         </div>
 
         {/* Right Sidebar - Tasks */}
-        <div
-          className={`${
-            showTasks ? "w-80 opacity-100" : "w-0 opacity-0"
-          } transition-all duration-300 ease-in-out border-l border-white/5 bg-[#09090b] flex flex-col overflow-hidden`}
+        <motion.div
+          initial={false}
+          animate={{
+            width: showTasks ? 320 : 0,
+            opacity: showTasks ? 1 : 0,
+          }}
+          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          className="border-l border-border bg-background flex flex-col overflow-hidden"
         >
           <div className="p-6 w-80 overflow-y-auto flex-1">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-6">Tasks</h3>
+            <h3 className="section-heading">Tasks</h3>
             <div className="space-y-8">
               {SONG_SECTIONS.map((section) => (
                 <TaskSection
                   key={section}
                   section={section}
                   tasks={tasks.filter((t) => t.section === section)}
-                  onCreateTask={(title) => createTask(section, title)}
+                  onCreateTask={(taskTitle) => createTask(section, taskTitle)}
                   onUpdateTask={updateTask}
                   onDeleteTask={deleteTask}
                 />
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Floating Audio Player */}
-      {song.mp3_url && (
-        <AudioPlayer
-          src={song.mp3_url}
-          onTimeUpdate={setCurrentTime}
-          noteTray={<TimelineNotes songId={song.id} currentTime={currentTime} />}
-        />
-      )}
+      {/* Floating Glass Audio Player */}
+      <GlassAudioPlayer
+        src={currentVersion?.file_url || song.mp3_url}
+        onTimeUpdate={setCurrentTime}
+        noteTray={<TimelineNotes songId={song.id} currentTime={currentTime} />}
+        accentColor={getAccentColor()}
+        onUploadClick={() => audioInputRef.current?.click()}
+      />
     </div>
   );
 }

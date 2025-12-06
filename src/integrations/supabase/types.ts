@@ -14,6 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
+      assets: {
+        Row: {
+          created_at: string
+          id: string
+          meta: Json | null
+          name: string
+          project_id: string | null
+          song_id: string | null
+          type: Database["public"]["Enums"]["asset_type"]
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          name: string
+          project_id?: string | null
+          song_id?: string | null
+          type?: Database["public"]["Enums"]["asset_type"]
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          name?: string
+          project_id?: string | null
+          song_id?: string | null
+          type?: Database["public"]["Enums"]["asset_type"]
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collaborators: {
+        Row: {
+          email: string | null
+          id: string
+          joined_at: string
+          name: string
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          email?: string | null
+          id?: string
+          joined_at?: string
+          name: string
+          project_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          email?: string | null
+          id?: string
+          joined_at?: string
+          name?: string
+          project_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collaborators_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -109,6 +198,47 @@ export type Database = {
           },
         ]
       }
+      song_versions: {
+        Row: {
+          created_at: string
+          description: string | null
+          file_url: string
+          id: string
+          is_current: boolean
+          song_id: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          file_url: string
+          id?: string
+          is_current?: boolean
+          song_id: string
+          user_id: string
+          version_number?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          file_url?: string
+          id?: string
+          is_current?: boolean
+          song_id?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_versions_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       songs: {
         Row: {
           bpm: number | null
@@ -120,6 +250,7 @@ export type Database = {
           mood_tags: string[] | null
           mp3_url: string | null
           project_id: string | null
+          reference_file_url: string | null
           reference_link: string | null
           status: string
           title: string
@@ -136,6 +267,7 @@ export type Database = {
           mood_tags?: string[] | null
           mp3_url?: string | null
           project_id?: string | null
+          reference_file_url?: string | null
           reference_link?: string | null
           status?: string
           title: string
@@ -152,6 +284,7 @@ export type Database = {
           mood_tags?: string[] | null
           mp3_url?: string | null
           project_id?: string | null
+          reference_file_url?: string | null
           reference_link?: string | null
           status?: string
           title?: string
@@ -217,7 +350,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      asset_type: "sample" | "preset" | "vst" | "reference"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -344,6 +477,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      asset_type: ["sample", "preset", "vst", "reference"],
+    },
   },
 } as const
