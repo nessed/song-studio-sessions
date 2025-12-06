@@ -120,12 +120,6 @@ export function GlassAudioPlayer({
 
   const progress = duration ? (currentTime / duration) * 100 : 0;
 
-  // Generate dummy waveform bars
-  const waveformBars = Array.from({ length: 48 }, (_, i) => ({
-    height: 20 + Math.sin(i * 0.5) * 15 + Math.random() * 20,
-    delay: i * 0.02,
-  }));
-
   // No audio state
   if (!src) {
     return (
@@ -172,16 +166,16 @@ export function GlassAudioPlayer({
       )}
 
       {/* Main Player - Premium Glass Capsule */}
-      <div className="relative h-20 rounded-full overflow-visible group">
-        {/* Bioluminescent glow shadow */}
+      <div className="relative h-16 rounded-full overflow-visible group">
+        {/* Soft glow */}
         <div 
-          className="absolute -inset-2 rounded-full blur-2xl opacity-30 transition-opacity duration-500 group-hover:opacity-50"
-          style={{ background: `radial-gradient(ellipse at center, rgba(${accentColor}, 0.4) 0%, transparent 70%)` }}
+          className="absolute -inset-1 rounded-full blur-xl opacity-30 transition-opacity duration-500 group-hover:opacity-50"
+          style={{ background: `radial-gradient(ellipse at center, rgba(${accentColor}, 0.35) 0%, transparent 70%)` }}
         />
 
         {/* Glass layers */}
-        <div className="absolute inset-0 bg-[#0a0a0c]/80 backdrop-blur-3xl rounded-full" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] to-transparent rounded-full" />
+        <div className="absolute inset-0 bg-[#0a0a0c]/85 backdrop-blur-3xl rounded-full" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.05] to-transparent rounded-full" />
         <div className="absolute inset-0 border border-white/[0.08] rounded-full" />
         <div className="absolute inset-[1px] border border-white/[0.03] rounded-full" />
         
@@ -189,7 +183,7 @@ export function GlassAudioPlayer({
         <div className="absolute inset-0 rounded-full shadow-[inset_0_1px_1px_rgba(255,255,255,0.08)]" />
         
         {/* Content */}
-        <div className="relative h-full px-6 flex items-center gap-5">
+        <div className="relative h-full px-6 flex items-center gap-4">
           <audio ref={audioRef} src={src} preload="metadata" />
 
           {/* Play/Pause - Floating button with glow */}
@@ -213,55 +207,28 @@ export function GlassAudioPlayer({
             {formatTime(currentTime)}
           </span>
 
-          {/* Waveform Progress Track */}
+          {/* Progress Track */}
           <div
             ref={progressRef}
-            className="flex-1 h-12 cursor-pointer flex items-end justify-center gap-[2px] relative"
+            className="flex-1 cursor-pointer relative h-2 rounded-full bg-white/10 overflow-hidden"
             onClick={handleSeek}
             onMouseMove={handleMouseMove}
             onMouseLeave={() => setHoverPosition(null)}
           >
-            {waveformBars.map((bar, i) => {
-              const barProgress = (i / waveformBars.length) * 100;
-              const isPlayed = barProgress <= progress;
-              const isHovered = hoverPosition !== null && barProgress <= hoverPosition;
-              
-              return (
-                <motion.div
-                  key={i}
-                  className="w-[2px] rounded-full transition-all duration-75"
-                  style={{
-                    height: `${bar.height}%`,
-                    background: isPlayed 
-                      ? `rgba(${accentColor}, 0.9)` 
-                      : isHovered 
-                        ? "rgba(255,255,255,0.4)" 
-                        : "rgba(255,255,255,0.15)",
-                    boxShadow: isPlayed ? `0 0 6px rgba(${accentColor}, 0.5)` : "none",
-                  }}
-                  animate={isPlaying && isPlayed ? {
-                    scaleY: [1, 1.1, 1],
-                  } : {}}
-                  transition={{
-                    duration: 0.4,
-                    delay: bar.delay,
-                    repeat: Infinity,
-                    repeatType: "reverse",
-                  }}
-                />
-              );
-            })}
-
-            {/* Playhead glow */}
             <div
-              className="absolute top-0 bottom-0 w-[3px] rounded-full transition-all duration-75"
+              className="absolute inset-y-0 left-0 rounded-full"
               style={{
-                left: `${progress}%`,
-                transform: "translateX(-50%)",
-                background: `rgba(${accentColor}, 1)`,
-                boxShadow: `0 0 12px rgba(${accentColor}, 0.8), 0 0 24px rgba(${accentColor}, 0.4)`,
+                width: `${progress}%`,
+                background: `linear-gradient(90deg, rgba(${accentColor},0.85), rgba(${accentColor},0.55))`,
+                boxShadow: `0 0 12px rgba(${accentColor},0.4)`
               }}
             />
+            {hoverPosition !== null && (
+              <div
+                className="absolute inset-y-[-4px] w-[2px] bg-white/70 rounded-full"
+                style={{ left: `${hoverPosition}%`, transform: "translateX(-50%)" }}
+              />
+            )}
           </div>
 
           {/* Duration */}

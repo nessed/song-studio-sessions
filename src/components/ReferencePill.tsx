@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ExternalLink, Link2, X, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link2, Check, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ReferencePillProps {
@@ -8,124 +8,69 @@ interface ReferencePillProps {
 }
 
 export function ReferencePill({ value, onChange }: ReferencePillProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [inputValue, setInputValue] = useState(value);
+  const [isOpen, setIsOpen] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
 
   const handleSave = () => {
-    onChange(inputValue);
-    setIsEditing(false);
+    onChange(draft);
+    setIsOpen(false);
   };
 
-  const handleClear = () => {
-    onChange("");
-    setInputValue("");
-  };
-
-  const truncateUrl = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      return parsed.hostname.replace("www.", "");
-    } catch {
-      return url.substring(0, 20) + "...";
-    }
-  };
-
-  // Empty state
-  if (!value && !isEditing) {
-    return (
-      <button
-        onClick={() => setIsEditing(true)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-white/40 hover:text-white/60 transition-colors"
-      >
-        <Link2 className="w-3.5 h-3.5" />
-        <span>+ Add Reference</span>
-      </button>
-    );
-  }
-
-  // Editing state
-  if (isEditing) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="flex items-center gap-2"
-      >
-        <div className="relative flex-1 max-w-xs">
-          <input
-            type="url"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
-            placeholder="https://..."
-            autoFocus
-            className="w-full px-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:border-white/20 font-mono"
-          />
-        </div>
-        <button
-          onClick={handleSave}
-          className="p-1.5 text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
-        >
-          <Check className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => {
-            setIsEditing(false);
-            setInputValue(value);
-          }}
-          className="p-1.5 text-white/40 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </motion.div>
-    );
-  }
-
-  // Display state
   return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -5 }}
-        className="inline-flex items-center gap-2"
+    <div className="relative inline-flex items-center gap-2">
+      <button
+        onClick={() => setIsOpen((v) => !v)}
+        className={`relative h-10 w-10 rounded-full border border-white/10 bg-white/5 backdrop-blur-md flex items-center justify-center transition-all hover:border-white/30 ${value ? "text-white/80" : "text-white/40"}`}
+        title={value ? "Reference link" : "Add reference link"}
       >
-        <div className="group relative inline-flex items-center gap-2 px-3 py-1.5 rounded-full overflow-hidden">
-          {/* Glass background */}
-          <div className="absolute inset-0 bg-white/5 backdrop-blur-md border border-white/10" />
-          
-          <Link2 className="relative w-3.5 h-3.5 text-white/50" />
-          <span className="relative text-sm text-white/70 font-mono">
-            {truncateUrl(value)}
-          </span>
-          
-          <a
-            href={value}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative p-1 -m-1 text-white/40 hover:text-white transition-colors"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        </div>
+        <Link2 className="w-4 h-4" />
+        {value && <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.6)]" />}
+      </button>
 
-        <button
-          onClick={() => {
-            setInputValue(value);
-            setIsEditing(true);
-          }}
-          className="text-xs text-white/30 hover:text-white/60 transition-colors"
-        >
-          Edit
-        </button>
-        
-        <button
-          onClick={handleClear}
-          className="text-xs text-white/30 hover:text-red-400 transition-colors"
-        >
-          Remove
-        </button>
-      </motion.div>
-    </AnimatePresence>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            className="absolute left-1/2 top-11 -translate-x-1/2 z-30 w-64"
+          >
+            <div className="relative rounded-xl border border-white/10 bg-[#0b0b0f]/95 backdrop-blur-2xl shadow-2xl p-3">
+              <input
+                type="url"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSave()}
+                placeholder="https://reference.link"
+                autoFocus
+                className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-xs font-mono text-white/80 placeholder:text-white/30 focus:outline-none focus:border-white/20"
+              />
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setDraft(value);
+                    setIsOpen(false);
+                  }}
+                  className="text-[11px] text-white/40 hover:text-white transition-colors px-2 py-1"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="inline-flex items-center gap-1 rounded-lg bg-white text-black px-2.5 py-1.5 text-[11px] font-semibold hover:bg-white/90 transition-colors"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Save
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

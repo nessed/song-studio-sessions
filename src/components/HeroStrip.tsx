@@ -19,8 +19,6 @@ interface HeroStripProps {
   currentVersion: SongVersion | null;
   onSelectVersion: (version: SongVersion) => void;
   onCoverClick: () => void;
-  onVersionUpload: (file: File, description: string) => Promise<void>;
-  isUploading: boolean;
 }
 
 export function HeroStrip({
@@ -41,22 +39,25 @@ export function HeroStrip({
 }: HeroStripProps) {
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
+  const versionLabel = currentVersion?.version_number
+    ? `VERSION v${currentVersion.version_number}`
+    : "VERSION v1";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="flex items-center gap-5 mb-8"
+      className="flex items-center gap-6"
     >
-      {/* Cover Art - Compact with glow */}
+      {/* Cover Art */}
       <button
         onClick={onCoverClick}
-        className="relative w-16 h-16 flex-shrink-0 group cursor-pointer rounded-xl overflow-hidden"
+        className="relative w-24 h-24 flex-shrink-0 group cursor-pointer rounded-xl overflow-hidden shadow-2xl"
       >
-        {/* Glow effect */}
         {coverUrl && (
           <div 
-            className="absolute -inset-2 blur-xl opacity-40 group-hover:opacity-60 transition-opacity"
+            className="absolute -inset-3 blur-2xl opacity-40 group-hover:opacity-60 transition-opacity"
             style={{ 
               backgroundImage: `url(${coverUrl})`,
               backgroundSize: "cover",
@@ -78,65 +79,78 @@ export function HeroStrip({
         </div>
       </button>
 
-      {/* Title + Vibe Box */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+      {/* Title + Meta */}
+      <div className="flex-1 min-w-0 flex flex-col gap-3">
         <input
           type="text"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="Untitled"
-          className="bg-transparent border-none outline-none text-2xl font-bold tracking-tight text-white flex-1 min-w-0 placeholder:text-white/20"
+          className="bg-transparent border-none outline-none text-4xl font-bold tracking-tight text-white flex-1 min-w-0 placeholder:text-white/25"
           style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}
         />
-        
-        <VibeBox
-          versions={versions}
-          currentVersion={currentVersion}
-          onSelectVersion={onSelectVersion}
-        />
+
+        <div className="flex flex-wrap items-center gap-4 text-sm font-mono text-white/70">
+          <div className="flex items-center gap-2">
+            <span className="uppercase text-[10px] text-white/40 tracking-[0.2em]">BPM</span>
+            <input
+              type="text"
+              value={bpm}
+              onChange={(e) => onBpmChange(e.target.value)}
+              placeholder="120"
+              className="bg-transparent border-none outline-none w-12 text-center placeholder:text-white/30 text-white/80"
+            />
+          </div>
+
+          <span className="h-4 w-px bg-white/10" />
+
+          <div className="flex items-center gap-2">
+            <span className="uppercase text-[10px] text-white/40 tracking-[0.2em]">Key</span>
+            <input
+              type="text"
+              value={songKey}
+              onChange={(e) => onKeyChange(e.target.value)}
+              placeholder="Fm"
+              className="bg-transparent border-none outline-none w-12 text-center placeholder:text-white/30 text-white/80"
+            />
+          </div>
+
+          <span className="h-4 w-px bg-white/10" />
+
+          <select
+            value={status}
+            onChange={(e) => onStatusChange(e.target.value)}
+            className="px-0 py-0 bg-transparent border-none text-white/80 text-sm font-mono focus:outline-none cursor-pointer hover:text-white transition-colors"
+          >
+            {statuses.map((s) => (
+              <option key={s.value} value={s.value} className="bg-[#09090b]">
+                {s.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Meta Bar - Ghost inputs */}
-      <div className="flex items-center gap-3 text-sm flex-shrink-0">
-        <select
-          value={status}
-          onChange={(e) => onStatusChange(e.target.value)}
-          className="px-2.5 py-1.5 bg-transparent border border-white/10 rounded-lg text-white/70 text-xs focus:outline-none cursor-pointer hover:border-white/20 transition-colors"
-        >
-          {statuses.map((s) => (
-            <option key={s.value} value={s.value} className="bg-[#09090b]">
-              {s.label}
-            </option>
-          ))}
-        </select>
+      {/* Right rail */}
+      <div className="flex flex-col items-end gap-3">
+        <div className="flex items-center gap-3">
+          <div className="border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white/80">
+            {versionLabel}
+          </div>
+          <VibeBox
+            versions={versions}
+            currentVersion={currentVersion}
+            onSelectVersion={onSelectVersion}
+          />
+        </div>
 
-        <div className="h-4 w-px bg-white/10" />
-
-        <input
-          type="text"
-          value={bpm}
-          onChange={(e) => onBpmChange(e.target.value)}
-          placeholder="BPM"
-          className="bg-transparent border-none outline-none text-xs w-12 text-white/50 placeholder:text-white/30 font-mono text-center"
-        />
-
-        <div className="h-4 w-px bg-white/10" />
-
-        <input
-          type="text"
-          value={songKey}
-          onChange={(e) => onKeyChange(e.target.value)}
-          placeholder="Key"
-          className="bg-transparent border-none outline-none text-xs w-10 text-white/50 placeholder:text-white/30 font-mono text-center"
+        <input 
+          ref={uploadInputRef}
+          type="file"
+          accept="audio/*"
+          className="hidden"
         />
       </div>
-
-      <input 
-        ref={uploadInputRef}
-        type="file"
-        accept="audio/*"
-        className="hidden"
-      />
     </motion.div>
   );
 }

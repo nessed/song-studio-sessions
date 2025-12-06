@@ -33,8 +33,8 @@ export function TaskSection({
   };
 
   return (
-    <div className="glass-panel-subtle p-4">
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+    <div className="rounded-2xl bg-[#0a0a0a] border border-white/5 p-5 mb-4">
+      <h4 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
         {section}
       </h4>
 
@@ -70,11 +70,11 @@ export function TaskSection({
       <div className="mt-3">
         <input
           type="text"
-          placeholder="Add task..."
+          placeholder={`Add ${section} task`}
           value={newTaskTitle}
           onChange={(e) => setNewTaskTitle(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="input-inline w-full text-sm py-1.5 text-muted-foreground hover:text-foreground focus:text-foreground transition-colors"
+          className="w-full text-sm py-1.5 text-white/60 bg-transparent border-b border-white/10 focus:border-white/30 outline-none placeholder:text-white/30 transition-colors"
         />
       </div>
     </div>

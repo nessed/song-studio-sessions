@@ -5,6 +5,7 @@ import { useSong, useSongs } from "@/hooks/useSongs";
 import { useSongVersions } from "@/hooks/useSongVersions";
 import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
+import { useSongNotes } from "@/hooks/useSongNotes";
 import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
 import { CoverBackground } from "@/components/CoverBackground";
 import { MoodTagsInput } from "@/components/MoodTagsInput";
@@ -12,7 +13,7 @@ import { TaskSection } from "@/components/TaskSection";
 import { TimelineNotes } from "@/components/TimelineNotes";
 import { HeroStrip } from "@/components/HeroStrip";
 import { ReferencePill } from "@/components/ReferencePill";
-import { GlassAudioPlayer } from "@/components/GlassAudioPlayer";
+import { AudioPlayer } from "@/components/AudioPlayer";
 import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
 import { ArrowLeft, Trash2, PanelRight, PanelRightClose, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -24,9 +25,10 @@ export default function SongDetail() {
   const queryClient = useQueryClient();
   const { song, loading } = useSong(id);
   const { updateSong, deleteSong, uploadCoverArt } = useSongs();
-  const { versions, currentVersion, uploadVersion, setCurrentVersion, isUploading } = useSongVersions(id);
+  const { versions, currentVersion, uploadVersion, setCurrentVersion } = useSongVersions(id);
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
   const { projects } = useProjects();
+  const { notes: timelineNotes, createNote, deleteNote } = useSongNotes(id);
 
   const [title, setTitle] = useState("");
   const [bpm, setBpm] = useState("");
@@ -34,6 +36,7 @@ export default function SongDetail() {
   const [referenceLink, setReferenceLink] = useState("");
   const [currentTime, setCurrentTime] = useState(0);
   const [showTasks, setShowTasks] = useState(true);
+  const [noteAddTime, setNoteAddTime] = useState<number | null>(null);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -170,21 +173,6 @@ export default function SongDetail() {
 
   const currentProject = projects.find((p) => p.id === song.project_id);
 
-  // Determine accent color based on mood tags
-  const getAccentColor = () => {
-    const tags = song.mood_tags || [];
-    if (tags.some(t => t.toLowerCase().includes("chill") || t.toLowerCase().includes("ambient"))) {
-      return "77, 208, 225"; // Cyan
-    }
-    if (tags.some(t => t.toLowerCase().includes("energetic") || t.toLowerCase().includes("upbeat"))) {
-      return "251, 146, 60"; // Orange
-    }
-    if (tags.some(t => t.toLowerCase().includes("dark") || t.toLowerCase().includes("moody"))) {
-      return "139, 92, 246"; // Purple
-    }
-    return "99, 102, 241"; // Indigo default
-  };
-
   return (
     <div className="min-h-screen relative bg-background">
       <CoverBackground imageUrl={song.cover_art_url} />
@@ -194,8 +182,8 @@ export default function SongDetail() {
       <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
 
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-background/60 backdrop-blur-xl border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-20 bg-background/70 backdrop-blur-xl border-b border-border">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             to={song.project_id ? `/project/${song.project_id}` : "/dashboard"}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -221,71 +209,57 @@ export default function SongDetail() {
       {/* Main Layout */}
       <div className="flex h-[calc(100vh-64px)] overflow-hidden">
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto pb-40 transition-all duration-300">
-          <div className="max-w-2xl mx-auto py-8 px-6">
+        <div className="flex-1 overflow-y-auto transition-all duration-300" style={{ paddingBottom: "120px" }}>
+          <div className="max-w-6xl mx-auto py-10 px-6 space-y-8">
             
-            {/* Hero Strip */}
-            <HeroStrip
-              coverUrl={song.cover_art_url}
-              title={title}
-              onTitleChange={handleTitleChange}
-              bpm={bpm}
-              onBpmChange={handleBpmChange}
-              songKey={songKey}
-              onKeyChange={handleKeyChange}
-              status={song.status}
-              onStatusChange={(s) => handleStatusChange(s as SongStatus)}
-              statuses={SONG_STATUSES}
-              versions={versions}
-              currentVersion={currentVersion}
-              onSelectVersion={handleVersionSelect}
-              onCoverClick={() => coverInputRef.current?.click()}
-              onVersionUpload={uploadVersion}
-              isUploading={isUploading}
-            />
+            {/* Console Grid */}
+            <section className="rounded-3xl border border-white/10 bg-white/[0.03] backdrop-blur-xl shadow-[0_10px_60px_rgba(0,0,0,0.4)] p-6 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-6 items-start">
+                <HeroStrip
+                  coverUrl={song.cover_art_url}
+                  title={title}
+                  onTitleChange={handleTitleChange}
+                  bpm={bpm}
+                  onBpmChange={handleBpmChange}
+                  songKey={songKey}
+                  onKeyChange={handleKeyChange}
+                  status={song.status}
+                  onStatusChange={(s) => handleStatusChange(s as SongStatus)}
+                  statuses={SONG_STATUSES}
+                  versions={versions}
+                  currentVersion={currentVersion}
+                  onSelectVersion={handleVersionSelect}
+                  onCoverClick={() => coverInputRef.current?.click()}
+                />
 
-            {/* Sub-controls row */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="flex flex-wrap items-center gap-4 mb-8"
-            >
-              {/* Project selector */}
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground text-xs">Project:</span>
-                <select
-                  value={song.project_id || "none"}
-                  onChange={(e) => handleProjectChange(e.target.value)}
-                  className="bg-transparent border-none text-foreground/70 text-sm focus:outline-none cursor-pointer hover:text-foreground transition-colors"
-                >
-                  <option value="none" className="bg-background">None</option>
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id} className="bg-background">
-                      {p.title}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground text-xs">Project</span>
+                      <select
+                        value={song.project_id || "none"}
+                        onChange={(e) => handleProjectChange(e.target.value)}
+                        className="bg-transparent border border-white/10 rounded-full px-3 py-1.5 text-foreground/80 text-xs focus:outline-none cursor-pointer hover:border-white/20 transition-colors"
+                      >
+                        <option value="none" className="bg-background">None</option>
+                        {projects.map((p) => (
+                          <option key={p.id} value={p.id} className="bg-background">
+                            {p.title}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <ReferencePill
+                      value={referenceLink}
+                      onChange={handleReferenceLinkChange}
+                    />
+                  </div>
+
+                  <MoodTagsInput tags={song.mood_tags} onUpdate={handleTagsUpdate} />
+                </div>
               </div>
-
-              <div className="h-4 w-px bg-border" />
-
-              {/* Reference Pill */}
-              <ReferencePill
-                value={referenceLink}
-                onChange={handleReferenceLinkChange}
-              />
-            </motion.div>
-
-            {/* Mood Tags */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.15 }}
-              className="mb-8"
-            >
-              <MoodTagsInput tags={song.mood_tags} onUpdate={handleTagsUpdate} />
-            </motion.div>
+            </section>
 
             {/* Upload audio button if no audio */}
             {!song.mp3_url && versions.length === 0 && (
@@ -313,8 +287,11 @@ export default function SongDetail() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25 }}
+              className="space-y-3"
             >
-              <h3 className="section-heading">Lyrics</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="section-heading">Lyrics</h3>
+              </div>
               <LyricsEditor value={song.lyrics || ""} onChange={handleLyricsChange} />
             </motion.div>
           </div>
@@ -324,13 +301,13 @@ export default function SongDetail() {
         <motion.div
           initial={false}
           animate={{
-            width: showTasks ? 320 : 0,
+            width: showTasks ? 260 : 0,
             opacity: showTasks ? 1 : 0,
           }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="border-l border-border bg-background flex flex-col overflow-hidden"
         >
-          <div className="p-6 w-80 overflow-y-auto flex-1">
+          <div className="p-6 w-64 overflow-y-auto flex-1">
             <h3 className="section-heading">Tasks</h3>
             <div className="space-y-8">
               {SONG_SECTIONS.map((section) => (
@@ -348,13 +325,24 @@ export default function SongDetail() {
         </motion.div>
       </div>
 
-      {/* Floating Glass Audio Player */}
-      <GlassAudioPlayer
+      {/* Floating Audio Player */}
+      <AudioPlayer
         src={currentVersion?.file_url || song.mp3_url}
         onTimeUpdate={setCurrentTime}
-        noteTray={<TimelineNotes songId={song.id} currentTime={currentTime} />}
-        accentColor={getAccentColor()}
-        onUploadClick={() => audioInputRef.current?.click()}
+        timelineNotes={timelineNotes}
+        onRequestAddNote={(time) =>
+          setNoteAddTime((prev) => (prev === time ? time + 0.001 : time))
+        }
+        noteTray={
+          <TimelineNotes
+            songId={song.id}
+            currentTime={currentTime}
+            notes={timelineNotes}
+            onCreateNote={createNote}
+            onDeleteNote={deleteNote}
+            triggerAddTime={noteAddTime ?? undefined}
+          />
+        }
       />
     </div>
   );

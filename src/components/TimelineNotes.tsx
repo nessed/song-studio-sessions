@@ -1,16 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSongNotes } from "@/hooks/useSongNotes";
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import { SongNote } from "@/lib/types";
 
 interface TimelineNotesProps {
   songId: string;
   currentTime: number;
+  notes?: SongNote[];
+  onCreateNote?: (timestampSeconds: number, body: string) => Promise<SongNote | null>;
+  onDeleteNote?: (id: string) => Promise<{ error: any } | void>;
+  triggerAddTime?: number;
 }
 
-export function TimelineNotes({ songId, currentTime }: TimelineNotesProps) {
-  const { notes, createNote, deleteNote } = useSongNotes(songId);
+export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCreateNote, onDeleteNote, triggerAddTime }: TimelineNotesProps) {
+  const { notes: internalNotes, createNote, deleteNote } = useSongNotes(songId);
+  const notes = externalNotes ?? internalNotes;
+  const addNote = onCreateNote ?? createNote;
+  const removeNote = onDeleteNote ?? deleteNote;
   const [isAdding, setIsAdding] = useState(false);
   const [noteText, setNoteText] = useState("");
+  const [draftTime, setDraftTime] = useState(currentTime);
+
+  useEffect(() => {
+    if (typeof triggerAddTime === "number") {
+      setDraftTime(triggerAddTime);
+      setIsAdding(true);
+    }
+  }, [triggerAddTime]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -19,8 +35,8 @@ export function TimelineNotes({ songId, currentTime }: TimelineNotesProps) {
   };
 
   const handleAdd = async () => {
-    if (!noteText.trim()) return;
-    await createNote(currentTime, noteText.trim());
+    if (!noteText.trim() || !addNote) return;
+    await addNote(draftTime, noteText.trim());
     setNoteText("");
     setIsAdding(false);
   };
@@ -42,19 +58,12 @@ export function TimelineNotes({ songId, currentTime }: TimelineNotesProps) {
         <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Timeline Notes
         </h4>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="btn-ghost text-xs flex items-center gap-1"
-        >
-          <Plus className="w-3 h-3" />
-          Add at {formatTime(currentTime)}
-        </button>
       </div>
 
       {isAdding && (
         <div className="mb-4 p-3 bg-card/50 rounded-lg border border-border/50">
           <div className="flex items-center gap-2 mb-2">
-            <span className="timestamp-chip">{formatTime(currentTime)}</span>
+            <span className="timestamp-chip">{formatTime(draftTime)}</span>
           </div>
           <textarea
             value={noteText}
@@ -96,7 +105,7 @@ export function TimelineNotes({ songId, currentTime }: TimelineNotesProps) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  deleteNote(note.id);
+                  removeNote(note.id);
                 }}
                 className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-1"
               >

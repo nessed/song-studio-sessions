@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { CollapsibleSection } from "./CollapsibleSection";
-import { useLyricsSections } from "./useLyricsSections";
-import { SECTION_ORDER, findSectionByLabel } from "@/lib/lyrics";
+import { useEffect, useRef } from "react";
+import { PenLine } from "lucide-react";
 import { LyricLineContext } from "./types";
 
 interface LyricsEditorProps {
@@ -11,169 +9,82 @@ interface LyricsEditorProps {
   onRequestAddNote?: (context: LyricLineContext | null) => void;
 }
 
+// Freeform glass sheet with debounced persistence
 export function LyricsEditor({ value, onChange, onContextChange, onRequestAddNote }: LyricsEditorProps) {
-  const {
-    sections,
-    activeId,
-    setActiveId,
-    setActiveByLabel,
-    insertSection,
-    updateSectionText,
-    rebuildText,
-    overwriteSections,
-  } = useLyricsSections(value || "");
-
   const debounceRef = useRef<NodeJS.Timeout>();
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [currentContext, setCurrentContext] = useState<LyricLineContext | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const initialValue =
+    value && value.trim().length > 0
+      ? value
+      : `[Intro]
+
+[Verse]
+
+[Pre-Chorus]
+
+[Chorus]
+
+[Bridge]
+
+[Outro]`;
 
   useEffect(() => {
+    // Initial context: entire sheet
+    onContextChange?.({
+      sectionLabel: "Freeform",
+      lineNumber: 1,
+      lineText: (value || "").split(/\r?\n/)[0] || "",
+    });
+
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
 
-  useEffect(() => {
-    onContextChange?.(currentContext);
-  }, [currentContext, onContextChange]);
-
-  const activeSection = useMemo(() => sections.find((s) => s.id === activeId), [sections, activeId]);
-
-  useEffect(() => {
-    if (!activeSection) {
-      setCurrentContext(null);
-      return;
-    }
-    const firstLine = activeSection.text.split(/\r?\n/).find((line) => line.trim().length > 0) || "";
-    setCurrentContext({
-      sectionLabel: activeSection.label,
-      lineNumber: 1,
-      lineText: firstLine,
-    });
-  }, [activeSection]);
-
-  const queuePersist = (nextLyrics: string) => {
+  const queuePersist = (next: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      onChange(nextLyrics);
-    }, 500);
-  };
-
-  const handleSaveNow = () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    const text = rebuildText();
-    onChange(text);
-  };
-
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(`lyrics-section-${id}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  };
-
-  const focusSection = (id: string) => {
-    setActiveId(id);
-    setTimeout(() => scrollToSection(id), 10);
-  };
-
-  const handleTabClick = (label: string) => {
-    const found = setActiveByLabel(label);
-    if (found) {
-      scrollToSection(found);
-      return;
-    }
-    const newId = insertSection(label);
-    setTimeout(() => {
-      scrollToSection(newId);
-    }, 20);
-  };
-
-  const handleSectionChange = (id: string, text: string) => {
-    const nextSections = sections.map((section) => (section.id === id ? { ...section, text } : section));
-    overwriteSections(nextSections);
-    const nextLyrics = rebuildText(nextSections);
-    queuePersist(nextLyrics);
-  };
-
-  const handleCaretChange = (sectionId: string, lineNumber: number, lineText: string) => {
-    const section = sections.find((s) => s.id === sectionId);
-    if (!section) return;
-    setCurrentContext({ sectionLabel: section.label, lineNumber, lineText });
-  };
-
-  const moveSection = (direction: 1 | -1) => {
-    if (!activeId) return;
-    const currentIndex = sections.findIndex((s) => s.id === activeId);
-    if (currentIndex === -1) return;
-    const nextIndex = currentIndex + direction;
-    if (nextIndex < 0 || nextIndex >= sections.length) return;
-    focusSection(sections[nextIndex].id);
+    debounceRef.current = setTimeout(() => onChange(next), 400);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((event.metaKey || event.ctrlKey) && /^[1-6]$/.test(event.key)) {
+    if (event.key.toLowerCase() === "n" && (event.metaKey || event.ctrlKey) && onRequestAddNote) {
       event.preventDefault();
-      const idx = Number(event.key) - 1;
-      const label = SECTION_ORDER[idx];
-      handleTabClick(label);
-      return;
-    }
-
-    if (event.key === "Tab") {
-      event.preventDefault();
-      moveSection(event.shiftKey ? -1 : 1);
-      return;
-    }
-
-    if (event.key.toLowerCase() === "n" && onRequestAddNote) {
-      event.preventDefault();
-      event.stopPropagation();
-      onRequestAddNote(currentContext);
+      const textarea = textareaRef.current;
+      const cursorLine =
+        textarea?.value
+          .substring(0, textarea.selectionStart || 0)
+          .split(/\r?\n/).length || 1;
+      onRequestAddNote({
+        sectionLabel: "Freeform",
+        lineNumber: cursorLine,
+        lineText: "",
+      });
     }
   };
 
   return (
-    <div className="lyrics-shell" ref={containerRef}>
-      <div className="lyrics-tabs" role="tablist">
-        {SECTION_ORDER.map((label) => {
-          const sectionExists = !!findSectionByLabel(sections, label);
-          const isActive = !!activeSection && activeSection.label.startsWith(label);
-          return (
-            <button
-              key={label}
-              role="tab"
-              aria-selected={isActive}
-              onClick={() => handleTabClick(label)}
-              className={`lyrics-tab ${isActive ? "active" : ""} ${sectionExists ? "present" : ""}`}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+    <div className="relative w-full h-[600px] overflow-hidden rounded-3xl border border-white/5 bg-[#0a0a0a]">
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.04] via-transparent to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-px bg-white/10" />
 
-      <div className="lyrics-panel">
-        {sections.length === 0 && (
-          <div className="empty-lyrics">
-            <p className="text-muted-foreground">No sections yet. Choose one above to start.</p>
+      <div className="relative h-full flex flex-col">
+        <div className="border-b border-white/5 px-4 py-3 flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">
+          <div className="flex items-center gap-2">
+            <PenLine className="w-3.5 h-3.5 text-white/40" />
+            <span>Freeform Lyrics</span>
           </div>
-        )}
+          <span className="text-white/40">Flow state — no tabs</span>
+        </div>
 
-        {sections.map((section) => (
-          <CollapsibleSection
-            key={section.id}
-            id={section.id}
-            label={section.label}
-            text={section.text}
-            expanded={section.id === activeId}
-            onExpand={() => focusSection(section.id)}
-            onChange={(text) => handleSectionChange(section.id, text)}
-            onBlur={handleSaveNow}
-            onCaretChange={(line, lineText) => handleCaretChange(section.id, line, lineText)}
-            onKeyDown={handleKeyDown}
-          />
-        ))}
+        <textarea
+          ref={textareaRef}
+          defaultValue={initialValue}
+          onChange={(e) => queuePersist(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Start writing..."
+          className="flex-1 w-full bg-transparent text-lg text-white/80 p-8 leading-relaxed font-sans resize-none focus:outline-none placeholder:text-white/25"
+          style={{ fontFamily: "Inter, 'Space Grotesk', 'JetBrains Mono', monospace" }}
+        />
       </div>
     </div>
   );
