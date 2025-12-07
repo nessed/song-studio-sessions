@@ -39,14 +39,16 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
       };
 
       const applyPalette = (dominant?: string, secondary?: string) => {
-        const baseSource = dominant || themeColor || SONIC_NEON[0];
-        const base = tinycolor(baseSource).saturate(35).lighten(18);
+        const domBase = tinycolor(dominant || themeColor || SONIC_NEON[0]).saturate(30).lighten(10);
+        const secBase = tinycolor(
+          secondary || domBase.clone().spin(180).toHexString()
+        ).saturate(30).lighten(10);
 
         const palette = [
-          ensureBright(base),
-          ensureBright(base.clone().spin(30)),
-          ensureBright(base.clone().spin(180)),
-          ensureBright(base.clone().spin(60)),
+          ensureBright(domBase),
+          ensureBright(domBase.clone().spin(30)),
+          ensureBright(secBase),
+          ensureBright(secBase.clone().spin(-30)),
         ];
 
         setMeshColors(palette);
