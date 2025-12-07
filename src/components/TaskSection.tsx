@@ -8,6 +8,7 @@ interface TaskSectionProps {
   onCreateTask: (title: string) => void;
   onUpdateTask: (id: string, updates: { done?: boolean; title?: string }) => void;
   onDeleteTask: (id: string) => void;
+  accentColor?: string | null;
 }
 
 export function TaskSection({
@@ -16,6 +17,7 @@ export function TaskSection({
   onCreateTask,
   onUpdateTask,
   onDeleteTask,
+  accentColor,
 }: TaskSectionProps) {
   const [newTaskTitle, setNewTaskTitle] = useState("");
 
@@ -33,7 +35,10 @@ export function TaskSection({
   };
 
   return (
-    <div className="rounded-2xl theme-card p-5 mb-4">
+    <div
+      className="rounded-2xl p-5 mb-4 bg-black/75 border"
+      style={{ borderColor: accentColor ? `${accentColor}33` : "rgba(255,255,255,0.06)" }}
+    >
       <h4 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
         {section}
       </h4>

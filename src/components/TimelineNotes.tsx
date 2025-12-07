@@ -6,13 +6,14 @@ import { SongNote } from "@/lib/types";
 interface TimelineNotesProps {
   songId: string;
   currentTime: number;
+  accentColor?: string | null;
   notes?: SongNote[];
   onCreateNote?: (timestampSeconds: number, body: string) => Promise<SongNote | null>;
   onDeleteNote?: (id: string) => Promise<{ error: any } | void>;
   triggerAddTime?: number;
 }
 
-export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCreateNote, onDeleteNote, triggerAddTime }: TimelineNotesProps) {
+export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCreateNote, onDeleteNote, triggerAddTime, accentColor }: TimelineNotesProps) {
   const { notes: internalNotes, createNote, deleteNote } = useSongNotes(songId);
   const notes = externalNotes ?? internalNotes;
   const addNote = onCreateNote ?? createNote;
@@ -98,7 +99,10 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
         <div className="space-y-1">
           {notes.map((note) => (
             <div key={note.id} className="timeline-note group" onClick={() => handleSeek(note.timestamp_seconds)}>
-              <button className="timestamp-chip flex-shrink-0">
+              <button
+                className="timestamp-chip flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium bg-black/80 border"
+                style={{ borderColor: accentColor ? `${accentColor}66` : "rgba(255,255,255,0.2)" }}
+              >
                 {formatTime(note.timestamp_seconds)}
               </button>
               <p className="flex-1 text-sm">{note.body}</p>

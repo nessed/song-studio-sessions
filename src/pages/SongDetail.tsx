@@ -175,7 +175,7 @@ export default function SongDetail() {
   const currentProject = projects.find((p) => p.id === song.project_id);
 
   return (
-    <SessionThemeProvider coverUrl={song.cover_art_url}>
+    <SessionThemeProvider coverUrl={song.cover_art_url} themeColor={(song as any).theme_color}>
     <div className="min-h-screen relative">
       <CoverBackground imageUrl={song.cover_art_url} />
 
@@ -215,7 +215,14 @@ export default function SongDetail() {
           <div className="max-w-6xl mx-auto py-10 px-6 space-y-8">
             
             {/* Console Grid */}
-            <section className="rounded-3xl theme-card backdrop-blur-xl shadow-[0_10px_60px_rgba(0,0,0,0.4)] p-6 space-y-4">
+            <section
+              className="rounded-3xl backdrop-blur-xl shadow-[0_10px_60px_rgba(0,0,0,0.4)] p-6 space-y-4"
+              style={{
+                background: "rgba(0,0,0,0.8)",
+                border: "1px solid var(--border-weak)",
+                boxShadow: `0 10px 60px rgba(0,0,0,0.4)`,
+              }}
+            >
               <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-6 items-start">
                 <HeroStrip
                   coverUrl={song.cover_art_url}
