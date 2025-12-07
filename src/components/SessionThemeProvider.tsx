@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Vibrant } from "node-vibrant/browser";
 import tinycolor from "tinycolor2";
+import { MeshGradient } from "./MeshGradient";
 
 export type SessionThemeProviderProps = {
   coverUrl?: string | null;
@@ -94,6 +95,7 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
 
   return (
     <div className="relative min-h-screen bg-[#09090b] overflow-hidden" style={cssVars}>
+      <MeshGradient colorSignature={meshColors.join("-")} />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#09090b]/65 via-[#09090b]/72 to-[#09090b]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.06),transparent_32%),radial-gradient(circle_at_82%_12%,rgba(255,255,255,0.05),transparent_30%)] mix-blend-screen" />
       <div className="relative">{children}</div>

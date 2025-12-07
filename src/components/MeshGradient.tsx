@@ -71,15 +71,7 @@ export function MeshGradient({
         id={canvasId}
         data-transition-in
         className="w-full h-full"
-        style={
-          {
-            opacity: canvasOpacity,
-            "--gradient-color-1": "#7c3aed",
-            "--gradient-color-2": "#c026d3",
-            "--gradient-color-3": "#4f46e5",
-            "--gradient-color-4": "#db2777",
-          } as React.CSSProperties
-        }
+        style={{ opacity: canvasOpacity } as React.CSSProperties}
       />
     </div>
   );
