@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Vibrant } from "node-vibrant/browser";
 import tinycolor from "tinycolor2";
+import { MeshGradient } from "@/components/MeshGradient";
 
 export type SessionThemeProviderProps = {
   coverUrl?: string | null;
@@ -9,42 +10,6 @@ export type SessionThemeProviderProps = {
 };
 
 const SONIC_NEON = ["#7c3aed", "#f59e0b", "#22d3ee", "#10b981"];
-
-const ensureNeon = (color: string, fallback: string) => {
-  const fallbackHsl = tinycolor(fallback).toHsl();
-  const parsed = tinycolor(color);
-  const hsl = parsed.toHsl();
-  const hue = Number.isNaN(hsl.h) ? fallbackHsl.h : hsl.h;
-  const saturated = Math.max(hsl.s, 0.86);
-  const lit = Math.max(hsl.l, 0.68);
-
-  return tinycolor({ h: hue, s: saturated, l: lit }).saturate(8).toHexString();
-};
-
-const buildMeshPalette = (swatches: string[], accent?: string) => {
-  const candidates = [
-    ...(accent ? [accent] : []),
-    ...swatches.filter(Boolean),
-  ];
-
-  const lightnessAverage =
-    candidates.length > 0
-      ? candidates.reduce((sum, color) => sum + tinycolor(color).toHsl().l, 0) /
-        candidates.length
-      : 0;
-
-  const paletteSeed = lightnessAverage < 0.35 ? SONIC_NEON : candidates;
-  const visible = paletteSeed.length ? paletteSeed : SONIC_NEON;
-
-  const palette = visible.slice(0, 4).map((color, index) => ensureNeon(color, SONIC_NEON[index % SONIC_NEON.length]));
-
-  while (palette.length < 4) {
-    const nextIndex = palette.length % SONIC_NEON.length;
-    palette.push(ensureNeon(SONIC_NEON[nextIndex], SONIC_NEON[nextIndex]));
-  }
-
-  return palette;
-};
 
 export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
   coverUrl,
@@ -57,28 +22,45 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
     let cancelled = false;
 
     const extractPalette = async () => {
+      const ensureBright = (input: tinycolor.Instance, fallbackHue = 270) => {
+        const base = input.clone().saturate(40);
+        const hsl = base.toHsl();
+        const hue = Number.isFinite(hsl.h) ? hsl.h : fallbackHue;
+        const neon = tinycolor({
+          h: hue,
+          s: Math.max(hsl.s, 0.78),
+          l: Math.max(hsl.l, 0.68),
+        });
+        return neon.saturate(20).toHexString();
+      };
+
+      const applyPalette = (dominant?: string, secondary?: string) => {
+        const baseSource = dominant || themeColor || SONIC_NEON[0];
+        const base = tinycolor(baseSource).saturate(40).lighten(14);
+        const secondarySource = secondary || themeColor || SONIC_NEON[1];
+
+        const palette = [
+          ensureBright(base),
+          ensureBright(base.clone().spin(30)),
+          ensureBright(base.clone().spin(60)),
+          ensureBright(tinycolor(secondarySource).saturate(50).lighten(24)),
+        ];
+
+        setMeshColors(palette);
+      };
+
       if (!coverUrl) {
-        const palette = buildMeshPalette([], themeColor ?? undefined);
-        if (!cancelled) setMeshColors(palette);
+        applyPalette(themeColor ?? SONIC_NEON[0], SONIC_NEON[1]);
         return;
       }
 
       try {
         const palette = await Vibrant.from(coverUrl).quality(2).getPalette();
-        const swatches = [
-          palette?.Vibrant?.getHex(),
-          palette?.LightVibrant?.getHex(),
-          palette?.DarkVibrant?.getHex(),
-          palette?.Muted?.getHex(),
-          palette?.LightMuted?.getHex(),
-          palette?.DarkMuted?.getHex(),
-        ].filter(Boolean) as string[];
-
-        const meshPalette = buildMeshPalette(swatches, themeColor ?? undefined);
-        if (!cancelled) setMeshColors(meshPalette);
+        const dominant = palette?.Vibrant?.getHex() || palette?.Muted?.getHex();
+        const secondary = palette?.LightVibrant?.getHex() || palette?.DarkVibrant?.getHex();
+        if (!cancelled) applyPalette(dominant ?? undefined, secondary ?? undefined);
       } catch {
-        const fallbackPalette = buildMeshPalette([], themeColor ?? undefined);
-        if (!cancelled) setMeshColors(fallbackPalette);
+        if (!cancelled) applyPalette(themeColor ?? SONIC_NEON[0], SONIC_NEON[1]);
       }
     };
 
@@ -93,6 +75,7 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
     const accent = meshColors[0] ?? SONIC_NEON[0];
     const accentSoft = tinycolor(accent).setAlpha(0.22).toRgbString();
     const accentSubtle = tinycolor(accent).setAlpha(0.14).toRgbString();
+    const signature = meshColors.join("-");
 
     return {
       "--gradient-color-1": meshColors[0],
@@ -105,11 +88,13 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
       "--accent-soft": accentSoft,
       "--accent-subtle": accentSubtle,
       "--border-weak": "rgba(255, 255, 255, 0.08)",
+      "--mesh-signature": signature,
     } as React.CSSProperties;
   }, [meshColors]);
 
   return (
     <div className="relative min-h-screen bg-[#09090b] overflow-hidden" style={cssVars}>
+      <MeshGradient colorSignature={meshColors.join("-")} />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#09090b]/65 via-[#09090b]/72 to-[#09090b]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.06),transparent_32%),radial-gradient(circle_at_82%_12%,rgba(255,255,255,0.05),transparent_30%)] mix-blend-screen" />
       <div className="relative">{children}</div>

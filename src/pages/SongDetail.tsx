@@ -15,7 +15,6 @@ import { ReferencePill } from "@/components/ReferencePill";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
 import { SessionThemeProvider } from "@/components/SessionThemeProvider";
-import { MeshGradient } from "@/components/MeshGradient";
 import { ArrowLeft, Trash2, PanelRight, PanelRightClose, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -176,7 +175,6 @@ export default function SongDetail() {
 
   return (
     <SessionThemeProvider coverUrl={song.cover_art_url} themeColor={(song as any).theme_color}>
-    <MeshGradient />
     <div className="min-h-screen relative">
 
       {/* Hidden inputs */}

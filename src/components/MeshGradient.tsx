@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Gradient } from "whatamesh";
 
 type MeshInstance = Gradient & {
@@ -10,45 +10,77 @@ type MeshInstance = Gradient & {
   disconnect?: () => void;
 };
 
-export const MeshGradient = () => {
+type MeshGradientProps = {
+  colorSignature?: string;
+  overlayOpacity?: number;
+  canvasOpacity?: number;
+};
+
+export function MeshGradient({
+  colorSignature,
+  overlayOpacity = 0.2,
+  canvasOpacity = 0.95,
+}: MeshGradientProps) {
   const gradientRef = useRef<MeshInstance | null>(null);
   const rafRef = useRef<number>();
+  const canvasId = useRef(`gradient-canvas-${Math.random().toString(36).slice(2, 9)}`).current;
 
   useEffect(() => {
-    const gradient = new Gradient() as MeshInstance;
-    gradient.amp = 180;
-    gradient.freqX = 7e-5;
-    gradient.freqY = 19e-5;
-    gradientRef.current = gradient;
-    gradient.initGradient("#gradient-canvas");
+    const timeoutId = window.setTimeout(() => {
+      const canvasElement = document.getElementById(canvasId);
+      if (!canvasElement) return;
 
-    const tuneMotion = () => {
-      if (!gradient.uniforms?.u_global || !gradient.uniforms.u_vertDeform) {
-        rafRef.current = requestAnimationFrame(tuneMotion);
-        return;
-      }
+      const gradient = new Gradient() as MeshInstance;
+      gradient.amp = 220;
+      gradient.freqX = 5e-5;
+      gradient.freqY = 15e-5;
+      gradientRef.current = gradient;
+      gradient.initGradient(`#${canvasId}`);
 
-      gradient.uniforms.u_global.value.noiseSpeed.value = 2.5e-6;
-      gradient.uniforms.u_vertDeform.value.noiseSpeed.value = 6;
-      gradient.uniforms.u_vertDeform.value.noiseFlow.value = 1.75;
-      gradient.uniforms.u_vertDeform.value.noiseAmp.value = 260;
-    };
+      const tuneMotion = () => {
+        if (!gradient.uniforms?.u_global || !gradient.uniforms.u_vertDeform) {
+          rafRef.current = requestAnimationFrame(tuneMotion);
+          return;
+        }
 
-    tuneMotion();
+        gradient.uniforms.u_global.value.noiseSpeed.value = 2e-6;
+        gradient.uniforms.u_vertDeform.value.noiseSpeed.value = 5.5;
+        gradient.uniforms.u_vertDeform.value.noiseFlow.value = 1.5;
+        gradient.uniforms.u_vertDeform.value.noiseAmp.value = 320;
+      };
+
+      tuneMotion();
+    }, 50);
 
     return () => {
+      window.clearTimeout(timeoutId);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      gradient.pause?.();
-      gradient.disconnect?.();
+      gradientRef.current?.pause?.();
+      gradientRef.current?.disconnect?.();
     };
-  }, []);
+  }, [colorSignature, canvasId]);
 
   return (
-    <canvas
-      id="gradient-canvas"
-      data-transition-in
-      className="fixed inset-0 w-screen h-screen opacity-60 -z-10"
-      style={{ pointerEvents: "none" }}
-    />
+    <div className="fixed inset-0 -z-10 pointer-events-none">
+      <div
+        className="absolute inset-0 z-10"
+        style={{ backgroundColor: `rgba(9, 9, 11, ${overlayOpacity})` }}
+      />
+      <canvas
+        key={colorSignature}
+        id={canvasId}
+        data-transition-in
+        className="w-full h-full"
+        style={
+          {
+            opacity: canvasOpacity,
+            "--gradient-color-1": "#7c3aed",
+            "--gradient-color-2": "#c026d3",
+            "--gradient-color-3": "#4f46e5",
+            "--gradient-color-4": "#db2777",
+          } as React.CSSProperties
+        }
+      />
+    </div>
   );
-};
+}
