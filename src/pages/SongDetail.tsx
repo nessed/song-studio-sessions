@@ -7,7 +7,6 @@ import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
 import { useSongNotes } from "@/hooks/useSongNotes";
 import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
-import { CoverBackground } from "@/components/CoverBackground";
 import { MoodTagsInput } from "@/components/MoodTagsInput";
 import { TaskSection } from "@/components/TaskSection";
 import { TimelineNotes } from "@/components/TimelineNotes";
@@ -16,6 +15,7 @@ import { ReferencePill } from "@/components/ReferencePill";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
 import { SessionThemeProvider } from "@/components/SessionThemeProvider";
+import { MeshGradient } from "@/components/MeshGradient";
 import { ArrowLeft, Trash2, PanelRight, PanelRightClose, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -176,8 +176,8 @@ export default function SongDetail() {
 
   return (
     <SessionThemeProvider coverUrl={song.cover_art_url} themeColor={(song as any).theme_color}>
+    <MeshGradient />
     <div className="min-h-screen relative">
-      <CoverBackground imageUrl={song.cover_art_url} />
 
       {/* Hidden inputs */}
       <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
