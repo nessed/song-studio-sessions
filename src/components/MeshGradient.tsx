@@ -19,7 +19,7 @@ type MeshGradientProps = {
 export function MeshGradient({
   colorSignature,
   overlayOpacity = 0.2,
-  canvasOpacity = 0.95,
+  canvasOpacity = 0.6,
 }: MeshGradientProps) {
   const gradientRef = useRef<MeshInstance | null>(null);
   const rafRef = useRef<number>();
@@ -61,7 +61,7 @@ export function MeshGradient({
   }, [colorSignature, canvasId]);
 
   return (
-    <div className="fixed inset-0 -z-10 pointer-events-none">
+    <div className="fixed inset-0 z-0 pointer-events-none">
       <div
         className="absolute inset-0 z-10"
         style={{ backgroundColor: `rgba(9, 9, 11, ${overlayOpacity})` }}

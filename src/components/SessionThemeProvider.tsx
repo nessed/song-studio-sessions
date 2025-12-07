@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Vibrant } from "node-vibrant/browser";
 import tinycolor from "tinycolor2";
-import { MeshGradient } from "@/components/MeshGradient";
 
 export type SessionThemeProviderProps = {
   coverUrl?: string | null;
@@ -23,27 +22,30 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
 
     const extractPalette = async () => {
       const ensureBright = (input: tinycolor.Instance, fallbackHue = 270) => {
-        const base = input.clone().saturate(40);
-        const hsl = base.toHsl();
+        const clone = input.clone();
+        const hsl = clone.toHsl();
         const hue = Number.isFinite(hsl.h) ? hsl.h : fallbackHue;
-        const neon = tinycolor({
+        let neon = tinycolor({
           h: hue,
-          s: Math.max(hsl.s, 0.78),
-          l: Math.max(hsl.l, 0.68),
-        });
-        return neon.saturate(20).toHexString();
+          s: Math.max(hsl.s, 0.75),
+          l: Math.max(hsl.l, 0.62),
+        }).saturate(20);
+        while (neon.getLuminance() < 0.3) {
+          neon = neon.lighten(8);
+          if (neon.getLuminance() > 0.5) break;
+        }
+        return neon.toHexString();
       };
 
       const applyPalette = (dominant?: string, secondary?: string) => {
         const baseSource = dominant || themeColor || SONIC_NEON[0];
-        const base = tinycolor(baseSource).saturate(40).lighten(14);
-        const secondarySource = secondary || themeColor || SONIC_NEON[1];
+        const base = tinycolor(baseSource).saturate(35).lighten(18);
 
         const palette = [
           ensureBright(base),
           ensureBright(base.clone().spin(30)),
+          ensureBright(base.clone().spin(180)),
           ensureBright(base.clone().spin(60)),
-          ensureBright(tinycolor(secondarySource).saturate(50).lighten(24)),
         ];
 
         setMeshColors(palette);
@@ -75,7 +77,6 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
     const accent = meshColors[0] ?? SONIC_NEON[0];
     const accentSoft = tinycolor(accent).setAlpha(0.22).toRgbString();
     const accentSubtle = tinycolor(accent).setAlpha(0.14).toRgbString();
-    const signature = meshColors.join("-");
 
     return {
       "--gradient-color-1": meshColors[0],
@@ -88,13 +89,11 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
       "--accent-soft": accentSoft,
       "--accent-subtle": accentSubtle,
       "--border-weak": "rgba(255, 255, 255, 0.08)",
-      "--mesh-signature": signature,
     } as React.CSSProperties;
   }, [meshColors]);
 
   return (
     <div className="relative min-h-screen bg-[#09090b] overflow-hidden" style={cssVars}>
-      <MeshGradient colorSignature={meshColors.join("-")} />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#09090b]/65 via-[#09090b]/72 to-[#09090b]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.06),transparent_32%),radial-gradient(circle_at_82%_12%,rgba(255,255,255,0.05),transparent_30%)] mix-blend-screen" />
       <div className="relative">{children}</div>
