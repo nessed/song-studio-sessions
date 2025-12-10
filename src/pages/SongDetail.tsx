@@ -182,7 +182,7 @@ export default function SongDetail() {
       <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
 
       {/* Header */}
-      <header className="sticky top-0 z-20 backdrop-blur-xl border-b border-white/10" style={{ background: "var(--bg-card)" }}>
+      <header className="sticky top-0 z-30 bg-[#09090b]/80 backdrop-blur-2xl border-b border-white/10 shadow-2xl">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             to={song.project_id ? `/project/${song.project_id}` : "/dashboard"}
@@ -213,58 +213,49 @@ export default function SongDetail() {
           <div className="max-w-6xl mx-auto py-10 px-6 space-y-8">
             
             {/* Console Grid */}
-            <section
-              className="rounded-3xl backdrop-blur-xl shadow-[0_10px_60px_rgba(0,0,0,0.4)] p-6 space-y-4"
-              style={{
-                background: "rgba(0,0,0,0.8)",
-                border: "1px solid var(--border-weak)",
-                boxShadow: `0 10px 60px rgba(0,0,0,0.4)`,
-              }}
-            >
-              <div className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-6 items-start">
-                <HeroStrip
-                  coverUrl={song.cover_art_url}
-                  title={title}
-                  onTitleChange={handleTitleChange}
-                  bpm={bpm}
-                  onBpmChange={handleBpmChange}
-                  songKey={songKey}
-                  onKeyChange={handleKeyChange}
-                  status={song.status}
-                  onStatusChange={(s) => handleStatusChange(s as SongStatus)}
-                  statuses={SONG_STATUSES}
-                  versions={versions}
-                  currentVersion={currentVersion}
-                  onSelectVersion={handleVersionSelect}
-                  onCoverClick={() => coverInputRef.current?.click()}
-                />
+            <section className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-8 items-start pb-8 border-b border-white/5">
+              <HeroStrip
+                coverUrl={song.cover_art_url}
+                title={title}
+                onTitleChange={handleTitleChange}
+                bpm={bpm}
+                onBpmChange={handleBpmChange}
+                songKey={songKey}
+                onKeyChange={handleKeyChange}
+                status={song.status}
+                onStatusChange={(s) => handleStatusChange(s as SongStatus)}
+                statuses={SONG_STATUSES}
+                versions={versions}
+                currentVersion={currentVersion}
+                onSelectVersion={handleVersionSelect}
+                onCoverClick={() => coverInputRef.current?.click()}
+              />
 
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-muted-foreground text-xs">Project</span>
-                      <select
-                        value={song.project_id || "none"}
-                        onChange={(e) => handleProjectChange(e.target.value)}
-                        className="bg-transparent border border-white/10 rounded-full px-3 py-1.5 text-foreground/80 text-xs focus:outline-none cursor-pointer hover:border-white/20 transition-colors"
-                      >
-                        <option value="none" className="bg-background">None</option>
-                        {projects.map((p) => (
-                          <option key={p.id} value={p.id} className="bg-background">
-                            {p.title}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <ReferencePill
-                      value={referenceLink}
-                      onChange={handleReferenceLinkChange}
-                    />
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-muted-foreground text-xs">Project</span>
+                    <select
+                      value={song.project_id || "none"}
+                      onChange={(e) => handleProjectChange(e.target.value)}
+                      className="bg-transparent border border-white/10 rounded-full px-3 py-1.5 text-foreground/80 text-xs focus:outline-none cursor-pointer hover:border-white/20 transition-colors"
+                    >
+                      <option value="none" className="bg-background">None</option>
+                      {projects.map((p) => (
+                        <option key={p.id} value={p.id} className="bg-background">
+                          {p.title}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
-                  <MoodTagsInput tags={song.mood_tags} onUpdate={handleTagsUpdate} />
+                  <ReferencePill
+                    value={referenceLink}
+                    onChange={handleReferenceLinkChange}
+                  />
                 </div>
+
+                <MoodTagsInput tags={song.mood_tags} onUpdate={handleTagsUpdate} />
               </div>
             </section>
 
@@ -278,11 +269,11 @@ export default function SongDetail() {
               >
                 <button
                   onClick={() => audioInputRef.current?.click()}
-                  className="w-full py-6 border border-dashed border-border rounded-xl text-muted-foreground hover:text-foreground hover:border-white/20 transition-colors flex items-center justify-center gap-3 group"
+                  className="w-full px-6 py-5 rounded-full bg-[#09090b]/80 backdrop-blur-2xl border border-white/10 shadow-2xl text-white/80 hover:text-white hover:border-white/20 transition-colors flex items-center justify-center gap-3 group"
                 >
                   <div className="relative">
                     <Upload className="w-5 h-5" />
-                    <div className="absolute inset-0 blur-md bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute inset-0 blur-md bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                   <span>Upload your first mix</span>
                 </button>
@@ -312,7 +303,7 @@ export default function SongDetail() {
             opacity: showTasks ? 1 : 0,
           }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="border-l border-border bg-background flex flex-col overflow-hidden"
+          className="border-l border-white/10 bg-[#09090b]/80 backdrop-blur-2xl shadow-2xl flex flex-col overflow-hidden"
         >
           <div className="p-6 w-64 overflow-y-auto flex-1">
             <h3 className="section-heading">Tasks</h3>

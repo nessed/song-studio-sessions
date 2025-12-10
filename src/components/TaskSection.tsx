@@ -36,8 +36,8 @@ export function TaskSection({
 
   return (
     <div
-      className="rounded-2xl p-5 mb-4 bg-black/75 border"
-      style={{ borderColor: accentColor ? `${accentColor}33` : "rgba(255,255,255,0.06)" }}
+      className="rounded-2xl p-5 mb-4 bg-[#09090b]/70 backdrop-blur-2xl border shadow-2xl"
+      style={{ borderColor: accentColor ? `${accentColor}` : "rgba(255,255,255,0.08)" }}
     >
       <h4 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
         {section}

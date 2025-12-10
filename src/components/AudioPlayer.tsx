@@ -90,10 +90,11 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
 
   const progress = duration ? (currentTime / duration) * 100 : 0;
   const waveformBars = Array.from({ length: 40 }, (_, i) => 6 + ((i * 13) % 18));
+  const accentColor = "var(--accent-main, rgba(255,255,255,0.9))";
 
   return (
     <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 w-full px-6">
-      <div className="relative h-24 w-full max-w-6xl mx-auto rounded-full bg-[#050505]/90 backdrop-blur-2xl border border-white/10 shadow-2xl flex items-center px-8 gap-6">
+      <div className="relative h-24 w-full max-w-6xl mx-auto rounded-full bg-[#09090b]/80 backdrop-blur-2xl border border-white/10 shadow-2xl flex items-center px-8 gap-6">
         <audio ref={audioRef} src={src} preload="metadata" />
 
         <button
@@ -116,7 +117,7 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
                 className="w-[4px] rounded-full transition-colors"
                 style={{
                   height: `${h + 20}px`,
-                  backgroundColor: played ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.2)",
+                  backgroundColor: played ? accentColor : "rgba(255,255,255,0.25)",
                 }}
               />
             );
