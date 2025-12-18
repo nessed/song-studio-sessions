@@ -57,6 +57,20 @@ export function useSongNotes(songId: string | undefined) {
     return newNote;
   };
 
+  const updateNote = async (id: string, body: string) => {
+    const { error } = await supabase
+      .from("song_notes")
+      .update({ body })
+      .eq("id", id);
+
+    if (!error) {
+      setNotes((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, body } : n))
+      );
+    }
+    return { error };
+  };
+
   const deleteNote = async (id: string) => {
     const { error } = await supabase.from("song_notes").delete().eq("id", id);
 
@@ -67,5 +81,5 @@ export function useSongNotes(songId: string | undefined) {
     return { error };
   };
 
-  return { notes, loading, createNote, deleteNote, refetch: fetchNotes };
+  return { notes, loading, createNote, updateNote, deleteNote, refetch: fetchNotes };
 }

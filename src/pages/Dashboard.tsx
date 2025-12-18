@@ -5,7 +5,7 @@ import { useProjects } from "@/hooks/useProjects";
 import { AppHeader } from "@/components/AppHeader";
 import { SongListItem } from "@/components/SongListItem";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { Plus, Music, Folder } from "lucide-react";
+import { Plus, Music, Folder, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function Dashboard() {
@@ -13,6 +13,7 @@ export default function Dashboard() {
   const { songs, loading, createSong } = useSongs();
   const { projects } = useProjects();
   const [newSongTitle, setNewSongTitle] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleCreateSong = async () => {
     if (!newSongTitle.trim()) return;
@@ -29,9 +30,9 @@ export default function Dashboard() {
     }
   };
 
-  const sortedSongs = [...songs].sort(
-    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-  );
+  const sortedSongs = [...songs]
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .filter((song) => song.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const recentProjects = projects.slice(0, 4);
 
@@ -74,11 +75,27 @@ export default function Dashboard() {
 
         {/* All Songs */}
         <section className="animate-slide-up">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight text-white mb-2">All Songs</h1>
-            <p className="text-sm text-white/40">
-              {songs.length === 0 ? "Start by creating your first song" : `${songs.length} song${songs.length !== 1 ? "s" : ""}`}
-            </p>
+          <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-white mb-2">All Songs</h1>
+              <p className="text-sm text-white/40">
+                {songs.length === 0 ? "Start by creating your first song" : `${songs.length} song${songs.length !== 1 ? "s" : ""}`}
+              </p>
+            </div>
+
+            {/* Search Bar */}
+            {songs.length > 0 && (
+              <div className="relative w-full md:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                <input
+                  type="text"
+                  placeholder="Search songs..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-full pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-white/20 transition-all"
+                />
+              </div>
+            )}
           </div>
 
           {/* Create song */}

@@ -26,7 +26,11 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [isLooping, setIsLooping] = useState(false);
-  const [volume, setVolume] = useState(1);
+  const [volume, setVolume] = useState(() => {
+    if (typeof window === "undefined") return 1;
+    const saved = localStorage.getItem("studio-volume");
+    return saved ? parseFloat(saved) : 1;
+  });
   
   // Audio Analysis
   const { peaks } = useAudioAnalyzer(src);
@@ -142,6 +146,7 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
   const handleVolumeChange = (next: number) => {
     const vol = Math.max(0, Math.min(1, next));
     setVolume(vol);
+    localStorage.setItem("studio-volume", vol.toString());
   };
 
   return (

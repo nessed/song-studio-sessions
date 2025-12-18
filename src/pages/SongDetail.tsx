@@ -25,10 +25,10 @@ export default function SongDetail() {
   const queryClient = useQueryClient();
   const { song, loading } = useSong(id);
   const { updateSong, deleteSong, uploadCoverArt } = useSongs();
-  const { versions, currentVersion, uploadVersion, setCurrentVersion, deleteVersion } = useSongVersions(id);
+  const { versions, currentVersion, uploadVersion, setCurrentVersion, deleteVersion, uploadProgress } = useSongVersions(id);
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
   const { projects } = useProjects();
-  const { notes: timelineNotes, createNote, deleteNote } = useSongNotes(id);
+  const { notes: timelineNotes, createNote, updateNote, deleteNote } = useSongNotes(id);
 
   const [title, setTitle] = useState("");
   const [bpm, setBpm] = useState("");
@@ -105,14 +105,26 @@ export default function SongDetail() {
     toast.success("Cover uploaded");
   };
 
+  // Watch upload progress
+  useEffect(() => {
+    if (uploadProgress > 0 && uploadProgress < 100) {
+      toast.loading(`Uploading... ${uploadProgress}%`, { id: "upload-progress" });
+    } else if (uploadProgress === 100) {
+      toast.dismiss("upload-progress");
+    }
+  }, [uploadProgress]);
+
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !id) return;
 
-    toast.loading("Uploading...");
-    await uploadVersion(file, `Mix v${versions.length + 1}`);
-    toast.dismiss();
-    toast.success("Version uploaded");
+    try {
+      await uploadVersion(file, `Mix v${versions.length + 1}`);
+      toast.success("Version uploaded");
+    } catch (err) {
+      toast.error("Failed to upload");
+      toast.dismiss("upload-progress");
+    }
   };
 
   const handleVersionSelect = async (version: typeof currentVersion) => {
@@ -278,6 +290,7 @@ export default function SongDetail() {
             currentTime={currentTime}
             notes={timelineNotes}
             onCreateNote={createNote}
+            onUpdateNote={updateNote}
             onDeleteNote={deleteNote}
             triggerAddTime={noteAddTime ?? undefined}
           />

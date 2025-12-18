@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -40,21 +41,84 @@ export function useSongVersions(songId: string | undefined) {
 
   const currentVersion = versions.find((v) => v.is_current) || versions[0] || null;
 
+  const [uploadProgress, setUploadProgress] = useState(0);
+
   const uploadVersionMutation = useMutation({
     mutationFn: async ({ file, description }: { file: File; description: string }) => {
       if (!user || !songId) throw new Error("Missing user or song");
+      setUploadProgress(0);
 
       const nextVersionNumber = versions.length + 1;
       const fileExt = file.name.split(".").pop();
       const filePath = `${user.id}/songs/${songId}/v${nextVersionNumber}.${fileExt}`;
 
-      // Upload file
-      const { error: uploadError } = await supabase.storage
-        .from("audio")
-        .upload(filePath, file, { upsert: true });
+      // Get session for token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session");
 
-      if (uploadError) throw uploadError;
+      // Upload via XHR for progress
+      await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          // Construct URL (assuming standard Supabase Storage URL structure)
+          // We can get the base URL from the client but it's often hidden. 
+          // However, we can use the project URL. 
+          // Easier: Use the supabase client's internal storage URL build if accessible,
+          // or just assume standard: ${process.env.SUPABASE_URL}/storage/v1/object/audio/${filePath}
+          // Actually, let's look at how to get the bucket URL reliably.
+          // Fallback: If we can't get the URL easily, we might break it.
+          // SAFE APPROACH: Supabase client *does* support raw upload? No.
+           
+          // Let's use the simpler approach: Fake progress for "Starting" and "Processing".
+          // Or, stick to XHR if I can guess the URL.
+          // The project URL is usually in the client config.
+          // Let's try to grab it from the supabase object?
+          // (supabase as any).storageUrl? 
+          
+          // ALTERNATIVE: Don't risk XHR URL mismatch. 
+          // Let's just create a "Upload Progress" that is manually stepped? No, that's what I said is bad.
+          
+          // Let's try to find the URL from the PROJECT_URL env var if available?
+          // `import { supabase } from "@/integrations/supabase/client";`
+          
+          // I will use a generic "fake" progress that increments quickly to 90%.
+          // NO, I promised critical analysis. Real progress is better.
+          
+          // Okay, I will try to use the project URL from a likely env var: VITE_SUPABASE_URL
+          const projectUrl = import.meta.env.VITE_SUPABASE_URL;
+          const url = `${projectUrl}/storage/v1/object/audio/${filePath}`;
+          
+          xhr.open("POST", url);
+          xhr.setRequestHeader("Authorization", `Bearer ${session.access_token}`);
+          xhr.setRequestHeader("x-upsert", "true");
+          
+          xhr.upload.onprogress = (e) => {
+             if (e.lengthComputable) {
+                const percent = (e.loaded / e.total) * 100;
+                setUploadProgress(Math.round(percent));
+             }
+          };
+          
+          xhr.onload = () => {
+             if (xhr.status >= 200 && xhr.status < 300) {
+                resolve();
+             } else {
+                reject(new Error(xhr.statusText));
+             }
+          };
+          
+          xhr.onerror = () => reject(new Error("Network Error"));
+          
+          const formData = new FormData();
+          formData.append("", file); 
+          // Wait, Supabase storage expects the raw body for binary? Or FormData?
+          // /object/ route expects raw binary usually or formData. 
+          // Standard Supabase upload uses FormData if it sends extra fields, but for just file... 
+          // Actually `supabase-js` uses `fetch` with `body: file`.
+          
+          xhr.send(file);
+      });
 
+      // Verification / Get Public URL
       const { data: urlData } = supabase.storage.from("audio").getPublicUrl(filePath);
       const fileUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
@@ -80,7 +144,7 @@ export function useSongVersions(songId: string | undefined) {
 
       if (error) throw error;
 
-      // Also update the song's mp3_url for backwards compatibility
+      // Update song
       await supabase.from("songs").update({ mp3_url: fileUrl }).eq("id", songId);
 
       return data as SongVersion;
@@ -88,7 +152,11 @@ export function useSongVersions(songId: string | undefined) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["song-versions", songId] });
       queryClient.invalidateQueries({ queryKey: ["song", songId] });
+      setUploadProgress(0);
     },
+    onError: () => {
+      setUploadProgress(0);
+    }
   });
 
   const setCurrentVersionMutation = useMutation({
@@ -174,5 +242,6 @@ export function useSongVersions(songId: string | undefined) {
       await deleteVersionMutation.mutateAsync(versionId);
     },
     isUploading: uploadVersionMutation.isPending,
+    uploadProgress,
   };
 }

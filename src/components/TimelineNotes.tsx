@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSongNotes } from "@/hooks/useSongNotes";
-import { Trash2, X, Send } from "lucide-react";
+import { Trash2, X, Send, Pencil } from "lucide-react";
 import { SongNote } from "@/lib/types";
 
 interface TimelineNotesProps {
@@ -9,20 +9,25 @@ interface TimelineNotesProps {
   accentColor?: string | null;
   notes?: SongNote[];
   onCreateNote?: (timestampSeconds: number, body: string) => Promise<SongNote | null>;
+  onUpdateNote?: (id: string, body: string) => Promise<{ error: any } | void>;
   onDeleteNote?: (id: string) => Promise<{ error: any } | void>;
   triggerAddTime?: number;
 }
 
-export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCreateNote, onDeleteNote, triggerAddTime, accentColor }: TimelineNotesProps) {
-  const { notes: internalNotes, createNote, deleteNote } = useSongNotes(songId);
+export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCreateNote, onUpdateNote, onDeleteNote, triggerAddTime, accentColor }: TimelineNotesProps) {
+  const { notes: internalNotes, createNote, updateNote, deleteNote } = useSongNotes(songId);
   const notes = externalNotes ?? internalNotes;
   const addNote = onCreateNote ?? createNote;
+  const editNote = onUpdateNote ?? updateNote;
   const removeNote = onDeleteNote ?? deleteNote;
   
   const [isAdding, setIsAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
+  const [editText, setEditText] = useState("");
   const [draftTime, setDraftTime] = useState(currentTime);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (typeof triggerAddTime === "number") {
@@ -44,6 +49,13 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
     await addNote(draftTime, noteText.trim());
     setNoteText("");
     setIsAdding(false);
+  };
+
+  const handleUpdate = async () => {
+    if (!editingId || !editText.trim() || !editNote) return;
+    await editNote(editingId, editText.trim());
+    setEditingId(null);
+    setEditText("");
   };
 
   const handleSeek = (timestamp: number) => {
@@ -93,21 +105,69 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
                       </span>
                    </div>
                    
-                   {/* Body */}
-                   <p className="flex-1 text-xs text-white/80 leading-relaxed pt-0.5 group-hover:text-white">
-                      {note.body}
-                   </p>
+                   {/* Body or Edit Form */}
+                   {editingId === note.id ? (
+                      <div className="flex-1 space-y-2">
+                        <textarea
+                          ref={editInputRef}
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if(e.key === 'Enter' && !e.shiftKey) {
+                               e.preventDefault();
+                               handleUpdate();
+                            }
+                            if(e.key === 'Escape') setEditingId(null);
+                          }}
+                          className="w-full bg-black/40 text-xs text-white p-2 rounded border border-white/20 focus:border-emerald-500/50 outline-none resize-none"
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleUpdate(); }}
+                            className="text-[10px] px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded hover:bg-emerald-500/30"
+                          >
+                            Save
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setEditingId(null); }}
+                            className="text-[10px] px-2 py-1 text-white/40 hover:text-white"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                   ) : (
+                      <p className="flex-1 text-xs text-white/80 leading-relaxed pt-0.5 group-hover:text-white break-words">
+                         {note.body}
+                      </p>
+                   )}
 
-                   {/* Delete Action */}
-                   <button
-                      onClick={(e) => {
-                         e.stopPropagation();
-                         removeNote(note.id);
-                      }}
-                      className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 p-1.5 text-white/20 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all"
-                   >
-                      <Trash2 className="w-3 h-3" />
-                   </button>
+                   {/* Actions */}
+                   {editingId !== note.id && (
+                     <div className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity bg-[#09090b] shadow-xl p-1 rounded-md border border-white/10">
+                        <button
+                          onClick={(e) => {
+                             e.stopPropagation();
+                             setEditingId(note.id);
+                             setEditText(note.body);
+                          }}
+                          className="p-1 text-white/40 hover:text-white hover:bg-white/10 rounded transition-colors"
+                        >
+                           <Pencil className="w-3 h-3" />
+                        </button>
+                        <button
+                           onClick={(e) => {
+                              e.stopPropagation();
+                              removeNote(note.id);
+                           }}
+                           className="p-1 text-white/40 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                        >
+                           <Trash2 className="w-3 h-3" />
+                        </button>
+                     </div>
+                   )}
                 </div>
              ))}
 
