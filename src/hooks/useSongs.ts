@@ -69,17 +69,33 @@ export function useSongs(projectId?: string) {
   const updateSongMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Omit<Song, "id" | "user_id" | "created_at">> }) => {
       const { error } = await supabase.from("songs").update(updates).eq("id", id);
+      if (error) throw error;
+      return null;
+    },
+    onMutate: async ({ id, updates }) => {
+      await queryClient.cancelQueries({ queryKey: ["song", id] });
+      await queryClient.cancelQueries({ queryKey: ["songs"] });
 
-      if (error) {
-        console.error("Error updating song:", error);
-        throw error;
+      const previousSong = queryClient.getQueryData<Song>(["song", id]);
+
+      if (previousSong) {
+        queryClient.setQueryData<Song>(["song", id], {
+          ...previousSong,
+          ...updates,
+        });
       }
 
-      return { error };
+      return { previousSong };
     },
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ["songs"] });
+    onError: (err, { id }, context) => {
+      if (context?.previousSong) {
+        queryClient.setQueryData(["song", id], context.previousSong);
+      }
+      console.error("Error updating song:", err);
+    },
+    onSettled: (_, __, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["song", id] });
+      queryClient.invalidateQueries({ queryKey: ["songs"] });
     },
   });
 

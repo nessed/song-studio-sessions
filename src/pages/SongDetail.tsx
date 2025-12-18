@@ -7,17 +7,16 @@ import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
 import { useSongNotes } from "@/hooks/useSongNotes";
 import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
-import { MoodTagsInput } from "@/components/MoodTagsInput";
 import { TaskSection } from "@/components/TaskSection";
 import { TimelineNotes } from "@/components/TimelineNotes";
-import { HeroStrip } from "@/components/HeroStrip";
-import { ReferencePill } from "@/components/ReferencePill";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
 import { SessionThemeProvider } from "@/components/SessionThemeProvider";
-import { ArrowLeft, Trash2, PanelRight, PanelRightClose, Upload } from "lucide-react";
+import { Upload } from "lucide-react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { SongHeader } from "@/components/SongHeader";
+import { SongMetadata } from "@/components/SongMetadata";
 
 export default function SongDetail() {
   const { id } = useParams<{ id: string }>();
@@ -41,13 +40,6 @@ export default function SongDetail() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
-
-  const setLocalSong = (updates: Partial<Song>) => {
-    if (!id) return;
-    queryClient.setQueryData(["song", id], (prev: Song | null) =>
-      prev ? { ...prev, ...updates } : prev
-    );
-  };
 
   useEffect(() => {
     if (song) {
@@ -89,21 +81,18 @@ export default function SongDetail() {
 
   const handleStatusChange = (status: SongStatus) => {
     if (id) updateSong(id, { status });
-    if (song) setLocalSong({ status });
   };
 
   const handleProjectChange = (projectId: string) => {
     if (id) {
       const newProjectId = projectId === "none" ? null : projectId;
       updateSong(id, { project_id: newProjectId });
-      if (song) setLocalSong({ project_id: newProjectId });
     }
   };
 
   const handleTagsUpdate = (tags: string[]) => {
     if (id && song) {
       updateSong(id, { mood_tags: tags });
-      setLocalSong({ mood_tags: tags });
     }
   };
 
@@ -111,11 +100,8 @@ export default function SongDetail() {
     const file = e.target.files?.[0];
     if (!file || !id) return;
 
-    const url = await uploadCoverArt(id, file);
-    if (url && song) {
-      setLocalSong({ cover_art_url: url });
-      toast.success("Cover uploaded");
-    }
+    await uploadCoverArt(id, file);
+    toast.success("Cover uploaded");
   };
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,9 +117,6 @@ export default function SongDetail() {
   const handleVersionSelect = async (version: typeof currentVersion) => {
     if (!version) return;
     await setCurrentVersion(version.id);
-    if (song) {
-      setLocalSong({ mp3_url: version.file_url });
-    }
     toast.success(`Loaded ${version.description || `v${version.version_number}`}`);
   };
 
@@ -146,7 +129,6 @@ export default function SongDetail() {
   const handleLyricsChange = (lyrics: string) => {
     if (id) {
       debouncedUpdate({ lyrics: lyrics || null });
-      if (song) setLocalSong({ lyrics });
     }
   };
 
@@ -181,30 +163,13 @@ export default function SongDetail() {
       <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
       <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
 
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-[#09090b]/80 backdrop-blur-2xl border-b border-white/10 shadow-2xl">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link
-            to={song.project_id ? `/project/${song.project_id}` : "/dashboard"}
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">{currentProject?.title || "Dashboard"}</span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowTasks(!showTasks)}
-              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-white/5"
-            >
-              {showTasks ? <PanelRightClose className="w-5 h-5" /> : <PanelRight className="w-5 h-5" />}
-            </button>
-            <button onClick={handleDelete} className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-white/5">
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </header>
+      <SongHeader
+        song={song}
+        project={currentProject}
+        showTasks={showTasks}
+        onToggleTasks={() => setShowTasks(!showTasks)}
+        onDelete={handleDelete}
+      />
 
       {/* Main Layout */}
       <div className="flex h-[calc(100vh-64px)] overflow-hidden">
@@ -212,52 +177,25 @@ export default function SongDetail() {
         <div className="flex-1 overflow-y-auto transition-all duration-300" style={{ paddingBottom: "120px" }}>
           <div className="max-w-6xl mx-auto py-10 px-6 space-y-8">
             
-            {/* Console Grid */}
-            <section className="grid grid-cols-1 lg:grid-cols-[auto,1fr] gap-8 items-start pb-8 border-b border-white/5">
-              <HeroStrip
-                coverUrl={song.cover_art_url}
-                title={title}
-                onTitleChange={handleTitleChange}
-                bpm={bpm}
-                onBpmChange={handleBpmChange}
-                songKey={songKey}
-                onKeyChange={handleKeyChange}
-                status={song.status}
-                onStatusChange={(s) => handleStatusChange(s as SongStatus)}
-                statuses={SONG_STATUSES}
-                versions={versions}
-                currentVersion={currentVersion}
-                onSelectVersion={handleVersionSelect}
-                onCoverClick={() => coverInputRef.current?.click()}
-              />
-
-              <div className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground text-xs">Project</span>
-                    <select
-                      value={song.project_id || "none"}
-                      onChange={(e) => handleProjectChange(e.target.value)}
-                      className="bg-transparent border border-white/10 rounded-full px-3 py-1.5 text-foreground/80 text-xs focus:outline-none cursor-pointer hover:border-white/20 transition-colors"
-                    >
-                      <option value="none" className="bg-background">None</option>
-                      {projects.map((p) => (
-                        <option key={p.id} value={p.id} className="bg-background">
-                          {p.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <ReferencePill
-                    value={referenceLink}
-                    onChange={handleReferenceLinkChange}
-                  />
-                </div>
-
-                <MoodTagsInput tags={song.mood_tags} onUpdate={handleTagsUpdate} />
-              </div>
-            </section>
+            <SongMetadata
+              song={song}
+              title={title}
+              onTitleChange={handleTitleChange}
+              bpm={bpm}
+              onBpmChange={handleBpmChange}
+              songKey={songKey}
+              onKeyChange={handleKeyChange}
+              referenceLink={referenceLink}
+              onReferenceLinkChange={handleReferenceLinkChange}
+              onStatusChange={handleStatusChange}
+              projects={projects}
+              onProjectChange={handleProjectChange}
+              versions={versions}
+              currentVersion={currentVersion}
+              onVersionSelect={handleVersionSelect}
+              onCoverClick={() => coverInputRef.current?.click()}
+              onTagsUpdate={handleTagsUpdate}
+            />
 
             {/* Upload audio button if no audio */}
             {!song.mp3_url && versions.length === 0 && (
@@ -325,7 +263,7 @@ export default function SongDetail() {
 
       {/* Floating Audio Player */}
       <AudioPlayer
-        src={currentVersion?.file_url || song.mp3_url}
+        src={currentVersion?.file_url || song.mp3_url || ""}
         onTimeUpdate={setCurrentTime}
         timelineNotes={timelineNotes}
         onRequestAddNote={(time) =>

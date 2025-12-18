@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSongNotes } from "@/hooks/useSongNotes";
-import { Trash2 } from "lucide-react";
+import { Trash2, X, Send } from "lucide-react";
 import { SongNote } from "@/lib/types";
 
 interface TimelineNotesProps {
@@ -18,14 +18,18 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
   const notes = externalNotes ?? internalNotes;
   const addNote = onCreateNote ?? createNote;
   const removeNote = onDeleteNote ?? deleteNote;
+  
   const [isAdding, setIsAdding] = useState(false);
   const [noteText, setNoteText] = useState("");
   const [draftTime, setDraftTime] = useState(currentTime);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (typeof triggerAddTime === "number") {
       setDraftTime(triggerAddTime);
       setIsAdding(true);
+      // Small delay to ensure render
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [triggerAddTime]);
 
@@ -43,88 +47,110 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
   };
 
   const handleSeek = (timestamp: number) => {
-    // Find the audio element and seek
-    const audio = document.querySelector("audio") as HTMLAudioElement & { seekTo?: (time: number) => void };
-    if (audio?.seekTo) {
-      audio.seekTo(timestamp);
-    } else if (audio) {
+    const audio = document.querySelector("audio");
+    if (audio) {
       audio.currentTime = timestamp;
       audio.play();
     }
   };
 
+  // If no notes and not adding, don't show anything (to keep UI clean)
+  if (notes.length === 0 && !isAdding) return null;
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Timeline Notes
-        </h4>
-      </div>
-
-      {isAdding && (
-        <div className="mb-4 p-3 bg-card/50 rounded-lg border border-border/50">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="timestamp-chip">{formatTime(draftTime)}</span>
+    <div className="w-full max-w-sm ml-8 mb-2">
+       {/* Glass Container */}
+       <div className="bg-[#09090b]/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[300px]">
+          
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+              Session Notes
+            </h4>
+            <span className="text-[10px] font-mono text-emerald-400">{notes.length} markers</span>
           </div>
-          <textarea
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            placeholder="Add your note..."
-            rows={2}
-            autoFocus
-            className="w-full text-sm bg-transparent border-none resize-none focus:outline-none placeholder:text-muted-foreground"
-          />
-          <div className="flex justify-end gap-2 mt-2">
-            <button
-              onClick={() => {
-                setIsAdding(false);
-                setNoteText("");
-              }}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAdd}
-              disabled={!noteText.trim()}
-              className="text-xs text-foreground font-medium disabled:opacity-50"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-      )}
 
-      {notes.length > 0 ? (
-        <div className="space-y-1">
-          {notes.map((note) => (
-            <div key={note.id} className="timeline-note group" onClick={() => handleSeek(note.timestamp_seconds)}>
-              <button
-                className="timestamp-chip flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium bg-black/80 border"
-                style={{ borderColor: accentColor ? `${accentColor}66` : "rgba(255,255,255,0.2)" }}
-              >
-                {formatTime(note.timestamp_seconds)}
-              </button>
-              <p className="flex-1 text-sm">{note.body}</p>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeNote(note.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-1"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        !isAdding && (
-          <p className="text-sm text-muted-foreground">
-            No notes yet. Add one while listening!
-          </p>
-        )
-      )}
+          {/* Notes List */}
+          <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar">
+             {notes.length === 0 && isAdding && (
+                <div className="text-center py-4 text-xs text-white/20 italic">
+                   New note at {formatTime(draftTime)}...
+                </div>
+             )}
+
+             {notes.map((note) => (
+                <div 
+                  key={note.id} 
+                  onClick={() => handleSeek(note.timestamp_seconds)}
+                  className="group flex items-start gap-3 p-2 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/5 transition-all cursor-pointer relative"
+                >
+                   {/* Timestamp */}
+                   <div 
+                      className="flex-shrink-0 px-1.5 py-0.5 rounded bg-white/5 border border-white/5 group-hover:border-emerald-500/30 group-hover:bg-emerald-500/10 transition-colors"
+                   >
+                      <span className="text-[10px] font-mono text-white/50 group-hover:text-emerald-400 block tabular-nums">
+                        {formatTime(note.timestamp_seconds)}
+                      </span>
+                   </div>
+                   
+                   {/* Body */}
+                   <p className="flex-1 text-xs text-white/80 leading-relaxed pt-0.5 group-hover:text-white">
+                      {note.body}
+                   </p>
+
+                   {/* Delete Action */}
+                   <button
+                      onClick={(e) => {
+                         e.stopPropagation();
+                         removeNote(note.id);
+                      }}
+                      className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 p-1.5 text-white/20 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all"
+                   >
+                      <Trash2 className="w-3 h-3" />
+                   </button>
+                </div>
+             ))}
+
+             {/* Inline Add Form */}
+             {isAdding && (
+                <div className="mt-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl animation-fade-in relative">
+                   <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-bold uppercase text-emerald-500 tracking-wider">
+                         Add at {formatTime(draftTime)}
+                      </span>
+                      <button onClick={() => setIsAdding(false)} className="text-white/20 hover:text-white">
+                         <X className="w-3 h-3" />
+                      </button>
+                   </div>
+                   
+                   <textarea
+                      ref={inputRef}
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      onKeyDown={(e) => {
+                         if(e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleAdd();
+                         }
+                      }}
+                      placeholder="Type your note..."
+                      className="w-full bg-transparent text-sm text-white placeholder:text-white/20 resize-none focus:outline-none min-h-[60px]"
+                   />
+                   
+                   <div className="flex justify-end mt-2">
+                      <button
+                         onClick={handleAdd}
+                         disabled={!noteText.trim()}
+                         className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500 text-black text-[10px] font-bold uppercase disabled:opacity-50 hover:bg-emerald-400 transition-colors"
+                      >
+                         <span>Save Note</span>
+                         <Send className="w-3 h-3" />
+                      </button>
+                   </div>
+                </div>
+             )}
+          </div>
+       </div>
     </div>
   );
 }
