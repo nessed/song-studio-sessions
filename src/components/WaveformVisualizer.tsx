@@ -71,7 +71,6 @@ export function WaveformVisualizer({ peaks, color = "rgba(255, 255, 255, 0.25)",
     <canvas 
       ref={canvasRef}
       className="w-full h-full block"
-      style={{ height }}
     />
   );
 }

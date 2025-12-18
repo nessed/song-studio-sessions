@@ -85,8 +85,12 @@ export function LyricsEditor({ value, onChange, onContextChange, onRequestAddNot
           onChange={(e) => queuePersist(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Start writing..."
-          className="flex-1 w-full bg-transparent text-lg text-white/80 p-8 leading-relaxed font-sans resize-none focus:outline-none placeholder:text-white/25"
-          style={{ fontFamily: "Inter, 'Space Grotesk', 'JetBrains Mono', monospace" }}
+          className="flex-1 w-full bg-transparent text-lg text-white/90 p-8 leading-relaxed font-mono resize-none focus:outline-none placeholder:text-white/20"
+          style={{ 
+            fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier Prime', monospace",
+            letterSpacing: "-0.01em",
+            lineHeight: "1.7"
+          }}
         />
       </div>
     </div>

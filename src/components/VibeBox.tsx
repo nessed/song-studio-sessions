@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronUp, ChevronDown, Download, Clock, X } from "lucide-react";
+import { ChevronUp, ChevronDown, Download, Clock, X, Trash2 } from "lucide-react";
 import { SongVersion } from "@/hooks/useSongVersions";
 import { formatDistanceToNow } from "date-fns";
 
@@ -9,9 +9,11 @@ interface VibeBoxProps {
   versions: SongVersion[];
   currentVersion: SongVersion | null;
   onSelectVersion: (version: SongVersion) => void;
+  onDeleteVersion?: (version: SongVersion) => void;
+  trigger?: React.ReactNode;
 }
 
-export function VibeBox({ versions, currentVersion, onSelectVersion }: VibeBoxProps) {
+export function VibeBox({ versions, currentVersion, onSelectVersion, onDeleteVersion, trigger }: VibeBoxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [viewIndex, setViewIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -60,17 +62,23 @@ export function VibeBox({ versions, currentVersion, onSelectVersion }: VibeBoxPr
           setViewIndex(versions.findIndex((v) => v.id === currentVersion?.id) || 0);
           setIsOpen(true);
         }}
-        className="group relative px-3 py-1.5 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105"
+        className={trigger ? "flex items-center justify-center transition-opacity hover:opacity-80" : "group relative px-3 py-1.5 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105"}
       >
-        {/* Glass background */}
-        <div className="absolute inset-0 bg-white/5 backdrop-blur-md border border-white/10" />
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-indigo-500/20 animate-pulse" />
-        </div>
-        
-        <span className="relative text-sm font-mono font-medium text-white/80">
-          v{versionNumber}
-        </span>
+        {trigger ? (
+           trigger
+        ) : (
+          <>
+            {/* Glass background */}
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-md border border-white/10" />
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-indigo-500/20 animate-pulse" />
+            </div>
+            
+            <span className="relative text-sm font-mono font-medium text-white/80">
+              v{versionNumber}
+            </span>
+          </>
+        )}
       </button>
 
       {/* Popover via portal to escape clipping */}
@@ -103,12 +111,29 @@ export function VibeBox({ versions, currentVersion, onSelectVersion }: VibeBoxPr
                       <h3 className="text-xs font-bold tracking-widest text-white/40 uppercase">
                         Version Roller
                       </h3>
-                      <button
-                        onClick={() => setIsOpen(false)}
-                        className="p-1 text-white/40 hover:text-white transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {onDeleteVersion && versions.length > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (displayVersion && window.confirm(`Delete v${displayVersion.version_number}? This cannot be undone.`)) {
+                                onDeleteVersion(displayVersion);
+                                setIsOpen(false);
+                              }
+                            }}
+                            className="p-1 mr-2 text-white/20 hover:text-red-500 transition-colors"
+                            title="Delete this version"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setIsOpen(false)}
+                          className="p-1 text-white/40 hover:text-white transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="relative h-32 overflow-hidden rounded-xl bg-black/30 border border-white/5">

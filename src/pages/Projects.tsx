@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useProjects } from "@/hooks/useProjects";
 import { AppHeader } from "@/components/AppHeader";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { Plus, Folder } from "lucide-react";
 
 export default function Projects() {
@@ -25,14 +26,7 @@ export default function Projects() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#09090b]">
-        <AppHeader />
-        <main className="max-w-5xl mx-auto px-6 py-12">
-          <div className="text-white/40">Loading...</div>
-        </main>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (

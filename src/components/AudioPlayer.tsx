@@ -61,6 +61,10 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
     onTimeUpdate?.(currentTime);
 
     rafRef.current = requestAnimationFrame(updateUI);
+
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [onTimeUpdate]);
 
   useEffect(() => {
@@ -167,7 +171,7 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
             className="h-10 w-full relative group cursor-pointer"
           >
             {/* Layer 1: Background Waveform */}
-            <div className="absolute inset-0 opacity-30 group-hover:opacity-40 transition-opacity">
+            <div className="absolute inset-0 opacity-100 text-white/40 group-hover:text-white/50 transition-colors">
                <WaveformVisualizer peaks={peaks} color="currentColor" />
             </div>
 

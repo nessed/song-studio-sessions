@@ -122,6 +122,44 @@ export function useSongVersions(songId: string | undefined) {
     },
   });
 
+  const deleteVersionMutation = useMutation({
+    mutationFn: async (versionId: string) => {
+      if (!songId) throw new Error("Missing song");
+
+      // Check if we are deleting the current version
+      const isDeletingCurrent = versions.find(v => v.id === versionId)?.is_current;
+
+      const { error } = await supabase
+        .from("song_versions")
+        .delete()
+        .eq("id", versionId);
+
+      if (error) throw error;
+
+      // If we deleted the current version, we should probably set another one as current
+      // ideally the backend handles this or we pick the latest Remaining one
+      if (isDeletingCurrent) {
+         // Logic to set newest as current is a bit complex for client-side, 
+         // but we can at least ensure the song's mp3_url is updated.
+         // For now, let's just clear the song's mp3_url if no versions remain,
+         // or set it to the next latest one.
+         const remainingVersions = versions.filter(v => v.id !== versionId);
+         if (remainingVersions.length > 0) {
+            const nextLatest = remainingVersions[0];
+            await supabase.from("song_versions").update({ is_current: true }).eq("id", nextLatest.id);
+            await supabase.from("songs").update({ mp3_url: nextLatest.file_url }).eq("id", songId);
+         } else {
+            // No versions left
+            await supabase.from("songs").update({ mp3_url: null }).eq("id", songId);
+         }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["song-versions", songId] });
+      queryClient.invalidateQueries({ queryKey: ["song", songId] });
+    },
+  });
+
   return {
     versions,
     currentVersion,
@@ -131,6 +169,9 @@ export function useSongVersions(songId: string | undefined) {
     },
     setCurrentVersion: async (versionId: string) => {
       await setCurrentVersionMutation.mutateAsync(versionId);
+    },
+    deleteVersion: async (versionId: string) => {
+      await deleteVersionMutation.mutateAsync(versionId);
     },
     isUploading: uploadVersionMutation.isPending,
   };

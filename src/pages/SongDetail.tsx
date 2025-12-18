@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { SongHeader } from "@/components/SongHeader";
 import { SongMetadata } from "@/components/SongMetadata";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 export default function SongDetail() {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +25,7 @@ export default function SongDetail() {
   const queryClient = useQueryClient();
   const { song, loading } = useSong(id);
   const { updateSong, deleteSong, uploadCoverArt } = useSongs();
-  const { versions, currentVersion, uploadVersion, setCurrentVersion } = useSongVersions(id);
+  const { versions, currentVersion, uploadVersion, setCurrentVersion, deleteVersion } = useSongVersions(id);
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
   const { projects } = useProjects();
   const { notes: timelineNotes, createNote, deleteNote } = useSongNotes(id);
@@ -134,9 +135,7 @@ export default function SongDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
+      <LoadingScreen />
     );
   }
 
@@ -193,6 +192,10 @@ export default function SongDetail() {
               versions={versions}
               currentVersion={currentVersion}
               onVersionSelect={handleVersionSelect}
+              onVersionDelete={async (v) => {
+                await deleteVersion(v.id);
+                toast.success("Version deleted");
+              }}
               onCoverClick={() => coverInputRef.current?.click()}
               onTagsUpdate={handleTagsUpdate}
             />

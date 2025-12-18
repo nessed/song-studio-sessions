@@ -39,16 +39,30 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
       };
 
       const applyPalette = (dominant?: string, secondary?: string) => {
-        const domBase = tinycolor(dominant || themeColor || SONIC_NEON[0]).saturate(30).lighten(10);
+        // Boost saturation and brightness for that "Neon Glass" look
+        const domBase = tinycolor(dominant || themeColor || SONIC_NEON[0])
+          .saturate(40) // Increased saturation
+          .lighten(5);   // Slight lighten
+          
         const secBase = tinycolor(
           secondary || domBase.clone().spin(180).toHexString()
-        ).saturate(30).lighten(10);
+        )
+          .saturate(40)
+          .lighten(5);
+
+        const ensureNeon = (c: tinycolor.Instance) => {
+           // Force high saturation for glow effect
+           if (c.toHsl().s < 0.5) c.saturate(30);
+           // Ensure not too dark, not too nice
+           if (c.getBrightness() < 40) c.lighten(20);
+           return c.toHexString();
+        };
 
         const palette = [
-          ensureBright(domBase),
-          ensureBright(domBase.clone().spin(30)),
-          ensureBright(secBase),
-          ensureBright(secBase.clone().spin(-30)),
+          ensureNeon(domBase),
+          ensureNeon(domBase.clone().spin(45)),
+          ensureNeon(secBase),
+          ensureNeon(secBase.clone().spin(-45)),
         ];
 
         setMeshColors(palette);
@@ -60,9 +74,9 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
       }
 
       try {
-        const palette = await Vibrant.from(coverUrl).quality(2).getPalette();
-        const dominant = palette?.Vibrant?.getHex() || palette?.Muted?.getHex();
-        const secondary = palette?.LightVibrant?.getHex() || palette?.DarkVibrant?.getHex();
+        const palette = await Vibrant.from(coverUrl).quality(1).getPalette(); 
+        const dominant = palette?.Vibrant?.hex || palette?.LightVibrant?.hex;
+        const secondary = palette?.DarkVibrant?.hex || palette?.Muted?.hex;
         if (!cancelled) applyPalette(dominant ?? undefined, secondary ?? undefined);
       } catch {
         if (!cancelled) applyPalette(themeColor ?? SONIC_NEON[0], SONIC_NEON[1]);
@@ -78,28 +92,37 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
 
   const cssVars = useMemo(() => {
     const accent = meshColors[0] ?? SONIC_NEON[0];
-    const accentSoft = tinycolor(accent).setAlpha(0.22).toRgbString();
-    const accentSubtle = tinycolor(accent).setAlpha(0.14).toRgbString();
+    // More opaque soft accent for better glass highlights
+    const accentSoft = tinycolor(accent).setAlpha(0.35).toRgbString(); 
+    const accentSubtle = tinycolor(accent).setAlpha(0.15).toRgbString();
 
     return {
       "--gradient-color-1": meshColors[0],
       "--gradient-color-2": meshColors[1],
       "--gradient-color-3": meshColors[2],
       "--gradient-color-4": meshColors[3],
-      "--bg-main": "#09090b",
-      "--bg-card": "rgba(9, 9, 11, 0.78)",
+      "--bg-main": "#050505", // Darker base for contrast
+      "--bg-card": "rgba(5, 5, 5, 0.6)", // More transparent card
       "--accent-main": accent,
       "--accent-soft": accentSoft,
       "--accent-subtle": accentSubtle,
-      "--border-weak": "rgba(255, 255, 255, 0.08)",
+      "--border-weak": "rgba(255, 255, 255, 0.06)",
     } as React.CSSProperties;
   }, [meshColors]);
 
   return (
-    <div className="relative min-h-screen bg-[#09090b] overflow-hidden" style={cssVars}>
+    <div className="relative min-h-screen bg-[#050505] overflow-hidden" style={cssVars}>
       <MeshGradient colorSignature={meshColors.join("-")} />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#09090b]/65 via-[#09090b]/72 to-[#09090b]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(255,255,255,0.06),transparent_32%),radial-gradient(circle_at_82%_12%,rgba(255,255,255,0.05),transparent_30%)] mix-blend-screen" />
+      
+      {/* Deep darkening vignette from bottom to top to ensure legible lyrics */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-transparent opacity-90" />
+      
+      {/* Top light leak */}
+      <div className="pointer-events-none absolute top-0 left-0 right-0 h-[50vh] bg-gradient-to-b from-[#050505]/40 to-transparent" />
+      
+      {/* Noise Texture */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03] mix-blend-overlay" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }} />
+
       <div className="relative">{children}</div>
     </div>
   );

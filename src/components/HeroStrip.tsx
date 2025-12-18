@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Image, Upload } from "lucide-react";
+import { Image, Upload, ChevronDown, Link as LinkIcon, ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
 import { VibeBox } from "./VibeBox";
 import { SongVersion } from "@/hooks/useSongVersions";
@@ -18,7 +18,13 @@ interface HeroStripProps {
   versions: SongVersion[];
   currentVersion: SongVersion | null;
   onSelectVersion: (version: SongVersion) => void;
+  onDeleteVersion?: (version: SongVersion) => void;
   onCoverClick: () => void;
+  projectName?: string;
+  projects?: { id: string; title: string }[];
+  onProjectChange?: (projectId: string) => void;
+  referenceLink?: string;
+  onReferenceClick?: () => void;
 }
 
 export function HeroStrip({
@@ -35,121 +41,181 @@ export function HeroStrip({
   versions,
   currentVersion,
   onSelectVersion,
+  onDeleteVersion,
   onCoverClick,
+  projectName,
+  projects,
+  onProjectChange,
+  referenceLink,
+  onReferenceClick,
 }: HeroStripProps) {
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const versionLabel = currentVersion?.version_number
-    ? `VERSION v${currentVersion.version_number}`
-    : "VERSION v1";
+    ? `v${currentVersion.version_number}`
+    : "v1";
+
+  // Find current project ID if possible, or use 'none'
+  const currentProjectId = projects?.find(p => p.title === projectName)?.id || "none";
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="flex items-center gap-6"
+      className="flex items-start gap-8 w-full"
     >
-      {/* Cover Art */}
-      <button
-        onClick={onCoverClick}
-        className="relative w-24 h-24 flex-shrink-0 group cursor-pointer rounded-xl overflow-hidden shadow-2xl"
-      >
-        {coverUrl && (
-          <div 
-            className="absolute -inset-3 blur-2xl opacity-40 group-hover:opacity-60 transition-opacity"
-            style={{ 
-              backgroundImage: `url(${coverUrl})`,
-              backgroundSize: "cover",
-            }}
-          />
-        )}
-        
-        <div className="relative w-full h-full rounded-xl overflow-hidden border border-white/10 bg-white/5">
-          {coverUrl ? (
-            <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Image className="w-5 h-5 text-white/20" />
-            </div>
+      {/* Cover Art - Slightly larger and cleaner */}
+      <div className="relative group">
+        <button
+          onClick={onCoverClick}
+          className="relative w-32 h-32 flex-shrink-0 cursor-pointer rounded-2xl overflow-hidden shadow-2xl transition-transform active:scale-95 z-10 block"
+        >
+           {/* Glow behind cover */}
+          {coverUrl && (
+            <div 
+              className="absolute -inset-4 blur-3xl opacity-30 group-hover:opacity-50 transition-opacity"
+              style={{ 
+                backgroundImage: `url(${coverUrl})`,
+                backgroundSize: "cover",
+              }}
+            />
           )}
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-            <Upload className="w-4 h-4 text-transparent group-hover:text-white transition-colors" />
-          </div>
-        </div>
-      </button>
 
-      {/* Title + Meta */}
-      <div className="flex-1 min-w-0 flex flex-col gap-3">
+          <div className="relative w-full h-full bg-white/5 border border-white/10">
+            {coverUrl ? (
+              <img src={coverUrl} alt="Cover" className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/5 to-white/0">
+                <Image className="w-8 h-8 text-white/20" />
+              </div>
+            )}
+            
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+              <Upload className="w-6 h-6 text-white" />
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {/* Main Content Info */}
+      <div className="flex-1 min-w-0 flex flex-col pt-1">
+        
+        {/* Context Line: Project • Version • Reference */}
+        <div className="flex items-center gap-3 text-xs font-medium text-white/40 mb-2">
+           <div className="relative group/project flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer">
+              <span className="uppercase tracking-wider font-bold text-[10px] truncate max-w-[200px]">
+                {projectName || "No Project"}
+              </span>
+              <ChevronDown className="w-3 h-3 opacity-0 group-hover/project:opacity-50" />
+              
+              {/* Invisible Select Overlay */}
+              {projects && onProjectChange && (
+                 <select
+                    value={currentProjectId}
+                    onChange={(e) => onProjectChange(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                 >
+                    <option value="none">No Project</option>
+                    {projects.map(p => (
+                       <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                 </select>
+              )}
+           </div>
+
+           <span className="text-white/10">•</span>
+
+           <div className="flex items-center gap-1 bg-white/5 border border-white/5 rounded-full px-2 py-0.5 text-[10px] font-mono hover:bg-white/10 transition-colors">
+              <span>{versionLabel}</span>
+              <VibeBox
+                versions={versions}
+                currentVersion={currentVersion}
+                onSelectVersion={onSelectVersion}
+                onDeleteVersion={onDeleteVersion}
+                trigger={
+                   <ChevronDown className="w-3 h-3 opacity-50" />
+                }
+              />
+           </div>
+
+           {referenceLink && (
+             <>
+               <span className="text-white/10">•</span>
+               <a 
+                  href={referenceLink} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="flex items-center gap-1 hover:text-emerald-400 transition-colors"
+                >
+                  <LinkIcon className="w-3 h-3" />
+                  <span className="truncate max-w-[150px]">{referenceLink.replace(/^https?:\/\/(www\.)?/, '')}</span>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-50" />
+               </a>
+             </>
+           )}
+        </div>
+
+        {/* Title Input */}
         <input
           type="text"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="Untitled"
-          className="bg-transparent border-none outline-none text-4xl font-bold tracking-tight text-white flex-1 min-w-0 placeholder:text-white/25"
-          style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}
+          placeholder="Untitled Song"
+          className="bg-transparent border-none outline-none text-5xl font-bold tracking-tighter text-white/90 placeholder:text-white/10 w-full mb-4"
+          style={{ fontFamily: "'Syne', sans-serif" }} // Premium font feel
         />
 
-        <div className="flex flex-wrap items-center gap-4 text-sm font-mono text-white/70">
-          <div className="flex items-center gap-2">
-            <span className="uppercase text-[10px] text-white/40 tracking-[0.2em]">BPM</span>
-            <input
-              type="text"
-              value={bpm}
-              onChange={(e) => onBpmChange(e.target.value)}
-              placeholder="120"
-              className="bg-transparent border-none outline-none w-12 text-center placeholder:text-white/30 text-white/80"
-            />
-          </div>
-
-          <span className="h-4 w-px bg-white/10" />
-
-          <div className="flex items-center gap-2">
-            <span className="uppercase text-[10px] text-white/40 tracking-[0.2em]">Key</span>
-            <input
-              type="text"
-              value={songKey}
-              onChange={(e) => onKeyChange(e.target.value)}
-              placeholder="Fm"
-              className="bg-transparent border-none outline-none w-12 text-center placeholder:text-white/30 text-white/80"
-            />
-          </div>
-
-          <span className="h-4 w-px bg-white/10" />
-
-          <select
-            value={status}
-            onChange={(e) => onStatusChange(e.target.value)}
-            className="px-0 py-0 bg-transparent border-none text-white/80 text-sm font-mono focus:outline-none cursor-pointer hover:text-white transition-colors"
-          >
-            {statuses.map((s) => (
-              <option key={s.value} value={s.value} className="bg-[#09090b]">
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Right rail */}
-      <div className="flex flex-col items-end gap-3">
+        {/* Badges Row: BPM, Key, Status */}
         <div className="flex items-center gap-3">
-          <div className="border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white/80">
-            {versionLabel}
+          
+          {/* BPM Pill */}
+          <div className="flex items-center bg-white/5 border border-white/5 rounded-md px-3 py-1.5 focus-within:border-white/20 focus-within:bg-white/10 transition-colors">
+             <span className="text-[10px] uppercase font-bold text-white/30 mr-2 tracking-wider">BPM</span>
+             <input
+               type="text"
+               value={bpm}
+               onChange={(e) => onBpmChange(e.target.value)}
+               placeholder="---"
+               className="bg-transparent border-none outline-none w-8 text-sm font-mono text-white/80 placeholder:text-white/20 text-center"
+             />
           </div>
-          <VibeBox
-            versions={versions}
-            currentVersion={currentVersion}
-            onSelectVersion={onSelectVersion}
-          />
-        </div>
 
-        <input 
-          ref={uploadInputRef}
-          type="file"
-          accept="audio/*"
-          className="hidden"
-        />
+          {/* Key Pill */}
+          <div className="flex items-center bg-white/5 border border-white/5 rounded-md px-3 py-1.5 focus-within:border-white/20 focus-within:bg-white/10 transition-colors">
+             <span className="text-[10px] uppercase font-bold text-white/30 mr-2 tracking-wider">KEY</span>
+             <input
+               type="text"
+               value={songKey}
+               onChange={(e) => onKeyChange(e.target.value)}
+               placeholder="---"
+               className="bg-transparent border-none outline-none w-10 text-sm font-mono text-white/80 placeholder:text-white/20 text-center"
+             />
+          </div>
+
+          {/* Status Dropdown - Clean Text */}
+          <div className="relative group">
+             <select
+                value={status}
+                onChange={(e) => onStatusChange(e.target.value)}
+                className="appearance-none bg-transparent pl-3 pr-8 py-1.5 text-sm font-medium text-white/60 hover:text-white transition-colors cursor-pointer focus:outline-none"
+             >
+                {statuses.map((s) => (
+                  <option key={s.value} value={s.value} className="bg-[#09090b]">
+                    {s.label}
+                  </option>
+                ))}
+             </select>
+             <ChevronDown className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" />
+             
+             {/* Status indicator dot */}
+             <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${
+                status === 'completed' ? 'bg-emerald-400' : 
+                status === 'writing' ? 'bg-amber-400' : 'bg-white/20'
+             }`} />
+          </div>
+
+        </div>
       </div>
     </motion.div>
   );

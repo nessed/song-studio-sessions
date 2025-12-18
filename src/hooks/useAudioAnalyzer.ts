@@ -20,6 +20,7 @@ export function useAudioAnalyzer(audioUrl: string) {
         // We need a new AudioContext for decoding
         const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
         const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        await audioContext.close(); // Important: Close context to free resources
         
         if (!active) return;
 

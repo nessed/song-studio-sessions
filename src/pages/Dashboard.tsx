@@ -4,6 +4,7 @@ import { useSongs } from "@/hooks/useSongs";
 import { useProjects } from "@/hooks/useProjects";
 import { AppHeader } from "@/components/AppHeader";
 import { SongListItem } from "@/components/SongListItem";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { Plus, Music, Folder } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -35,14 +36,7 @@ export default function Dashboard() {
   const recentProjects = projects.slice(0, 4);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#09090b]">
-        <AppHeader />
-        <main className="max-w-5xl mx-auto px-6 py-12">
-          <div className="text-white/40">Loading...</div>
-        </main>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (

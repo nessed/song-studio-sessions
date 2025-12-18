@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { Toaster } from "sonner";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import Index from "@/pages/Index";
 import Dashboard from "@/pages/Dashboard";
 import SongDetail from "@/pages/SongDetail";
@@ -14,14 +15,14 @@ import NotFound from "@/pages/NotFound";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center"><p className="text-white/40">Loading...</p></div>;
+  if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen bg-[#09090b] flex items-center justify-center"><p className="text-white/40">Loading...</p></div>;
+  if (loading) return <LoadingScreen />;
   if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }

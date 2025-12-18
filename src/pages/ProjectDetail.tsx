@@ -9,6 +9,7 @@ import { SongListItem } from "@/components/SongListItem";
 import { ArrowLeft, Trash2, Plus, Music } from "lucide-react";
 import { toast } from "sonner";
 import { Project } from "@/lib/types";
+import { LoadingScreen } from "@/components/LoadingScreen";
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -90,11 +91,7 @@ export default function ProjectDetail() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   if (!project) {
