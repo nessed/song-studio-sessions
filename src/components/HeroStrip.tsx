@@ -12,6 +12,7 @@ interface HeroStripProps {
   onBpmChange: (value: string) => void;
   songKey: string;
   onKeyChange: (value: string) => void;
+  shareAction?: React.ReactNode;
   status: string;
   onStatusChange: (value: string) => void;
   statuses: { value: string; label: string }[];
@@ -35,6 +36,7 @@ export function HeroStrip({
   onBpmChange,
   songKey,
   onKeyChange,
+  shareAction,
   status,
   onStatusChange,
   statuses,
@@ -153,6 +155,13 @@ export function HeroStrip({
                   <ExternalLink className="w-2.5 h-2.5 opacity-50" />
                </a>
              </>
+           )}
+
+           {shareAction && (
+              <>
+                 <span className="text-white/10">•</span>
+                 {shareAction}
+              </>
            )}
         </div>
 

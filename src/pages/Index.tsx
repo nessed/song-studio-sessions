@@ -54,13 +54,14 @@ const Index = () => {
             </motion.div>
             <motion.h1
               variants={stagger}
-              className="text-4xl sm:text-6xl lg:text-7xl font-bold leading-[0.9] tracking-tight"
+              className="text-4xl sm:text-6xl lg:text-7xl font-bold leading-[0.9] tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/50"
               style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}
             >
-              Your songs. Organized. Finally.
+              Your music. <br />
+              Mastered.
             </motion.h1>
-            <motion.p variants={stagger} className="text-lg sm:text-xl text-white/60 max-w-xl leading-relaxed">
-              Sessions is the studio console for producers who are done with chaotic folders, lost mix notes, and flat dashboards. Keep every version, reference, and idea flowing in one minimalist space.
+            <motion.p variants={stagger} className="text-lg sm:text-xl text-white/50 max-w-xl leading-relaxed font-light">
+              The operating system for modern producers. Manage versions, feedback, and tasks in a workspace that feels as good as your studio key lighting looks.
             </motion.p>
             <motion.div variants={stagger} className="flex flex-col sm:flex-row gap-3 sm:items-center">
               <Link
@@ -151,10 +152,10 @@ const Index = () => {
           <div className="flex flex-col gap-3">
             <p className="text-xs uppercase tracking-[0.25em] text-white/40 font-mono">The problem</p>
             <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight" style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}>
-              File version hell vs. a studio-grade console.
+              Stop texting MP3s to yourself.
             </h2>
-            <p className="text-white/60 max-w-2xl">
-              Demos named “Song_v3_Final_REAL.mp3”, comments lost in group chats, and tasks scattered across tools. Sessions puts every mix, note, and timestamp in one flow.
+            <p className="text-white/60 max-w-2xl leading-relaxed">
+              Demos named “Song_v3_Final_REAL.mp3” cluttering your Desktop? Notes lost in WhatsApp threads? Sessions replaces the chaos with a professional, timeline-accurate console.
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
@@ -215,23 +216,23 @@ const Index = () => {
           <div className="grid md:grid-cols-3 gap-10">
             {[
               {
-                title: "Mix versioning",
-                body: "Capture every pass with instant recall, timestamps, and context. Never guess which export the artist loved.",
+                title: "Version Roller",
+                body: "Stack every mix version (v1, v2, vFinal) in one slot. Compare them instantly, delete the bad ones, and keep your folder clean.",
               },
               {
-                title: "Sonic palette",
-                body: "Drop in reference tracks, A/B inside the floating player, and keep notes in the exact bar they matter.",
+                title: "Timeline Notes",
+                body: "Drop a note at 1:42 to fix the hi-hat. Edit it later. Every comment is locked to the exact second in the audio.",
               },
               {
-                title: "Floating console",
-                body: "A bottom-fixed glass player + note tray that follows you through tasks, lyrics, and feedback.",
+                title: "Mood Tags & Search",
+                body: "Filter your catalog by 'Dark', '140BPM', or 'Demo'. Find that one beat you made three months ago in seconds.",
               },
             ].map((feature) => (
               <div key={feature.title} className="space-y-3">
-                <h3 className="text-xl font-semibold" style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}>
+                <h3 className="text-xl font-semibold opacity-90" style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}>
                   {feature.title}
                 </h3>
-                <p className="text-white/60 leading-relaxed">{feature.body}</p>
+                <p className="text-white/60 leading-relaxed text-sm">{feature.body}</p>
               </div>
             ))}
           </div>

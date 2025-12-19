@@ -57,12 +57,18 @@ export function WaveformVisualizer({ peaks, color = "rgba(255, 255, 255, 0.25)",
 
   if (!peaks.length) {
     return (
-       <div className="w-full h-full flex items-center justify-center gap-1 opacity-50 relative">
-          <div className="flex gap-1 items-end h-1/2">
-             {[...Array(10)].map((_, i) => (
-                 <div key={i} className="w-1 bg-white/20 animate-pulse" style={{ height: `${Math.random() * 100}%`, animationDelay: `${i * 0.1}s` }} />
-             ))}
-          </div>
+       <div className="w-full h-full flex items-center justify-between gap-[2px] opacity-50 px-1 overflow-hidden">
+          {[...Array(40)].map((_, i) => (
+             <div 
+               key={i} 
+               className="w-full bg-white/30 rounded-full animate-pulse" 
+               style={{ 
+                 height: `${Math.max(10, Math.random() * 80)}%`, 
+                 animationDelay: `${Math.random() * 1.5}s`,
+                 animationDuration: `${0.8 + Math.random()}s`
+               }} 
+             />
+          ))}
        </div>
     );
   }

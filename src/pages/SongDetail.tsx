@@ -210,6 +210,7 @@ export default function SongDetail() {
               }}
               onCoverClick={() => coverInputRef.current?.click()}
               onTagsUpdate={handleTagsUpdate}
+              onUpdateSong={() => queryClient.invalidateQueries({ queryKey: ["song", id] })}
             />
 
             {/* Upload audio button if no audio */}

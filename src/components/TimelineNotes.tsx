@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSongNotes } from "@/hooks/useSongNotes";
-import { Trash2, X, Send, Pencil } from "lucide-react";
+import { Trash2, X, Send, Pencil, ChevronUp, ChevronDown } from "lucide-react";
 import { SongNote } from "@/lib/types";
 
 interface TimelineNotesProps {
@@ -21,6 +21,8 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
   const editNote = onUpdateNote ?? updateNote;
   const removeNote = onDeleteNote ?? deleteNote;
   
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
@@ -33,6 +35,7 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
     if (typeof triggerAddTime === "number") {
       setDraftTime(triggerAddTime);
       setIsAdding(true);
+      setIsCollapsed(false); // Auto-expand when adding
       // Small delay to ensure render
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -70,20 +73,29 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
   if (notes.length === 0 && !isAdding) return null;
 
   return (
-    <div className="w-full max-w-sm ml-8 mb-2">
+    <div className={`w-full max-w-sm ml-8 mb-2 transition-all duration-300 ease-in-out ${isCollapsed ? 'translate-y-[calc(100%-44px)]' : ''}`}>
        {/* Glass Container */}
        <div className="bg-[#09090b]/80 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-h-[300px]">
           
           {/* Header */}
-          <div className="px-4 py-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/40">
-              Session Notes
-            </h4>
-            <span className="text-[10px] font-mono text-emerald-400">{notes.length} markers</span>
-          </div>
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="px-4 py-3 border-b border-white/5 bg-white/5 flex items-center justify-between w-full hover:bg-white/10 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+               <h4 className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                 Session Notes
+               </h4>
+               <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                 {notes.length}
+               </span>
+            </div>
+            {isCollapsed ? <ChevronUp className="w-4 h-4 text-white/40" /> : <ChevronDown className="w-4 h-4 text-white/40" />}
+          </button>
 
           {/* Notes List */}
-          <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar">
+          {!isCollapsed && (
+             <div className="overflow-y-auto p-2 space-y-1 custom-scrollbar">
              {notes.length === 0 && isAdding && (
                 <div className="text-center py-4 text-xs text-white/20 italic">
                    New note at {formatTime(draftTime)}...
@@ -210,6 +222,7 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
                 </div>
              )}
           </div>
+          )}
        </div>
     </div>
   );

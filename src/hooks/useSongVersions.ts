@@ -2,17 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
-
-export interface SongVersion {
-  id: string;
-  song_id: string;
-  version_number: number;
-  file_url: string;
-  description: string | null;
-  is_current: boolean;
-  created_at: string;
-  user_id: string;
-}
+import { SongVersion } from "@/lib/types";
 
 export function useSongVersions(songId: string | undefined) {
   const { user } = useAuth();

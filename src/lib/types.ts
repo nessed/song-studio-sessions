@@ -69,6 +69,8 @@ export interface Song {
   mp3_url: string | null;
   reference_link: string | null;
   lyrics: string | null;
+  is_public?: boolean;
+  share_hash?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -102,7 +104,19 @@ export interface ExportData {
   exported_at: string;
 }
 
+export interface SongVersion {
+  id: string;
+  song_id: string;
+  version_number: number;
+  file_url: string;
+  description: string | null;
+  is_current: boolean;
+  created_at: string;
+  user_id: string;
+}
+
 export interface SessionsDB {
   songs: Song[];
   tasks: Task[];
+  song_versions: SongVersion[];
 }

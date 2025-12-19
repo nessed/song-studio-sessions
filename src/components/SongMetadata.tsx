@@ -2,6 +2,7 @@ import { Song, Project, SongStatus, SONG_STATUSES } from "@/lib/types";
 import { HeroStrip } from "@/components/HeroStrip";
 import { MoodTagsInput } from "@/components/MoodTagsInput";
 import { SongVersion } from "@/hooks/useSongVersions";
+import { ShareModal } from "@/components/ShareModal";
 
 interface SongMetadataProps {
   song: Song;
@@ -22,6 +23,7 @@ interface SongMetadataProps {
   onVersionDelete: (v: SongVersion) => void;
   onCoverClick: () => void;
   onTagsUpdate: (tags: string[]) => void;
+  onUpdateSong: () => void;
 }
 
 export function SongMetadata({
@@ -43,6 +45,7 @@ export function SongMetadata({
   onVersionDelete,
   onCoverClick,
   onTagsUpdate,
+  onUpdateSong,
 }: SongMetadataProps) {
   
   const currentProjectName = projects.find(p => p.id === song.project_id)?.title;
@@ -70,6 +73,12 @@ export function SongMetadata({
         projects={projects}
         onProjectChange={onProjectChange}
         referenceLink={referenceLink}
+        shareAction={
+           <ShareModal 
+              song={song} 
+              onUpdate={onUpdateSong} 
+           />
+        }
       />
 
       {/* Mood Tags below the hero, cleaner layout */}
