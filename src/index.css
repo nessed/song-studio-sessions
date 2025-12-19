@@ -242,8 +242,8 @@
 
   .cover-background-image {
     @apply absolute inset-0 w-full h-full object-cover scale-110;
-    filter: blur(100px) saturate(1.2);
-    opacity: 0.25;
+    filter: blur(100px) saturate(1.1);
+    opacity: 0.18;
   }
   
   .cover-background-overlay {
@@ -416,16 +416,16 @@
     position: relative;
     background: linear-gradient(
       135deg,
-      rgba(255, 255, 255, 0.06) 0%,
+      rgba(255, 255, 255, 0.05) 0%,
       rgba(255, 255, 255, 0.02) 100%
     );
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 0.75rem;
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 2px 8px rgba(0, 0, 0, 0.2);
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 2px 6px rgba(0, 0, 0, 0.15);
     transition: all 0.3s ease;
   }
 

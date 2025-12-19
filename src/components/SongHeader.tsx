@@ -32,7 +32,7 @@ export function SongHeader({
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       
       {/* Bottom border with chromatic effect */}
-      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/5 to-transparent" />
       
       <div className="relative max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <Link

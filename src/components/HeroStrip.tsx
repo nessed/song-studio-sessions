@@ -78,7 +78,7 @@ export function HeroStrip({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="relative flex items-start gap-10 w-full py-2"
+      className="relative flex items-start gap-12 w-full py-2"
     >
       {/* Ambient Background Glow from Cover */}
       {coverUrl && (
@@ -109,10 +109,10 @@ export function HeroStrip({
               background: `radial-gradient(circle at center, rgba(255,255,255,0.15) 0%, transparent 70%)`,
             }}
             animate={{
-              scale: [1, 1.05, 1],
+              scale: [1, 1.03, 1],
             }}
             transition={{
-              duration: 3,
+              duration: 5,
               repeat: Infinity,
               ease: "easeInOut",
             }}
@@ -188,7 +188,7 @@ export function HeroStrip({
 
            {/* Version Pill - Enhanced */}
            <div className={`flex items-center gap-1.5 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-full px-2.5 py-1 text-[10px] font-mono hover:from-indigo-500/15 hover:to-purple-500/15 transition-all group/version ${versions.length > 1 ? 'cursor-pointer' : ''}`}>
-              <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+              <div className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
               <span className="text-indigo-300/80 font-semibold">{versionLabel}</span>
               {versions.length > 1 ? (
                 <VibeBox
@@ -255,8 +255,8 @@ export function HeroStrip({
         <div className="flex items-center gap-3">
           
           {/* BPM Pill - Premium Glass */}
-          <label className="glass-pill relative group/bpm flex items-center px-4 py-2 cursor-text">
-             <span className="text-[9px] uppercase font-bold text-white/30 mr-2.5 tracking-widest">BPM</span>
+          <label className="glass-pill relative group/bpm flex items-center px-3 py-1.5 cursor-text">
+             <span className="text-[9px] uppercase font-semibold text-white/30 mr-2 tracking-wider">BPM</span>
              <input
                type="text"
                value={bpm}
@@ -269,8 +269,8 @@ export function HeroStrip({
           </label>
 
           {/* Key Pill - Premium Glass */}
-          <label className="glass-pill relative group/key flex items-center px-4 py-2 cursor-text">
-             <span className="text-[9px] uppercase font-bold text-white/30 mr-2.5 tracking-widest">KEY</span>
+          <label className="glass-pill relative group/key flex items-center px-3 py-1.5 cursor-text">
+             <span className="text-[9px] uppercase font-semibold text-white/30 mr-2 tracking-wider">KEY</span>
              <input
                type="text"
                value={songKey}
