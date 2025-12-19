@@ -32,10 +32,8 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
     return saved ? parseFloat(saved) : 1;
   });
   
-  // Audio Analysis
   const { peaks } = useAudioAnalyzer(src);
 
-  // Helper to format time strings efficiently
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -47,13 +45,10 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
     if (!audio) return;
 
     const currentTime = audio.currentTime;
-    const duration = audio.duration || 1; // Avoid divide by zero
-    const pct = (currentTime / duration) * 100;
+    const dur = audio.duration || 1;
+    const pct = (currentTime / dur) * 100;
 
-    // Direct DOM manipulation avoiding React render cycle
     if (progressBarRef.current) {
-      // Use clip-path to reveal the waveform without squashing it
-      // inset(top right bottom left) -> we chop from the right
       const rightChop = 100 - pct;
       progressBarRef.current.style.clipPath = `inset(0 ${rightChop}% 0 0)`;
     }
@@ -61,9 +56,7 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
       timeDisplayRef.current.innerText = formatTime(currentTime);
     }
 
-    // Call external handler (parent might still re-render, but we don't)
     onTimeUpdate?.(currentTime);
-
     rafRef.current = requestAnimationFrame(updateUI);
 
     return () => {
@@ -135,7 +128,6 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
     
     audio.currentTime = pct * duration;
     
-    // Immediate UI update
     if (progressBarRef.current) {
        const rightChop = 100 - (pct * 100);
        progressBarRef.current.style.clipPath = `inset(0 ${rightChop}% 0 0)`;
@@ -143,7 +135,6 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
     if (timeDisplayRef.current) timeDisplayRef.current.innerText = formatTime(audio.currentTime);
   };
 
-  // Handle double-click on waveform to add note at that position
   const handleWaveformDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const track = trackRef.current;
     if (!track || !duration || !onRequestAddNote) return;
@@ -163,127 +154,182 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
   };
 
   return (
-    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 w-full px-6 flex justify-center">
-      <div className="relative h-20 w-full max-w-5xl rounded-2xl bg-[#09090b]/60 backdrop-blur-3xl border border-white/5 shadow-2xl flex items-center px-6 gap-6 transition-all hover:bg-[#09090b]/80 group/player">
-        <audio ref={audioRef} src={src} preload="metadata" />
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full px-6 flex justify-center">
+      {/* Outer ambient glow */}
+      <div 
+        className="absolute inset-x-12 -bottom-4 h-32 opacity-50 blur-3xl pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 60% 80% at 50% 100%, var(--accent-subtle, rgba(124,58,237,0.2)) 0%, transparent 70%)' }}
+      />
+      
+      <div className="relative h-[88px] w-full max-w-5xl rounded-[28px] overflow-hidden group/player shadow-2xl shadow-black/50">
+        {/* Glass background */}
+        <div className="absolute inset-0 bg-[#08080a]/90 backdrop-blur-3xl" />
+        
+        {/* Top highlight line */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        
+        {/* Theme-tinted glow from left */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-40"
+          style={{ background: 'radial-gradient(ellipse 40% 100% at 0% 50%, var(--accent-subtle, rgba(124,58,237,0.15)) 0%, transparent 60%)' }}
+        />
+        
+        {/* Chromatic border */}
+        <div className="absolute inset-0 rounded-[28px] pointer-events-none border border-white/[0.08]" />
+        
+        {/* Content */}
+        <div className="relative h-full flex items-center px-5 gap-5">
+          <audio ref={audioRef} src={src} preload="metadata" />
 
-        {/* Play/Pause Button */}
-        <button
-          onClick={togglePlay}
-          className="h-12 w-12 min-w-[3rem] rounded-full bg-white text-black flex items-center justify-center shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_25px_rgba(255,255,255,0.25)] transition-all active:scale-95 z-10"
-        >
-          {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-1 fill-current" />}
-        </button>
-
-        {/* Time & Waveform */}
-        <div className="flex-1 flex flex-col justify-center gap-1">
-          {/* Top Row: Time & Info */}
-          <div className="flex items-center justify-between text-[10px] font-medium tracking-wide text-white/40 uppercase px-1">
-             <div ref={timeDisplayRef} className="tabular-nums">0:00</div>
-             <div className="opacity-0 group-hover/player:opacity-100 transition-opacity">Visualizer Active</div>
-          </div>
-
-          <div
-            ref={trackRef}
-            onClick={handleSeek}
-            onDoubleClick={handleWaveformDoubleClick}
-            className="h-10 w-full relative group cursor-pointer"
-            title="Double-click to add note"
+          {/* Play/Pause Button - Premium */}
+          <button
+            onClick={togglePlay}
+            className="relative h-14 w-14 min-w-[3.5rem] rounded-2xl flex items-center justify-center transition-all active:scale-95 z-10 group/play"
           >
-            {/* Layer 1: Background Waveform */}
-            <div className="absolute inset-0 opacity-100 text-white/40 group-hover:text-white/50 transition-colors">
-               <WaveformVisualizer peaks={peaks} color="currentColor" />
-            </div>
-
-            {/* Layer 2: Foreground Waveform (Clipped) */}
+            {/* Glow behind button */}
             <div 
-              ref={progressBarRef}
-              className="absolute inset-0 pointer-events-none text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] will-change-[clip-path]"
-              style={{ clipPath: "inset(0 100% 0 0)" }}
+              className="absolute inset-0 rounded-2xl opacity-50 blur-xl transition-opacity group-hover/play:opacity-80"
+              style={{ background: isPlaying ? 'var(--accent-main, #fff)' : 'rgba(255,255,255,0.3)' }}
+            />
+            
+            {/* Button face */}
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white via-white to-white/90 shadow-lg" />
+            
+            {/* Icon */}
+            <div className="relative text-black">
+              {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-0.5 fill-current" />}
+            </div>
+          </button>
+
+          {/* Time & Waveform */}
+          <div className="flex-1 flex flex-col justify-center gap-1.5">
+            {/* Time display row */}
+            <div className="flex items-center justify-between text-[10px] font-medium uppercase px-0.5">
+               <div ref={timeDisplayRef} className="tabular-nums text-white/60 font-mono tracking-wide">0:00</div>
+               <div className="text-white/25 font-mono tabular-nums tracking-wide">{formatTime(duration)}</div>
+            </div>
+
+            {/* Waveform track */}
+            <div
+              ref={trackRef}
+              onClick={handleSeek}
+              onDoubleClick={handleWaveformDoubleClick}
+              className="h-11 w-full relative group cursor-pointer rounded-xl overflow-hidden"
+              title="Double-click to add note"
             >
-               <WaveformVisualizer peaks={peaks} color="currentColor" />
-            </div>
+              {/* Track background */}
+              <div className="absolute inset-0 bg-white/[0.03] rounded-xl" />
+              
+              {/* Background waveform */}
+              <div className="absolute inset-0 text-white/20 group-hover:text-white/30 transition-colors">
+                 <WaveformVisualizer peaks={peaks} color="currentColor" />
+              </div>
 
-            {/* Timeline Notes Markers */}
-            {timelineNotes.map((note, idx) => {
-              const pct = duration ? (note.timestamp_seconds / duration) * 100 : 0;
-              return (
-                <div
-                  key={`${note.timestamp_seconds}-${idx}`}
-                  className="absolute bottom-0 top-0 w-0.5 bg-emerald-400/60 hover:bg-emerald-300 hover:w-1 transition-all z-20 group/marker cursor-pointer"
-                  style={{ left: `${pct}%` }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const audio = document.querySelector("audio");
-                    if (audio) {
-                      audio.currentTime = note.timestamp_seconds;
-                      audio.play();
-                    }
-                  }}
-                >
-                  {/* Dot at top */}
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400 border border-emerald-300 opacity-0 group-hover/marker:opacity-100 transition-opacity" />
-                  
-                  {/* Tooltip */}
-                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 text-xs text-white whitespace-nowrap opacity-0 group-hover/marker:opacity-100 pointer-events-none transition-opacity shadow-xl max-w-[200px]">
-                    <div className="text-[9px] font-mono text-emerald-400 mb-1">{formatTime(note.timestamp_seconds)}</div>
-                    <div className="text-white/80 truncate">{note.body}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right Controls */}
-        <div className="flex items-center gap-4 pl-4 border-l border-white/5">
-          <div className="flex items-center gap-2 group/volume">
-             <div className="h-1 w-20 bg-white/10 rounded-full overflow-hidden relative">
-               <input
-                type="range"
-                min={0}
-                max={100}
-                value={Math.round(volume * 100)}
-                onChange={(e) => handleVolumeChange(Number(e.target.value) / 100)}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-              />
+              {/* Progress waveform with theme color */}
               <div 
-                className="h-full bg-white transition-all group-hover/volume:bg-emerald-400" 
-                style={{ width: `${volume * 100}%` }}
-              />
-             </div>
-          </div>
-          
-          <button
-            onClick={() => setIsLooping((l) => !l)}
-            className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-all ${
-              isLooping 
-              ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.1)]" 
-              : "border-white/5 text-white/40 hover:text-white hover:border-white/20"
-            }`}
-          >
-            Loop
-          </button>
-          
-          {/* Notes Popover */}
-          {notesComponent && (
-            <div className="relative">
-              {notesComponent}
-            </div>
-          )}
-          
-          <button
-            onClick={() => {
-                const audio = audioRef.current;
-                if (audio) onRequestAddNote?.(audio.currentTime);
-            }}
-            className="h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white/60 flex items-center justify-center hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:text-emerald-400 hover:scale-105 transition-all"
-            title="Add note at current time (or double-click waveform)"
-          >
-            <span className="text-lg leading-none mb-0.5">+</span>
-          </button>
-        </div>
+                ref={progressBarRef}
+                className="absolute inset-0 pointer-events-none will-change-[clip-path]"
+                style={{ clipPath: "inset(0 100% 0 0)" }}
+              >
+                {/* Main colored waveform */}
+                <div style={{ color: 'var(--accent-main, #a78bfa)' }}>
+                  <WaveformVisualizer peaks={peaks} color="currentColor" />
+                </div>
+                {/* Glow layer */}
+                <div 
+                  className="absolute inset-0 blur-[3px] opacity-60"
+                  style={{ color: 'var(--accent-main, #a78bfa)' }}
+                >
+                  <WaveformVisualizer peaks={peaks} color="currentColor" />
+                </div>
+              </div>
 
+              {/* Note markers */}
+              {timelineNotes.map((note, idx) => {
+                const pct = duration ? (note.timestamp_seconds / duration) * 100 : 0;
+                return (
+                  <div
+                    key={`${note.timestamp_seconds}-${idx}`}
+                    className="absolute bottom-0 top-0 w-0.5 bg-emerald-400/70 hover:bg-emerald-300 hover:w-1 transition-all z-20 group/marker cursor-pointer"
+                    style={{ left: `${pct}%` }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const audio = document.querySelector("audio");
+                      if (audio) {
+                        audio.currentTime = note.timestamp_seconds;
+                        audio.play();
+                      }
+                    }}
+                  >
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400 border-2 border-[#08080a] opacity-0 group-hover/marker:opacity-100 transition-opacity" />
+                    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 px-3 py-2 rounded-xl bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 text-xs text-white whitespace-nowrap opacity-0 group-hover/marker:opacity-100 pointer-events-none transition-opacity shadow-2xl max-w-[200px]">
+                      <div className="text-[9px] font-mono text-emerald-400 mb-0.5">{formatTime(note.timestamp_seconds)}</div>
+                      <div className="text-white/80 truncate">{note.body}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Soft divider */}
+          <div className="h-9 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+
+          {/* Right controls */}
+          <div className="flex items-center gap-2.5">
+            {/* Volume */}
+            <div className="flex items-center gap-2 group/volume px-1">
+               <div className="h-1.5 w-16 bg-white/10 rounded-full overflow-hidden relative">
+                 <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={Math.round(volume * 100)}
+                  onChange={(e) => handleVolumeChange(Number(e.target.value) / 100)}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                <div 
+                  className="h-full rounded-full transition-all" 
+                  style={{ 
+                    width: `${volume * 100}%`,
+                    background: 'var(--accent-main, #a78bfa)'
+                  }}
+                />
+               </div>
+            </div>
+            
+            {/* Loop */}
+            <button
+              onClick={() => setIsLooping((l) => !l)}
+              className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border transition-all ${
+                isLooping 
+                ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400" 
+                : "border-white/10 text-white/35 hover:text-white/60 hover:border-white/20"
+              }`}
+            >
+              Loop
+            </button>
+            
+            {/* Notes */}
+            {notesComponent && (
+              <div className="relative">
+                {notesComponent}
+              </div>
+            )}
+            
+            {/* Add note */}
+            <button
+              onClick={() => {
+                  const audio = audioRef.current;
+                  if (audio) onRequestAddNote?.(audio.currentTime);
+              }}
+              className="h-8 w-8 rounded-lg border border-white/10 bg-white/5 text-white/40 flex items-center justify-center hover:bg-emerald-500/15 hover:border-emerald-500/30 hover:text-emerald-400 transition-all"
+              title="Add note at current time"
+            >
+              <span className="text-base leading-none">+</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
