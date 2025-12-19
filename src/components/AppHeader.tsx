@@ -12,8 +12,23 @@ export function AppHeader() {
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + "/");
 
   return (
-    <header className="sticky top-0 z-10 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/5">
-      <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+    <header className="sticky top-0 z-10 relative overflow-hidden">
+      {/* Glass background */}
+      <div className="absolute inset-0 bg-[#09090b]/85 backdrop-blur-2xl" />
+      
+      {/* Theme-tinted glow (subtle) */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-15"
+        style={{ background: 'linear-gradient(90deg, var(--accent-subtle, rgba(124,58,237,0.08)) 0%, transparent 40%)' }}
+      />
+      
+      {/* Top highlight */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
+      
+      {/* Bottom border */}
+      <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/6 to-transparent" />
+      
+      <div className="relative max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <SessionsLogo />
 

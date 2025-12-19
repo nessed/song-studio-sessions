@@ -30,7 +30,13 @@ export default function Projects() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b]">
+    <div className="min-h-screen bg-[#09090b] relative">
+      {/* Subtle ambient glow */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse 80% 40% at 50% -5%, var(--accent-subtle, rgba(124,58,237,0.1)) 0%, transparent 60%)' }}
+      />
+      
       <AppHeader />
 
       <main className="max-w-5xl mx-auto px-6 py-12">
@@ -74,8 +80,8 @@ export default function Projects() {
                 to={`/project/${project.id}`}
                 className="group"
               >
-                {/* Image - Hero element */}
-                <div className="aspect-square rounded-2xl overflow-hidden shadow-lg transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-2xl bg-white/5">
+                {/* Image - Hero element with glass */}
+                <div className="glass-premium aspect-square rounded-2xl overflow-hidden transition-all duration-300 group-hover:scale-[1.02]">
                   {project.cover_art_url ? (
                     <img
                       src={project.cover_art_url}
@@ -83,7 +89,7 @@ export default function Projects() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-full h-full flex items-center justify-center bg-white/[0.02]">
                       <Folder className="w-16 h-16 text-white/20" />
                     </div>
                   )}

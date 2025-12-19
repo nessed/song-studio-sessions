@@ -76,19 +76,16 @@ export function LyricsEditor({ value, onChange, onContextChange, onRequestAddNot
       {/* Animated gradient border on hover */}
       <div className="absolute -inset-px rounded-2xl bg-gradient-to-br from-white/10 via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
-      {/* Main container */}
-      <div 
-        className="relative rounded-2xl overflow-hidden"
-        style={{ 
-          background: "linear-gradient(180deg, rgba(15,15,20,0.95) 0%, rgba(10,10,15,0.98) 100%)",
-          border: "1px solid rgba(255,255,255,0.06)"
-        }}
-      >
-        {/* Top highlight */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+      {/* Main container with premium glass */}
+      <div className="glass-premium glass-noise relative rounded-2xl overflow-hidden">
+        {/* Theme-tinted inner glow */}
+        <div 
+          className="absolute inset-0 pointer-events-none opacity-30"
+          style={{ background: 'radial-gradient(ellipse at top, var(--accent-subtle, rgba(124,58,237,0.1)) 0%, transparent 60%)' }}
+        />
         
-        {/* Inner glow */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-white/[0.03] via-transparent to-transparent" />
+        {/* Top highlight */}
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent z-10" />
 
         {/* Header */}
         <div className="relative border-b border-white/[0.06] px-5 py-3.5 flex items-center justify-between">

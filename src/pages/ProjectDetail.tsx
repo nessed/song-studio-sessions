@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useProject, useProjects } from "@/hooks/useProjects";
 import { useSongs } from "@/hooks/useSongs";
 import { MoodTagsInput } from "@/components/MoodTagsInput";
-import { CoverBackground } from "@/components/CoverBackground";
+import { SessionThemeProvider } from "@/components/SessionThemeProvider";
 import { SongListItem } from "@/components/SongListItem";
 import { ArrowLeft, Trash2, Plus, Music } from "lucide-react";
 import { toast } from "sonner";
@@ -108,12 +108,16 @@ export default function ProjectDetail() {
   }
 
   return (
+    <SessionThemeProvider coverUrl={project.cover_art_url}>
     <div className="min-h-screen relative">
-      <CoverBackground imageUrl={project.cover_art_url} />
 
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/60 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-10 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[#09090b]/85 backdrop-blur-2xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/6 to-transparent" />
+        
+        <div className="relative max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             to="/projects"
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
@@ -232,5 +236,6 @@ export default function ProjectDetail() {
         </section>
       </main>
     </div>
+    </SessionThemeProvider>
   );
 }

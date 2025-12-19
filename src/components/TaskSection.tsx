@@ -36,10 +36,19 @@ export function TaskSection({
 
   return (
     <div
-      className="rounded-2xl p-5 mb-4 bg-[#09090b]/70 backdrop-blur-2xl border shadow-2xl"
-      style={{ borderColor: accentColor ? `${accentColor}` : "rgba(255,255,255,0.08)" }}
+      className="glass-tinted relative rounded-2xl p-5 mb-4 overflow-hidden"
+      style={{ borderColor: accentColor ? `${accentColor}` : undefined }}
     >
-      <h4 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
+      {/* Theme glow accent */}
+      <div 
+        className="absolute inset-0 pointer-events-none opacity-20"
+        style={{ background: 'radial-gradient(ellipse at top left, var(--accent-subtle, rgba(124,58,237,0.1)) 0%, transparent 50%)' }}
+      />
+      
+      {/* Top highlight line */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      
+      <h4 className="relative text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground mb-3">
         {section}
       </h4>
 

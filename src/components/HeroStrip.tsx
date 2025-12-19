@@ -254,8 +254,8 @@ export function HeroStrip({
         {/* Badges Row: BPM, Key, Status - Redesigned */}
         <div className="flex items-center gap-3">
           
-          {/* BPM Pill - Gradient Style */}
-          <label className="relative group/bpm flex items-center bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08] rounded-xl px-4 py-2 focus-within:border-white/20 focus-within:from-white/[0.08] focus-within:to-white/[0.04] transition-all shadow-lg shadow-black/20 cursor-text hover:border-white/15">
+          {/* BPM Pill - Premium Glass */}
+          <label className="glass-pill relative group/bpm flex items-center px-4 py-2 cursor-text">
              <span className="text-[9px] uppercase font-bold text-white/30 mr-2.5 tracking-widest">BPM</span>
              <input
                type="text"
@@ -264,12 +264,12 @@ export function HeroStrip({
                placeholder="---"
                className="bg-transparent border-none outline-none w-14 text-base font-mono font-semibold text-white/90 placeholder:text-white/20 text-center"
              />
-             {/* Subtle gradient glow on hover */}
-             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-rose-500/0 via-orange-500/0 to-amber-500/0 group-hover/bpm:from-rose-500/5 group-hover/bpm:via-orange-500/5 group-hover/bpm:to-amber-500/5 transition-all duration-300 pointer-events-none" />
+             {/* Chromatic accent on hover */}
+             <div className="absolute inset-0 rounded-xl opacity-0 group-hover/bpm:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(255,120,120,0.05), rgba(255,180,100,0.05))' }} />
           </label>
 
-          {/* Key Pill - Gradient Style */}
-          <label className="relative group/key flex items-center bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/[0.08] rounded-xl px-4 py-2 focus-within:border-white/20 focus-within:from-white/[0.08] focus-within:to-white/[0.04] transition-all shadow-lg shadow-black/20 cursor-text hover:border-white/15">
+          {/* Key Pill - Premium Glass */}
+          <label className="glass-pill relative group/key flex items-center px-4 py-2 cursor-text">
              <span className="text-[9px] uppercase font-bold text-white/30 mr-2.5 tracking-widest">KEY</span>
              <input
                type="text"
@@ -278,8 +278,8 @@ export function HeroStrip({
                placeholder="---"
                className="bg-transparent border-none outline-none w-16 text-base font-mono font-semibold text-white/90 placeholder:text-white/20 text-center"
              />
-             {/* Subtle gradient glow on hover */}
-             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-500/0 via-cyan-500/0 to-teal-500/0 group-hover/key:from-blue-500/5 group-hover/key:via-cyan-500/5 group-hover/key:to-teal-500/5 transition-all duration-300 pointer-events-none" />
+             {/* Chromatic accent on hover */}
+             <div className="absolute inset-0 rounded-xl opacity-0 group-hover/key:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: 'linear-gradient(135deg, rgba(100,180,255,0.05), rgba(100,255,200,0.05))' }} />
           </label>
 
           {/* Spacer */}
