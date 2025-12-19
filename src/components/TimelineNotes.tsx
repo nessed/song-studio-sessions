@@ -151,9 +151,15 @@ export function TimelineNotes({ songId, currentTime, notes: externalNotes, onCre
                         </div>
                       </div>
                    ) : (
-                      <p className="flex-1 text-xs text-white/80 leading-relaxed pt-0.5 group-hover:text-white break-words">
-                         {note.body}
-                      </p>
+                      <div className="flex-1 pt-0.5">
+                         {/* Author Label */}
+                         <div className="text-[9px] font-bold uppercase tracking-wider text-white/30 mb-0.5">
+                            {note.guest_name || "Creator"}
+                         </div>
+                         <p className="text-xs text-white/80 leading-relaxed group-hover:text-white break-words">
+                            {note.body}
+                         </p>
+                      </div>
                    )}
 
                    {/* Actions */}

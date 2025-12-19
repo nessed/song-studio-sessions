@@ -89,7 +89,8 @@ export interface Task {
 export interface SongNote {
   id: string;
   song_id: string;
-  user_id: string;
+  user_id: string | null;
+  guest_name?: string | null;
   timestamp_seconds: number;
   body: string;
   created_at: string;

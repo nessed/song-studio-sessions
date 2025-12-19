@@ -1,22 +1,27 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Song, SongVersion } from "@/lib/types";
+import { Song, SongVersion, SongNote } from "@/lib/types";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { SessionsLogo } from "@/components/SessionsLogo";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { Download, Share2, AlertCircle, Clock, Calendar } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { TimelineNotes } from "@/components/TimelineNotes";
+import { toast } from "sonner";
 
 export default function SharedSongView() {
   const { hash } = useParams<{ hash: string }>();
   const [song, setSong] = useState<Song | null>(null);
   const [versions, setVersions] = useState<SongVersion[]>([]);
+  const [notes, setNotes] = useState<SongNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [addNoteTrigger, setAddNoteTrigger] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     async function fetchSharedSong() {
@@ -26,7 +31,7 @@ export default function SharedSongView() {
         return;
       }
 
-      // Fetch song by hash
+      // 1. Fetch Song
       const { data: songData, error: songError } = await supabase
         .from("songs")
         .select("*")
@@ -43,9 +48,8 @@ export default function SharedSongView() {
 
       setSong(songData as Song);
 
-      // Fetch versions for this song
-      // RLS Policy should allow this if song is public
-      const { data: versionsData, error: versionsError } = await supabase
+      // 2. Fetch Versions
+      const { data: versionsData } = await supabase
         .from("song_versions")
         .select("*")
         .eq("song_id", songData.id)
@@ -53,9 +57,19 @@ export default function SharedSongView() {
 
       if (versionsData) {
         setVersions(versionsData as SongVersion[]);
-        // Default to current version or latest
         const current = versionsData.find((v: any) => v.is_current) || versionsData[0];
         if (current) setActiveVersionId(current.id);
+      }
+
+      // 3. Fetch Notes (Public Policy)
+      const { data: notesData } = await supabase
+        .from("song_notes")
+        .select("*")
+        .eq("song_id", songData.id)
+        .order("timestamp_seconds", { ascending: true });
+        
+      if (notesData) {
+         setNotes(notesData as SongNote[]);
       }
 
       setLoading(false);
@@ -63,6 +77,41 @@ export default function SharedSongView() {
 
     fetchSharedSong();
   }, [hash]);
+
+  const handleCreateGuestNote = async (timestamp: number, body: string) => {
+    if (!song) return null;
+
+    // Get or ask for guest name
+    let guestName = localStorage.getItem("sessions-guest-name");
+    if (!guestName) {
+      guestName = prompt("Please enter your name to leave feedback:");
+      if (!guestName) return null; // Cancelled
+      localStorage.setItem("sessions-guest-name", guestName);
+    }
+
+    const { data, error } = await supabase
+      .from("song_notes")
+      .insert({
+         song_id: song.id,
+         timestamp_seconds: timestamp,
+         body: body,
+         guest_name: guestName,
+         user_id: null // Explicitly null for guests
+      })
+      .select()
+      .single();
+
+    if (error) {
+       toast.error("Failed to post note. Try again.");
+       console.error(error);
+       return null;
+    }
+
+    const newNote = data as SongNote;
+    setNotes(prev => [...prev, newNote].sort((a,b) => a.timestamp_seconds - b.timestamp_seconds));
+    toast.success("Feedback added!");
+    return newNote;
+  };
 
   const activeVersion = versions.find(v => v.id === activeVersionId) || versions[0];
   const audioSrc = activeVersion?.file_url || song?.mp3_url;
@@ -139,15 +188,39 @@ export default function SharedSongView() {
         </div>
 
         {/* Player Section - Big & Centered */}
-        <div className="w-full bg-[#121214] border border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-40 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none" />
-           <div className="relative z-10">
-              {audioSrc ? (
-                 <AudioPlayer src={audioSrc} />
-              ) : (
-                 <div className="h-24 flex items-center justify-center text-white/30 italic">No audio file</div>
-              )}
-           </div>
+        <div className="w-full space-y-4">
+            <div className="w-full bg-[#121214] border border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-visible group">
+               <div className="absolute top-0 right-0 p-40 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none" />
+               <div className="relative z-10">
+                  {audioSrc ? (
+                     <AudioPlayer 
+                        src={audioSrc} 
+                        timelineNotes={notes}
+                        onTimeUpdate={setCurrentTime}
+                        onRequestAddNote={(time) => setAddNoteTrigger(time)}
+                        noteTray={
+                           <TimelineNotes 
+                              songId={song.id}
+                              currentTime={currentTime}
+                              notes={notes}
+                              onCreateNote={handleCreateGuestNote}
+                              triggerAddTime={addNoteTrigger}
+                              // Guests cannot update/delete others' notes usually, but for MVP we might hide it or allow it.
+                              // For now, disable update/delete for guests (passing undefined/noop)
+                              onUpdateNote={async () => toast.error("Guest editing not allowed")}
+                              onDeleteNote={async () => toast.error("Guest deletion not allowed")}
+                           />
+                        }
+                     />
+                  ) : (
+                     <div className="h-24 flex items-center justify-center text-white/30 italic">No audio file</div>
+                  )}
+               </div>
+            </div>
+            
+            <p className="text-center text-xs text-white/30 pt-2">
+               Tip: Press <span className="text-white/60 font-bold bg-white/10 px-1 rounded">+</span> to add feedback at current time
+            </p>
         </div>
 
         {/* Version History (ReadOnly) */}
