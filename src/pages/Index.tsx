@@ -87,7 +87,7 @@ const Index = () => {
               <span className="h-[1px] w-10 bg-white/15" />
               <span>Floating console</span>
               <span className="h-[1px] w-10 bg-white/15" />
-              <span>Sonic palette</span>
+              <span>Secure Sharing</span>
             </motion.div>
           </motion.div>
 
@@ -155,7 +155,7 @@ const Index = () => {
               Stop texting MP3s to yourself.
             </h2>
             <p className="text-white/60 max-w-2xl leading-relaxed">
-              Demos named “Song_v3_Final_REAL.mp3” cluttering your Desktop? Notes lost in WhatsApp threads? Sessions replaces the chaos with a professional, timeline-accurate console.
+              Demos named “Song_v3_Final_REAL.mp3” cluttering your Desktop? Expired WeTransfer links? Sessions replaces the chaos with a professional, timeline-accurate console.
             </p>
           </div>
           <div className="grid md:grid-cols-2 gap-8">
@@ -224,8 +224,8 @@ const Index = () => {
                 body: "Drop a note at 1:42 to fix the hi-hat. Edit it later. Every comment is locked to the exact second in the audio.",
               },
               {
-                title: "Mood Tags & Search",
-                body: "Filter your catalog by 'Dark', '140BPM', or 'Demo'. Find that one beat you made three months ago in seconds.",
+                title: "Public Share Links",
+                body: "The Dropbox Killer. Send a secure, branded link to clients. They get a premium player (no login required). You look like a pro.",
               },
             ].map((feature) => (
               <div key={feature.title} className="space-y-3">
