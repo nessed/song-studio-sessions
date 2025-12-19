@@ -204,15 +204,13 @@ export default function SharedSongView() {
                         timelineNotes={notes}
                         onTimeUpdate={setCurrentTime}
                         onRequestAddNote={(time) => setAddNoteTrigger(time)}
-                        noteTray={
+                        notesComponent={
                            <TimelineNotes 
                               songId={song.id}
                               currentTime={currentTime}
                               notes={notes}
                               onCreateNote={handleCreateGuestNote}
                               triggerAddTime={addNoteTrigger}
-                              // Guests cannot update/delete others' notes usually, but for MVP we might hide it or allow it.
-                              // For now, disable update/delete for guests (passing undefined/noop)
                               onUpdateNote={async () => toast.error("Guest editing not allowed")}
                               onDeleteNote={async () => toast.error("Guest deletion not allowed")}
                            />
@@ -225,7 +223,7 @@ export default function SharedSongView() {
             </div>
             
             <p className="text-center text-xs text-white/30 pt-2">
-               Tip: Press <span className="text-white/60 font-bold bg-white/10 px-1 rounded">+</span> to add feedback at current time
+               Tip: <span className="text-white/60 font-bold bg-white/10 px-1 rounded">Double-click</span> on waveform to add feedback
             </p>
         </div>
 

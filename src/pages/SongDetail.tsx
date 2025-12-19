@@ -290,7 +290,7 @@ export default function SongDetail() {
         onRequestAddNote={(time) =>
           setNoteAddTime((prev) => (prev === time ? time + 0.001 : time))
         }
-        noteTray={
+        notesComponent={
           <TimelineNotes
             songId={song.id}
             currentTime={currentTime}

@@ -11,12 +11,12 @@ interface TimelineNote {
 interface AudioPlayerProps {
   src: string;
   onTimeUpdate?: (time: number) => void;
-  noteTray?: React.ReactNode;
+  notesComponent?: React.ReactNode;
   timelineNotes?: TimelineNote[];
   onRequestAddNote?: (time: number) => void;
 }
 
-export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], onRequestAddNote }: AudioPlayerProps) {
+export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes = [], onRequestAddNote }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
@@ -143,6 +143,19 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
     if (timeDisplayRef.current) timeDisplayRef.current.innerText = formatTime(audio.currentTime);
   };
 
+  // Handle double-click on waveform to add note at that position
+  const handleWaveformDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const track = trackRef.current;
+    if (!track || !duration || !onRequestAddNote) return;
+    
+    const rect = track.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    const time = pct * duration;
+    
+    onRequestAddNote(time);
+  };
+
   const handleVolumeChange = (next: number) => {
     const vol = Math.max(0, Math.min(1, next));
     setVolume(vol);
@@ -173,7 +186,9 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
           <div
             ref={trackRef}
             onClick={handleSeek}
+            onDoubleClick={handleWaveformDoubleClick}
             className="h-10 w-full relative group cursor-pointer"
+            title="Double-click to add note"
           >
             {/* Layer 1: Background Waveform */}
             <div className="absolute inset-0 opacity-100 text-white/40 group-hover:text-white/50 transition-colors">
@@ -195,11 +210,24 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
               return (
                 <div
                   key={`${note.timestamp_seconds}-${idx}`}
-                  className="absolute bottom-0 top-0 w-[2px] bg-emerald-400/80 hover:bg-emerald-300 transition-colors z-20 group/marker"
+                  className="absolute bottom-0 top-0 w-0.5 bg-emerald-400/60 hover:bg-emerald-300 hover:w-1 transition-all z-20 group/marker cursor-pointer"
                   style={{ left: `${pct}%` }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const audio = document.querySelector("audio");
+                    if (audio) {
+                      audio.currentTime = note.timestamp_seconds;
+                      audio.play();
+                    }
+                  }}
                 >
-                  <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-black/90 border border-white/10 text-[10px] text-white whitespace-nowrap opacity-0 group-hover/marker:opacity-100 pointer-events-none transition-opacity">
-                    {note.body}
+                  {/* Dot at top */}
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400 border border-emerald-300 opacity-0 group-hover/marker:opacity-100 transition-opacity" />
+                  
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 text-xs text-white whitespace-nowrap opacity-0 group-hover/marker:opacity-100 pointer-events-none transition-opacity shadow-xl max-w-[200px]">
+                    <div className="text-[9px] font-mono text-emerald-400 mb-1">{formatTime(note.timestamp_seconds)}</div>
+                    <div className="text-white/80 truncate">{note.body}</div>
                   </div>
                 </div>
               );
@@ -237,25 +265,25 @@ export function AudioPlayer({ src, onTimeUpdate, noteTray, timelineNotes = [], o
             Loop
           </button>
           
+          {/* Notes Popover */}
+          {notesComponent && (
+            <div className="relative">
+              {notesComponent}
+            </div>
+          )}
+          
           <button
             onClick={() => {
                 const audio = audioRef.current;
                 if (audio) onRequestAddNote?.(audio.currentTime);
             }}
-            className="h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white/60 flex items-center justify-center hover:bg-white/10 hover:text-white hover:scale-105 transition-all"
-            title="Add note at current time"
+            className="h-9 w-9 rounded-full border border-white/10 bg-white/5 text-white/60 flex items-center justify-center hover:bg-emerald-500/20 hover:border-emerald-500/40 hover:text-emerald-400 hover:scale-105 transition-all"
+            title="Add note at current time (or double-click waveform)"
           >
             <span className="text-lg leading-none mb-0.5">+</span>
           </button>
         </div>
 
-        {noteTray && (
-          <div className="absolute bottom-full left-0 w-full pb-4 px-4 pointer-events-none">
-            <div className="pointer-events-auto">
-               {noteTray}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
