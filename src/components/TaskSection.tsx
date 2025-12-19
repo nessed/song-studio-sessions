@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Task, SongSection } from "@/lib/types";
-import { Check, Trash2 } from "lucide-react";
+import { Check, Trash2, Plus, Inbox } from "lucide-react";
 
 interface TaskSectionProps {
   section: SongSection;
@@ -70,17 +70,28 @@ export function TaskSection({
             </button>
           </div>
         ))}
+        
+        {/* Empty state */}
+        {tasks.length === 0 && (
+          <div className="flex items-center gap-2 py-2 text-white/20">
+            <Inbox className="w-3.5 h-3.5" />
+            <span className="text-xs">No tasks yet</span>
+          </div>
+        )}
       </div>
 
       <div className="mt-3">
-        <input
-          type="text"
-          placeholder={`Add ${section} task`}
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          onKeyDown={handleKeyDown}
-          className="w-full text-sm py-1.5 text-white/60 bg-transparent border-b border-white/10 focus:border-white/30 outline-none placeholder:text-white/30 transition-colors"
-        />
+        <div className="relative flex items-center">
+          <Plus className="absolute left-0 w-3.5 h-3.5 text-white/20" />
+          <input
+            type="text"
+            placeholder={`Add ${section} task`}
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full text-sm py-1.5 pl-5 text-white/60 bg-transparent border-b border-white/10 focus:border-white/30 focus:bg-white/[0.02] outline-none placeholder:text-white/30 transition-all"
+          />
+        </div>
       </div>
     </div>
   );

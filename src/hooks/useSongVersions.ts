@@ -4,6 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { SongVersion } from "@/lib/types";
 
+// Re-export for convenience
+export type { SongVersion } from "@/lib/types";
+
+
 export function useSongVersions(songId: string | undefined) {
   const { user } = useAuth();
   const queryClient = useQueryClient();

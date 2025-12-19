@@ -219,17 +219,26 @@ export default function SongDetail() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="mb-8"
+                className="py-4"
               >
                 <button
                   onClick={() => audioInputRef.current?.click()}
-                  className="w-full px-6 py-5 rounded-full bg-[#09090b]/80 backdrop-blur-2xl border border-white/10 shadow-2xl text-white/80 hover:text-white hover:border-white/20 transition-colors flex items-center justify-center gap-3 group"
+                  className="relative w-full group"
                 >
-                  <div className="relative">
-                    <Upload className="w-5 h-5" />
-                    <div className="absolute inset-0 blur-md bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {/* Gradient border glow on hover */}
+                  <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 opacity-0 group-hover:opacity-100 blur-sm transition-all duration-500" />
+                  
+                  <div className="relative px-8 py-6 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 group-hover:border-white/15 transition-all flex items-center justify-center gap-4">
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Upload className="w-5 h-5 text-indigo-400" />
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-white/90">Upload your first mix</p>
+                      <p className="text-xs text-white/40">Drag and drop or click to browse</p>
+                    </div>
                   </div>
-                  <span>Upload your first mix</span>
                 </button>
               </motion.div>
             )}
@@ -239,11 +248,7 @@ export default function SongDetail() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25 }}
-              className="space-y-3"
             >
-              <div className="flex items-center justify-between">
-                <h3 className="section-heading">Lyrics</h3>
-              </div>
               <LyricsEditor value={song.lyrics || ""} onChange={handleLyricsChange} />
             </motion.div>
           </div>
