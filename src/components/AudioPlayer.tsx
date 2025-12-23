@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, X } from "lucide-react";
 import { useAudioAnalyzer } from "@/hooks/useAudioAnalyzer";
 import { WaveformVisualizer } from "./WaveformVisualizer";
 
 interface TimelineNote {
   timestamp_seconds: number;
   body: string;
+}
+
+interface LoopRegion {
+  start: number;
+  end: number;
 }
 
 interface AudioPlayerProps {
@@ -31,6 +36,12 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
     const saved = localStorage.getItem("studio-volume");
     return saved ? parseFloat(saved) : 1;
   });
+  
+  // Loop region state
+  const [loopRegion, setLoopRegion] = useState<LoopRegion | null>(null);
+  const [isLoopRegionActive, setIsLoopRegionActive] = useState(false);
+  const [isDraggingLoop, setIsDraggingLoop] = useState(false);
+  const [loopDragStart, setLoopDragStart] = useState<number | null>(null);
   
   const { peaks } = useAudioAnalyzer(src);
 
@@ -101,10 +112,27 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
 
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.loop = isLooping;
+      audioRef.current.loop = isLooping && !loopRegion; // Disable native loop if region is active
       audioRef.current.volume = volume;
     }
-  }, [isLooping, volume]);
+  }, [isLooping, volume, loopRegion]);
+
+  // Loop region enforcement - check on time update
+  useEffect(() => {
+    if (!loopRegion || !isLoopRegionActive || !isPlaying) return;
+    
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const checkLoop = () => {
+      if (audio.currentTime >= loopRegion.end) {
+        audio.currentTime = loopRegion.start;
+      }
+    };
+
+    const interval = setInterval(checkLoop, 50); // Check every 50ms
+    return () => clearInterval(interval);
+  }, [loopRegion, isLoopRegionActive, isPlaying]);
 
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -151,6 +179,65 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
     const vol = Math.max(0, Math.min(1, next));
     setVolume(vol);
     localStorage.setItem("studio-volume", vol.toString());
+  };
+
+  // Loop region handlers
+  const handleLoopDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!e.shiftKey || !duration) return;
+    e.preventDefault();
+    
+    const track = trackRef.current;
+    if (!track) return;
+    
+    const rect = track.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    const time = pct * duration;
+    
+    setIsDraggingLoop(true);
+    setLoopDragStart(time);
+  };
+
+  const handleLoopDragMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingLoop || loopDragStart === null || !duration) return;
+    
+    const track = trackRef.current;
+    if (!track) return;
+    
+    const rect = track.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const pct = Math.max(0, Math.min(1, x / rect.width));
+    const time = pct * duration;
+    
+    const start = Math.min(loopDragStart, time);
+    const end = Math.max(loopDragStart, time);
+    
+    if (end - start > 0.5) { // Min 0.5s loop
+      setLoopRegion({ start, end });
+      setIsLoopRegionActive(true);
+    }
+  }, [isDraggingLoop, loopDragStart, duration]);
+
+  const handleLoopDragEnd = useCallback(() => {
+    setIsDraggingLoop(false);
+  }, []);
+
+  // Global mouse listeners for loop drag
+  useEffect(() => {
+    if (isDraggingLoop) {
+      window.addEventListener("mousemove", handleLoopDragMove);
+      window.addEventListener("mouseup", handleLoopDragEnd);
+    }
+    return () => {
+      window.removeEventListener("mousemove", handleLoopDragMove);
+      window.removeEventListener("mouseup", handleLoopDragEnd);
+    };
+  }, [isDraggingLoop, handleLoopDragMove, handleLoopDragEnd]);
+
+  const clearLoopRegion = () => {
+    setLoopRegion(null);
+    setIsLoopRegionActive(false);
+    setLoopDragStart(null);
   };
 
   return (
@@ -213,9 +300,10 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
             <div
               ref={trackRef}
               onClick={handleSeek}
+              onMouseDown={handleLoopDragStart}
               onDoubleClick={handleWaveformDoubleClick}
-              className="h-11 w-full relative group cursor-pointer rounded-xl overflow-hidden"
-              title="Double-click to add note"
+              className={`h-11 w-full relative group cursor-pointer rounded-xl overflow-hidden ${isDraggingLoop ? 'cursor-ew-resize' : ''}`}
+              title="Double-click to add note • Shift+Drag to set loop region"
             >
               {/* Track background */}
               <div className="absolute inset-0 bg-white/[0.03] rounded-xl" />
@@ -243,6 +331,25 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                   <WaveformVisualizer peaks={peaks} color="currentColor" />
                 </div>
               </div>
+
+              {/* Loop Region Overlay */}
+              {loopRegion && duration > 0 && (
+                <div 
+                  className="absolute top-0 bottom-0 bg-amber-500/20 border-l-2 border-r-2 border-amber-400/60 z-10 pointer-events-none"
+                  style={{
+                    left: `${(loopRegion.start / duration) * 100}%`,
+                    width: `${((loopRegion.end - loopRegion.start) / duration) * 100}%`,
+                  }}
+                >
+                  {/* Loop region labels */}
+                  <div className="absolute -top-5 left-0 text-[8px] font-mono text-amber-400 bg-[#08080a]/90 px-1 rounded">
+                    {formatTime(loopRegion.start)}
+                  </div>
+                  <div className="absolute -top-5 right-0 text-[8px] font-mono text-amber-400 bg-[#08080a]/90 px-1 rounded">
+                    {formatTime(loopRegion.end)}
+                  </div>
+                </div>
+              )}
 
               {/* Note markers */}
               {timelineNotes.map((note, idx) => {
@@ -309,6 +416,18 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
             >
               Loop
             </button>
+            
+            {/* Clear Loop Region - shown when a loop region exists */}
+            {loopRegion && (
+              <button
+                onClick={clearLoopRegion}
+                className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all"
+                title="Clear loop region"
+              >
+                <X className="w-3 h-3" />
+                <span className="hidden sm:inline">Region</span>
+              </button>
+            )}
             
             {/* Notes */}
             {notesComponent && (

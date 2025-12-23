@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
-import { PenLine, Sparkles, FileText } from "lucide-react";
+import { useRef, useEffect, useState } from "react";
 import { LyricLineContext } from "./types";
 import { motion } from "framer-motion";
+import { Maximize2, Minimize2 } from "lucide-react";
 
 interface LyricsEditorProps {
   value: string;
@@ -14,6 +14,7 @@ interface LyricsEditorProps {
 export function LyricsEditor({ value, onChange, onContextChange, onRequestAddNote }: LyricsEditorProps) {
   const debounceRef = useRef<NodeJS.Timeout>();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
   const initialValue =
     value && value.trim().length > 0
       ? value
@@ -42,9 +43,23 @@ export function LyricsEditor({ value, onChange, onContextChange, onRequestAddNot
     };
   }, []);
 
+  // Auto-resize textarea
+  const adjustHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto'; // Reset to recalculate
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+  };
+
+  useEffect(() => {
+    adjustHeight();
+  }, [value, isExpanded]);
+
   const queuePersist = (next: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => onChange(next), 400);
+    adjustHeight();
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -62,9 +77,6 @@ export function LyricsEditor({ value, onChange, onContextChange, onRequestAddNot
       });
     }
   };
-
-  // Count lines for line number display hint
-  const lineCount = (value || initialValue).split(/\r?\n/).length;
 
   return (
     <motion.div
@@ -90,54 +102,48 @@ export function LyricsEditor({ value, onChange, onContextChange, onRequestAddNot
         {/* Header */}
         <div className="relative border-b border-white/[0.06] px-5 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 border border-violet-500/20 flex items-center justify-center">
-                <PenLine className="w-4 h-4 text-violet-400" />
-              </div>
-              <Sparkles className="w-2.5 h-2.5 text-violet-400/60 absolute -top-0.5 -right-0.5" />
-            </div>
-            <div>
-              <h4 className="text-xs font-semibold text-white/80 tracking-tight">Lyrics</h4>
-              <p className="text-[10px] text-white/30 font-medium">Freeform writing mode</p>
-            </div>
+             <h4 className="text-xs font-semibold text-white/80 tracking-tight">Lyrics</h4>
           </div>
-          
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-[10px] text-white/30">
-              <FileText className="w-3 h-3" />
-              <span>{lineCount} lines</span>
-            </div>
-            <div className="px-2 py-1 rounded-md bg-white/[0.03] border border-white/[0.06]">
-              <span className="text-[9px] uppercase tracking-widest font-bold text-white/30">⌘+N add note</span>
-            </div>
-          </div>
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="p-1.5 rounded-lg hover:bg-white/5 text-white/40 hover:text-white transition-colors"
+            title={isExpanded ? "Collapse" : "Expand"}
+          >
+            {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
         </div>
 
         {/* Editor area */}
-        <div className="relative min-h-[300px] max-h-[600px] h-[450px] resize-y overflow-hidden">
+        <div className={`relative transition-all duration-300 ${isExpanded ? 'min-h-[500px]' : 'h-[450px]'} overflow-hidden`}>
           <textarea
             ref={textareaRef}
             defaultValue={initialValue}
             onChange={(e) => queuePersist(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Start writing your lyrics..."
-            className="w-full h-full bg-transparent text-base text-white/90 p-6 leading-relaxed resize-none focus:outline-none placeholder:text-white/15 scrollbar-thin"
+            className={`w-full ${isExpanded ? 'h-full' : 'h-full'} bg-transparent text-base text-white/90 p-6 leading-relaxed resize-none focus:outline-none placeholder:text-white/15 scrollbar-thin overflow-y-auto`}
             style={{ 
               fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier Prime', monospace",
               letterSpacing: "-0.01em",
-              lineHeight: "2"
+              lineHeight: "2",
+              height: isExpanded ? 'auto' : '100%',
+              minHeight: '100%'
             }}
           />
           
-          {/* Fade at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0a0a0f] to-transparent pointer-events-none" />
-          
-          {/* Resize handle indicator */}
-          <div className="absolute bottom-1 right-3 flex items-center gap-0.5 opacity-30 pointer-events-none">
-            <div className="w-1 h-1 rounded-full bg-white/40" />
-            <div className="w-1 h-1 rounded-full bg-white/40" />
-            <div className="w-1 h-1 rounded-full bg-white/40" />
-          </div>
+          {/* Fade at bottom (only when not expanded) */}
+          {!isExpanded && (
+            <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#0a0a0f] to-transparent pointer-events-none" />
+          )}
+
+          {/* Resize handle (only when not expanded) */}
+           {!isExpanded && (
+            <div className="absolute bottom-1 right-3 flex items-center gap-0.5 opacity-30 pointer-events-none">
+              <div className="w-1 h-1 rounded-full bg-white/40" />
+              <div className="w-1 h-1 rounded-full bg-white/40" />
+              <div className="w-1 h-1 rounded-full bg-white/40" />
+            </div>
+           )}
         </div>
       </div>
     </motion.div>

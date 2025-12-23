@@ -7,15 +7,8 @@ interface MoodTagsInputProps {
   onUpdate: (tags: string[]) => void;
 }
 
-// Rotating gradient colors for tags
-const tagGradients = [
-  "from-rose-500/20 to-pink-500/20 border-rose-500/20 text-rose-300",
-  "from-amber-500/20 to-orange-500/20 border-amber-500/20 text-amber-300",
-  "from-emerald-500/20 to-teal-500/20 border-emerald-500/20 text-emerald-300",
-  "from-blue-500/20 to-cyan-500/20 border-blue-500/20 text-blue-300",
-  "from-violet-500/20 to-purple-500/20 border-violet-500/20 text-violet-300",
-  "from-fuchsia-500/20 to-pink-500/20 border-fuchsia-500/20 text-fuchsia-300",
-];
+// Uniform neutral tag style
+const tagStyle = "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white/90";
 
 export function MoodTagsInput({ tags, onUpdate }: MoodTagsInputProps) {
   const [newTag, setNewTag] = useState("");
@@ -47,7 +40,6 @@ export function MoodTagsInput({ tags, onUpdate }: MoodTagsInputProps) {
     <div className="flex flex-wrap items-center gap-2">
       <AnimatePresence mode="popLayout">
         {tags.map((tag, index) => {
-          const gradientClass = tagGradients[index % tagGradients.length];
           return (
             <motion.span 
               key={tag} 
@@ -55,7 +47,7 @@ export function MoodTagsInput({ tags, onUpdate }: MoodTagsInputProps) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               layout
-              className={`inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full bg-gradient-to-r ${gradientClass} border backdrop-blur-sm group transition-all hover:scale-105 cursor-default`}
+              className={`inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-full border backdrop-blur-sm group transition-all cursor-default ${tagStyle}`}
             >
               <span className="mr-1.5">{tag}</span>
               <button
@@ -98,10 +90,10 @@ export function MoodTagsInput({ tags, onUpdate }: MoodTagsInputProps) {
             className="relative inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white/40 rounded-full border border-dashed border-white/10 hover:border-white/30 hover:text-white/70 hover:bg-white/[0.04] transition-all group overflow-hidden"
           >
             {/* Glow effect on hover */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-violet-500/10 via-fuchsia-500/10 to-violet-500/10 blur-sm" />
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/5 blur-sm" />
             <Plus className="relative w-3 h-3 group-hover:rotate-90 transition-transform" />
             <span className="relative">Add vibe</span>
-            <Sparkles className="relative w-3 h-3 opacity-0 group-hover:opacity-70 transition-opacity" />
+            <Sparkles className="relative w-3 h-3 opacity-0 group-hover:opacity-70 transition-opacity text-white/50" />
           </motion.button>
         )}
       </AnimatePresence>

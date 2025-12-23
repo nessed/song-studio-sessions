@@ -3,14 +3,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useSong, useSongs } from "@/hooks/useSongs";
 import { useSongVersions } from "@/hooks/useSongVersions";
+import { useSongStems } from "@/hooks/useSongStems";
 import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
 import { useSongNotes } from "@/hooks/useSongNotes";
-import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
+import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song, StemType } from "@/lib/types";
 import { TaskSection } from "@/components/TaskSection";
 import { TimelineNotes } from "@/components/TimelineNotes";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
+import { StemMixer } from "@/components/StemMixer";
 import { SessionThemeProvider } from "@/components/SessionThemeProvider";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +31,8 @@ export default function SongDetail() {
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
   const { projects } = useProjects();
   const { notes: timelineNotes, createNote, updateNote, deleteNote } = useSongNotes(id);
+  const { stems, uploadStem, updateStem, deleteStem, isUploading: isStemUploading, uploadProgress: stemUploadProgress } = useSongStems(currentVersion?.id);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const [title, setTitle] = useState("");
   const [bpm, setBpm] = useState("");
@@ -225,13 +229,13 @@ export default function SongDetail() {
                   onClick={() => audioInputRef.current?.click()}
                   className="relative w-full group"
                 >
-                  {/* Gradient border glow on hover */}
-                  <div className="absolute -inset-px rounded-2xl bg-gradient-to-r from-indigo-500/30 via-purple-500/30 to-pink-500/30 opacity-0 group-hover:opacity-100 blur-sm transition-all duration-500" />
+                  {/* Subtle hover glow */}
+                  <div className="absolute -inset-px rounded-2xl bg-white/5 opacity-0 group-hover:opacity-100 blur-sm transition-all duration-500" />
                   
                   <div className="relative px-8 py-6 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 group-hover:border-white/15 transition-all flex items-center justify-center gap-4">
                     <div className="relative">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Upload className="w-5 h-5 text-indigo-400" />
+                      <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Upload className="w-5 h-5 text-white/50 group-hover:text-white/80 transition-colors" />
                       </div>
                     </div>
                     <div className="text-left">
@@ -251,6 +255,32 @@ export default function SongDetail() {
             >
               <LyricsEditor value={song.lyrics || ""} onChange={handleLyricsChange} />
             </motion.div>
+
+            {/* Stem Mixer */}
+            {currentVersion && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                <StemMixer
+                  stems={stems}
+                  isPlaying={isPlaying}
+                  currentTime={currentTime}
+                  onUpdateStem={updateStem}
+                  onDeleteStem={async (stemId) => {
+                    await deleteStem(stemId);
+                    toast.success("Stem deleted");
+                  }}
+                  onUploadStem={async (file, stemType) => {
+                    await uploadStem(file, stemType);
+                    toast.success("Stem uploaded");
+                  }}
+                  isUploading={isStemUploading}
+                  uploadProgress={stemUploadProgress}
+                />
+              </motion.div>
+            )}
           </div>
         </div>
 

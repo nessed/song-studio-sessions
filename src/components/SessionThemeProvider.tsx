@@ -30,8 +30,8 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
         const palette = await Vibrant.from(coverUrl).quality(1).getPalette();
         const vibrant = palette?.Vibrant?.hex || palette?.LightVibrant?.hex || palette?.DarkVibrant?.hex;
         if (!cancelled && vibrant) {
-          // Slightly boost saturation but keep it natural
-          const adjusted = tinycolor(vibrant).saturate(15).toHexString();
+          // Keep it natural, don't oversaturate
+          const adjusted = tinycolor(vibrant).toHexString();
           setDominantColor(adjusted);
         }
       } catch {
@@ -45,9 +45,9 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
 
   const cssVars = useMemo(() => {
     const accent = dominantColor;
-    const accentSoft = tinycolor(accent).setAlpha(0.35).toRgbString();
-    const accentSubtle = tinycolor(accent).setAlpha(0.12).toRgbString();
-    const accentGlow = tinycolor(accent).setAlpha(0.25).toRgbString();
+    const accentSoft = tinycolor(accent).setAlpha(0.2).toRgbString(); // Reduced from 0.35
+    const accentSubtle = tinycolor(accent).setAlpha(0.08).toRgbString(); // Reduced from 0.12
+    const accentGlow = tinycolor(accent).setAlpha(0.15).toRgbString(); // Reduced from 0.25
 
     return {
       "--accent-main": accent,
@@ -66,7 +66,7 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
       <div 
         className="pointer-events-none fixed inset-0 z-0"
         style={{
-          background: `radial-gradient(ellipse 80% 50% at 50% -10%, ${tinycolor(dominantColor).setAlpha(0.35).toRgbString()} 0%, transparent 60%)`,
+          background: `radial-gradient(ellipse 80% 50% at 50% -10%, ${tinycolor(dominantColor).setAlpha(0.15).toRgbString()} 0%, transparent 60%)`,
         }}
       />
       
@@ -74,7 +74,7 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
       <div 
         className="pointer-events-none fixed inset-0 z-0"
         style={{
-          background: `radial-gradient(ellipse 100% 60% at 30% 100%, ${tinycolor(dominantColor).setAlpha(0.12).toRgbString()} 0%, transparent 50%)`,
+          background: `radial-gradient(ellipse 100% 60% at 30% 100%, ${tinycolor(dominantColor).setAlpha(0.05).toRgbString()} 0%, transparent 50%)`,
         }}
       />
 

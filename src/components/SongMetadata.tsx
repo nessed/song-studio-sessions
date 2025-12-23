@@ -87,31 +87,9 @@ export function SongMetadata({
               onUpdate={onUpdateSong} 
            />
         }
+        tags={song.mood_tags}
+        onTagsUpdate={onTagsUpdate}
       />
-
-      {/* Mood Tags Section - Enhanced styling */}
-      <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="relative"
-      >
-        {/* Subtle divider */}
-        <div className="absolute -top-3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-        
-        <div className="flex items-start gap-4 pt-4">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-white/30 pt-1.5">
-            <Tags className="w-3.5 h-3.5" />
-            <span>Vibes</span>
-          </div>
-          <div className="flex-1">
-            <MoodTagsInput tags={song.mood_tags} onUpdate={onTagsUpdate} />
-          </div>
-        </div>
-        
-        {/* Bottom divider */}
-        <div className="mt-6 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-      </motion.div>
     </motion.section>
   );
 }

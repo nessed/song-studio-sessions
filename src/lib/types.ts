@@ -116,8 +116,33 @@ export interface SongVersion {
   user_id: string;
 }
 
+export type StemType = 'drums' | 'bass' | 'vocals' | 'synths' | 'guitars' | 'other';
+
+export interface SongStem {
+  id: string;
+  version_id: string;
+  user_id: string;
+  stem_type: StemType;
+  file_url: string;
+  label: string | null;
+  is_muted: boolean;
+  volume: number;
+  created_at: string;
+}
+
+export const STEM_TYPES: { value: StemType; label: string; color: string }[] = [
+  { value: 'drums', label: 'Drums', color: '#f97316' },
+  { value: 'bass', label: 'Bass', color: '#8b5cf6' },
+  { value: 'vocals', label: 'Vocals', color: '#06b6d4' },
+  { value: 'synths', label: 'Synths', color: '#10b981' },
+  { value: 'guitars', label: 'Guitars', color: '#f59e0b' },
+  { value: 'other', label: 'Other', color: '#6b7280' },
+];
+
 export interface SessionsDB {
   songs: Song[];
   tasks: Task[];
   song_versions: SongVersion[];
+  song_stems: SongStem[];
 }
+
