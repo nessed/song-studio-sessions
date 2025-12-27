@@ -75,6 +75,8 @@ export interface Song {
   updated_at: string;
 }
 
+export type TaskPriority = 'high' | 'medium' | 'low';
+
 export interface Task {
   id: string;
   song_id: string;
@@ -82,6 +84,9 @@ export interface Task {
   section: SongSection;
   title: string;
   done: boolean;
+  priority: TaskPriority;
+  due_date: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }

@@ -33,8 +33,22 @@ export function useTasks(songId: string | undefined) {
     fetchTasks();
   }, [fetchTasks]);
 
-  const createTask = async (section: SongSection, title: string): Promise<Task | null> => {
+  const createTask = async (
+    section: SongSection, 
+    title: string,
+    options?: { priority?: 'high' | 'medium' | 'low'; due_date?: Date }
+  ): Promise<Task | null> => {
     if (!songId || !user) return null;
+
+    // Get max sort_order for this song
+    const { data: existing } = await supabase
+      .from("tasks")
+      .select("sort_order")
+      .eq("song_id", songId)
+      .order("sort_order", { ascending: false })
+      .limit(1);
+    
+    const nextOrder = (existing?.[0]?.sort_order ?? -1) + 1;
 
     const { data, error } = await supabase
       .from("tasks")
@@ -43,6 +57,9 @@ export function useTasks(songId: string | undefined) {
         user_id: user.id,
         section,
         title,
+        priority: options?.priority || 'medium',
+        due_date: options?.due_date?.toISOString() || null,
+        sort_order: nextOrder,
       })
       .select()
       .single();

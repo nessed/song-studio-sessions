@@ -8,7 +8,7 @@ import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
 import { useSongNotes } from "@/hooks/useSongNotes";
 import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song, StemType } from "@/lib/types";
-import { TaskSection } from "@/components/TaskSection";
+import { SmartTaskPanel } from "@/components/SmartTaskPanel";
 import { TimelineNotes } from "@/components/TimelineNotes";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
@@ -294,20 +294,14 @@ export default function SongDetail() {
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="border-l border-white/10 bg-[#09090b]/80 backdrop-blur-2xl shadow-2xl flex flex-col overflow-hidden"
         >
-          <div className="p-6 w-64 overflow-y-auto flex-1">
-            <h3 className="section-heading">Tasks</h3>
-            <div className="space-y-8">
-              {SONG_SECTIONS.map((section) => (
-                <TaskSection
-                  key={section}
-                  section={section}
-                  tasks={tasks.filter((t) => t.section === section)}
-                  onCreateTask={(taskTitle) => createTask(section, taskTitle)}
-                  onUpdateTask={updateTask}
-                  onDeleteTask={deleteTask}
-                />
-              ))}
-            </div>
+          <div className="p-4 w-80 overflow-y-auto flex-1">
+            <SmartTaskPanel
+              tasks={tasks}
+              onCreateTask={createTask}
+              onUpdateTask={updateTask}
+              onDeleteTask={deleteTask}
+              currentSection={song.status === 'idea' ? 'Idea' : song.status === 'writing' ? 'Writing' : song.status === 'recording' ? 'Recording' : song.status === 'mixing' ? 'Mixing' : song.status === 'mastering' ? 'Mastering' : 'Production'}
+            />
           </div>
         </motion.div>
       </div>
