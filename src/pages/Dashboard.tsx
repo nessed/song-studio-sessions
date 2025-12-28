@@ -10,6 +10,7 @@ import { SessionThemeProvider } from "@/components/SessionThemeProvider";
 import { SessionsLogo } from "@/components/SessionsLogo";
 import { Plus, Music, Folder, Search, User, Disc3 } from "lucide-react";
 import { motion } from "framer-motion";
+import { OnboardingTour, TourStep } from "@/components/OnboardingTour";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -44,6 +45,34 @@ export default function Dashboard() {
 
   const recentProjects = projects.slice(0, 4);
 
+  // Tour steps configuration
+  const tourSteps: TourStep[] = [
+    {
+      target: "navigation",
+      title: "Welcome to Song Studio!",
+      description: "Navigate between Songs and Projects here.",
+      position: "bottom"
+    },
+    {
+      target: "create-song",
+      title: "Create a Song",
+      description: "Type a title and click Create to start a new track.",
+      position: "top"
+    },
+    {
+      target: "song-list",
+      title: "Your Library",
+      description: "All your songs appear here. Click any to open it.",
+      position: "top"
+    },
+    {
+      target: "profile",
+      title: "Settings",
+      description: "Access your profile and preferences here.",
+      position: "bottom"
+    }
+  ];
+
   if (loading) {
     return <LoadingScreen />;
   }
@@ -69,7 +98,7 @@ export default function Dashboard() {
               <SessionsLogo />
 
               {/* Navigation Tabs - Desktop */}
-              <nav className="hidden sm:flex items-center">
+              <nav className="hidden sm:flex items-center" data-tour="navigation">
                 <div className="flex items-center bg-white/[0.04] rounded-full p-1 border border-white/[0.06]">
                   <Link
                     to="/dashboard"
@@ -101,6 +130,7 @@ export default function Dashboard() {
               <Link 
                 to="/settings" 
                 className="group relative p-1.5 rounded-full hover:bg-white/5 transition-all"
+                data-tour="profile"
               >
                 {profile?.avatar_url ? (
                   <img
@@ -230,7 +260,7 @@ export default function Dashboard() {
             </div>
 
             {/* Create song - Glass panel matching SongDetail */}
-            <div className="mb-8">
+            <div className="mb-8" data-tour="create-song">
               <div className="flex items-center gap-3 p-1.5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
                 <div className="pl-3">
                   <Disc3 className="w-5 h-5 text-white/20" />
@@ -256,7 +286,7 @@ export default function Dashboard() {
 
             {/* Song List - Glass panel matching SongDetail version dropdown */}
             {sortedSongs.length > 0 ? (
-              <div className="rounded-2xl overflow-hidden bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40">
+              <div className="rounded-2xl overflow-hidden bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40" data-tour="song-list">
                 <div className="divide-y divide-white/[0.04]">
                   {sortedSongs.map((song, i) => (
                     <motion.div
@@ -271,7 +301,7 @@ export default function Dashboard() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-20 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+              <div className="text-center py-20 rounded-2xl bg-white/[0.02] border border-white/[0.06]" data-tour="song-list">
                 <div className="w-16 h-16 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-4">
                   <Music className="w-8 h-8 text-white/10" />
                 </div>
@@ -282,6 +312,9 @@ export default function Dashboard() {
           </motion.section>
         </main>
       </div>
+
+        {/* Onboarding Tour */}
+        <OnboardingTour steps={tourSteps} tourId="dashboard" />
     </SessionThemeProvider>
   );
 }

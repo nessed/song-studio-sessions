@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
+import { OnboardingTour, TourStep } from "@/components/OnboardingTour";
 
 export default function SongDetail() {
   const { id } = useParams<{ id: string }>();
@@ -175,6 +176,34 @@ export default function SongDetail() {
   const currentProject = projects.find((p) => p.id === song.project_id);
   const activeVersion = currentVersion || versions[0];
 
+  // Song detail tour steps
+  const songTourSteps: TourStep[] = [
+    {
+      target: "song-cover",
+      title: "Cover Art",
+      description: "Upload artwork. It sets the ambient background.",
+      position: "right"
+    },
+    {
+      target: "song-metadata",
+      title: "Metadata",
+      description: "Set BPM, key, and production status.",
+      position: "bottom"
+    },
+    {
+      target: "lyrics-editor",
+      title: "Lyrics",
+      description: "Write lyrics or production notes here.",
+      position: "top"
+    },
+    {
+      target: "task-panel",
+      title: "Tasks",
+      description: "Break down your workflow into trackable tasks.",
+      position: "left"
+    }
+  ];
+
   return (
     <SessionThemeProvider coverUrl={song.cover_art_url} themeColor={(song as any).theme_color}>
       <div className="min-h-screen bg-[#09090b] text-white relative overflow-hidden">
@@ -246,6 +275,7 @@ export default function SongDetail() {
                     onClick={() => coverInputRef.current?.click()}
                     whileHover={{ scale: 1.02 }}
                     className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 flex-shrink-0 group"
+                    data-tour="song-cover"
                   >
                     {/* Glow */}
                     {song.cover_art_url && (
@@ -312,7 +342,7 @@ export default function SongDetail() {
                     </div>
 
                     {/* Metadata Pills */}
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-2">
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-2" data-tour="song-metadata">
                       {/* Version */}
                       {versions.length > 0 && (
                         <button 
@@ -446,6 +476,7 @@ export default function SongDetail() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
+                data-tour="lyrics-editor"
               >
                 <LyricsEditor value={song.lyrics || ""} onChange={handleLyricsChange} />
               </motion.div>
@@ -474,7 +505,7 @@ export default function SongDetail() {
               className="h-full"
             >
               {/* SmartTaskPanel has its own glass-premium styling */}
-              <div className="p-4 pb-36 h-full overflow-y-auto scrollbar-thin">
+              <div className="p-4 pb-36 h-full overflow-y-auto scrollbar-thin" data-tour="task-panel">
                 <SmartTaskPanel
                   tasks={tasks}
                   onCreateTask={createTask}
@@ -525,6 +556,9 @@ export default function SongDetail() {
             />
           }
         />
+
+        {/* Onboarding Tour */}
+        <OnboardingTour steps={songTourSteps} tourId="song-detail" />
       </div>
     </SessionThemeProvider>
   );

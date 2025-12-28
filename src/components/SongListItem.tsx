@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 import { Song, Project } from "@/lib/types";
 import { Music } from "lucide-react";
@@ -8,7 +9,7 @@ interface SongListItemProps {
   projects?: Project[];
 }
 
-export function SongListItem({ song, showProject, projects = [] }: SongListItemProps) {
+function SongListItemInner({ song, showProject, projects = [] }: SongListItemProps) {
   const project = showProject && song.project_id 
     ? projects.find(p => p.id === song.project_id) 
     : null;
@@ -25,6 +26,7 @@ export function SongListItem({ song, showProject, projects = [] }: SongListItemP
             src={song.cover_art_url}
             alt=""
             className="w-full h-full object-cover"
+            loading="lazy"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -58,3 +60,6 @@ export function SongListItem({ song, showProject, projects = [] }: SongListItemP
     </Link>
   );
 }
+
+// Memoize to prevent re-renders when parent state changes
+export const SongListItem = memo(SongListItemInner);
