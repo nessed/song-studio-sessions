@@ -40,6 +40,7 @@ export default function SongDetail() {
   const [currentTime, setCurrentTime] = useState(0);
   const [noteAddTime, setNoteAddTime] = useState<number | null>(null);
   const [showVersions, setShowVersions] = useState(false);
+  const [showTaskPanel, setShowTaskPanel] = useState(false);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -227,7 +228,7 @@ export default function SongDetail() {
         </header>
 
         {/* Main Layout */}
-        <div className="flex h-[calc(100vh-64px)] overflow-hidden relative z-10">
+        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden relative z-10">
           {/* Main Content */}
           <div className="flex-1 overflow-y-auto" style={{ paddingBottom: "120px" }}>
             <div className="max-w-4xl mx-auto py-8 sm:py-12 px-4 sm:px-6 space-y-8 sm:space-y-10">
@@ -452,8 +453,20 @@ export default function SongDetail() {
             </div>
           </div>
 
-          {/* Right Side - Tasks Panel with glass styling */}
-          <div className="w-80 flex-shrink-0 overflow-hidden">
+          {/* Right Side - Tasks Panel - Hidden on mobile by default */}
+          <div className={`
+            fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto
+            w-full lg:w-80 flex-shrink-0 
+            transition-transform duration-300 ease-out
+            ${showTaskPanel ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+          `}>
+            {/* Mobile backdrop */}
+            <div 
+              className={`absolute inset-0 bg-black/60 lg:hidden ${showTaskPanel ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-opacity`}
+              onClick={() => setShowTaskPanel(false)}
+            />
+            {/* Panel content */}
+            <div className="absolute right-0 top-0 bottom-0 w-80 lg:w-full lg:relative bg-[#09090b] lg:bg-transparent overflow-hidden">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -471,8 +484,26 @@ export default function SongDetail() {
                 />
               </div>
             </motion.div>
+            </div>
           </div>
         </div>
+
+        {/* Mobile Task Panel Toggle */}
+        <button
+          onClick={() => setShowTaskPanel(!showTaskPanel)}
+          className="fixed bottom-28 right-4 z-50 lg:hidden w-14 h-14 rounded-full bg-[#09090b]/90 border border-white/15 flex items-center justify-center text-white shadow-2xl"
+        >
+          <div className="relative">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            {tasks.length > 0 && (
+              <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] rounded-full bg-white text-black text-[10px] font-bold flex items-center justify-center">
+                {tasks.length}
+              </span>
+            )}
+          </div>
+        </button>
 
         {/* Floating Audio Player */}
         <AudioPlayer
