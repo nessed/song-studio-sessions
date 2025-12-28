@@ -241,18 +241,18 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full px-6 flex justify-center">
+    <div className="fixed bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 w-full px-3 sm:px-6 flex justify-center">
       {/* Outer ambient glow */}
       <div 
-        className="absolute inset-x-12 -bottom-4 h-32 opacity-50 blur-3xl pointer-events-none"
+        className="absolute inset-x-6 sm:inset-x-12 -bottom-4 h-32 opacity-50 blur-3xl pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 60% 80% at 50% 100%, var(--accent-subtle, rgba(124,58,237,0.2)) 0%, transparent 70%)' }}
       />
       
-      {/* Main Container - Allow overflow for popups, but keep shape size */}
-      <div className="relative h-[88px] w-full max-w-5xl group/player shadow-2xl shadow-black/50">
+      {/* Main Container */}
+      <div className="relative h-[72px] sm:h-[88px] w-full max-w-5xl group/player shadow-2xl shadow-black/50">
         
-        {/* Background Styling Container - Clips background effects but not content */}
-        <div className="absolute inset-0 rounded-[28px] overflow-hidden pointer-events-none">
+        {/* Background Styling Container */}
+        <div className="absolute inset-0 rounded-2xl sm:rounded-[28px] overflow-hidden pointer-events-none">
           {/* Glass background */}
           <div className="absolute inset-0 bg-[#08080a]/90 backdrop-blur-3xl" />
           
@@ -266,17 +266,17 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
           />
           
           {/* Chromatic border */}
-          <div className="absolute inset-0 rounded-[28px] border border-white/[0.08]" />
+          <div className="absolute inset-0 rounded-2xl sm:rounded-[28px] border border-white/[0.08]" />
         </div>
         
-        {/* Content - No overflow hidden, so popups can extend out */}
-        <div className="relative h-full flex items-center px-5 gap-5">
+        {/* Content */}
+        <div className="relative h-full flex items-center px-3 sm:px-5 gap-3 sm:gap-5">
           <audio ref={audioRef} src={src} preload="metadata" />
 
-          {/* Play/Pause Button - Circular Premium */}
+          {/* Play/Pause Button */}
           <button
             onClick={togglePlay}
-            className="relative h-14 w-14 min-w-[3.5rem] rounded-full flex items-center justify-center transition-all active:scale-95 z-10 group/play"
+            className="relative h-11 w-11 sm:h-14 sm:w-14 min-w-[2.75rem] sm:min-w-[3.5rem] rounded-full flex items-center justify-center transition-all active:scale-95 z-10 group/play"
           >
             {/* Glow behind button */}
             <div 
@@ -289,14 +289,14 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
             
             {/* Icon */}
             <div className="relative text-black">
-              {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 ml-0.5 fill-current" />}
+              {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5 fill-current" />}
             </div>
           </button>
 
           {/* Time & Waveform */}
-          <div className="flex-1 flex flex-col justify-center gap-1.5">
+          <div className="flex-1 flex flex-col justify-center gap-1 sm:gap-1.5">
             {/* Time display row */}
-            <div className="flex items-center justify-between text-[11px] font-medium px-0.5">
+            <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-medium px-0.5">
                <div ref={timeDisplayRef} className="tabular-nums text-white/80 font-mono tracking-wide">0:00</div>
                <div className="text-white/40 font-mono tabular-nums tracking-wide">{formatTime(duration)}</div>
             </div>
@@ -307,28 +307,26 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
               onClick={handleSeek}
               onMouseDown={handleLoopDragStart}
               onDoubleClick={handleWaveformDoubleClick}
-              className={`h-11 w-full relative group cursor-pointer rounded-xl overflow-hidden ${isDraggingLoop ? 'cursor-ew-resize' : ''}`}
+              className={`h-8 sm:h-11 w-full relative group cursor-pointer rounded-lg sm:rounded-xl overflow-hidden ${isDraggingLoop ? 'cursor-ew-resize' : ''}`}
               title="Double-click to add note • Shift+Drag to set loop region"
             >
               {/* Track background */}
-              <div className="absolute inset-0 bg-white/[0.03] rounded-xl" />
+              <div className="absolute inset-0 bg-white/[0.03] rounded-lg sm:rounded-xl" />
               
-              {/* Background waveform - Increased contrast */}
+              {/* Background waveform */}
               <div className="absolute inset-0 text-white/50 group-hover:text-white/60 transition-colors">
                  <WaveformVisualizer peaks={peaks} color="currentColor" />
               </div>
 
-              {/* Progress waveform with cyan/teal color */}
+              {/* Progress waveform */}
               <div 
                 ref={progressBarRef}
                 className="absolute inset-0 pointer-events-none will-change-[clip-path]"
                 style={{ clipPath: "inset(0 100% 0 0)" }}
               >
-                {/* Main colored waveform - bright cyan */}
                 <div className="text-cyan-400">
                   <WaveformVisualizer peaks={peaks} color="currentColor" />
                 </div>
-                {/* Glow layer for luminous effect */}
                 <div className="absolute inset-0 blur-[4px] opacity-70 text-cyan-400">
                   <WaveformVisualizer peaks={peaks} color="currentColor" />
                 </div>
@@ -351,11 +349,10 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                     width: `${((loopRegion.end - loopRegion.start) / duration) * 100}%`,
                   }}
                 >
-                  {/* Loop region labels */}
-                  <div className="absolute -top-5 left-0 text-[8px] font-mono text-amber-400 bg-[#08080a]/90 px-1 rounded">
+                  <div className="absolute -top-5 left-0 text-[8px] font-mono text-amber-400 bg-[#08080a]/90 px-1 rounded hidden sm:block">
                     {formatTime(loopRegion.start)}
                   </div>
-                  <div className="absolute -top-5 right-0 text-[8px] font-mono text-amber-400 bg-[#08080a]/90 px-1 rounded">
+                  <div className="absolute -top-5 right-0 text-[8px] font-mono text-amber-400 bg-[#08080a]/90 px-1 rounded hidden sm:block">
                     {formatTime(loopRegion.end)}
                   </div>
                 </div>
@@ -379,7 +376,7 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                     }}
                   >
                     <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400 border-2 border-[#08080a] opacity-0 group-hover/marker:opacity-100 transition-opacity" />
-                    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 px-3 py-2 rounded-xl bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 text-xs text-white whitespace-nowrap opacity-0 group-hover/marker:opacity-100 pointer-events-none transition-opacity shadow-2xl max-w-[200px]">
+                    <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 px-3 py-2 rounded-xl bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 text-xs text-white whitespace-nowrap opacity-0 group-hover/marker:opacity-100 pointer-events-none transition-opacity shadow-2xl max-w-[200px] hidden sm:block">
                       <div className="text-[9px] font-mono text-emerald-400 mb-0.5">{formatTime(note.timestamp_seconds)}</div>
                       <div className="text-white/80 truncate">{note.body}</div>
                     </div>
@@ -389,13 +386,13 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
             </div>
           </div>
 
-          {/* Soft divider */}
-          <div className="h-9 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+          {/* Soft divider - hidden on mobile */}
+          <div className="hidden sm:block h-9 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
 
           {/* Right controls */}
-          <div className="flex items-center gap-2.5">
-            {/* Volume - always visible inline slider */}
-            <div className="flex items-center gap-2 px-1">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
+            {/* Volume - hidden on mobile */}
+            <div className="hidden sm:flex items-center gap-2 px-1">
                <div className="h-1.5 w-20 bg-white/10 rounded-full overflow-hidden relative">
                  <input
                   type="range"
@@ -412,10 +409,10 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                </div>
             </div>
             
-            {/* Loop - uses theme accent when active */}
+            {/* Loop */}
             <button
               onClick={() => setIsLooping((l) => !l)}
-              className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border transition-all ${
+              className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 sm:px-2.5 py-1.5 rounded-lg border transition-all ${
                 isLooping 
                 ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-400" 
                 : "border-white/10 text-white/35 hover:text-white/60 hover:border-white/20"
@@ -424,11 +421,11 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
               Loop
             </button>
             
-            {/* Clear Loop Region - shown when a loop region exists */}
+            {/* Clear Loop Region - hidden on mobile when text shown */}
             {loopRegion && (
               <button
                 onClick={clearLoopRegion}
-                className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-2 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all"
+                className="flex items-center gap-1 text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-1.5 sm:px-2 py-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all"
                 title="Clear loop region"
               >
                 <X className="w-3 h-3" />
@@ -438,7 +435,7 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
             
             {/* Notes with count badge */}
             {notesComponent && (
-              <div className="relative">
+              <div className="relative hidden sm:block">
                 {notesComponent}
                 {timelineNotes.length > 0 && (
                   <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px] font-bold text-white/70 pointer-events-none">
@@ -454,10 +451,10 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                   const audio = audioRef.current;
                   if (audio) onRequestAddNote?.(audio.currentTime);
               }}
-              className="h-8 w-8 rounded-lg border border-white/10 bg-white/5 text-white/40 flex items-center justify-center hover:bg-emerald-500/15 hover:border-emerald-500/30 hover:text-emerald-400 transition-all"
+              className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg border border-white/10 bg-white/5 text-white/40 flex items-center justify-center hover:bg-emerald-500/15 hover:border-emerald-500/30 hover:text-emerald-400 transition-all"
               title="Add note at current time"
             >
-              <span className="text-base leading-none">+</span>
+              <span className="text-sm sm:text-base leading-none">+</span>
             </button>
           </div>
         </div>

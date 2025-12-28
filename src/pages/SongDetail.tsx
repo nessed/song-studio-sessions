@@ -203,13 +203,13 @@ export default function SongDetail() {
         )}
 
         {/* Header */}
-        <header className="sticky top-0 z-30 px-6 py-4 flex items-center justify-between bg-[#09090b]/95 border-b border-white/[0.04]">
+        <header className="sticky top-0 z-30 px-4 sm:px-6 py-4 flex items-center justify-between bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04]">
           <Link
             to={song.project_id ? `/project/${song.project_id}` : "/dashboard"}
             className="flex items-center gap-2 text-white/50 hover:text-white transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">{currentProject?.title || "Dashboard"}</span>
+            <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-none">{currentProject?.title || "Dashboard"}</span>
           </Link>
 
           <div className="flex items-center gap-2">
@@ -229,27 +229,27 @@ export default function SongDetail() {
         {/* Main Layout */}
         <div className="flex h-[calc(100vh-64px)] overflow-hidden relative z-10">
           {/* Main Content */}
-          <div className="flex-1 overflow-y-auto" style={{ paddingBottom: "140px" }}>
-            <div className="max-w-4xl mx-auto py-12 px-6 space-y-10">
+          <div className="flex-1 overflow-y-auto" style={{ paddingBottom: "120px" }}>
+            <div className="max-w-4xl mx-auto py-8 sm:py-12 px-4 sm:px-6 space-y-8 sm:space-y-10">
 
               {/* Hero Section */}
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="space-y-8"
+                className="space-y-6 sm:space-y-8"
               >
                 {/* Cover Art */}
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                <div className="flex flex-col items-center md:flex-row md:items-start gap-6 sm:gap-8">
                   <motion.button
                     onClick={() => coverInputRef.current?.click()}
                     whileHover={{ scale: 1.02 }}
-                    className="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0 group"
+                    className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 flex-shrink-0 group"
                   >
                     {/* Glow */}
                     {song.cover_art_url && (
                       <div 
-                        className="absolute -inset-4 rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity"
+                        className="absolute -inset-4 rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity hidden sm:block"
                         style={{ 
                           backgroundImage: `url(${song.cover_art_url})`,
                           backgroundSize: "cover",
@@ -262,7 +262,7 @@ export default function SongDetail() {
                         <img src={song.cover_art_url} alt={song.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full bg-white/[0.03] flex items-center justify-center border-2 border-dashed border-white/10 group-hover:border-white/20 transition-colors">
-                          <Music2 className="w-12 h-12 text-white/10" />
+                          <Music2 className="w-10 h-10 sm:w-12 sm:h-12 text-white/10" />
                         </div>
                       )}
                       {/* Hover overlay */}
@@ -273,27 +273,27 @@ export default function SongDetail() {
                   </motion.button>
 
                   {/* Title & Meta */}
-                  <div className="flex-1 text-center md:text-left space-y-4">
+                  <div className="flex-1 text-center md:text-left space-y-3 sm:space-y-4 w-full">
                     {/* Title Input */}
                     <input
                       type="text"
                       value={title}
                       onChange={(e) => handleTitleChange(e.target.value)}
                       placeholder="Untitled Song"
-                      className="bg-transparent border-none outline-none text-4xl md:text-5xl font-bold tracking-tight text-white placeholder:text-white/10 w-full"
+                      className="bg-transparent border-none outline-none text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white placeholder:text-white/10 w-full text-center md:text-left"
                       style={{ fontFamily: "'Syne', sans-serif" }}
                     />
 
                     {/* Context Line */}
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-white/40">
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 text-xs sm:text-sm text-white/40">
                       {currentProject && (
                         <span className="flex items-center gap-1.5">
-                          <Folder className="w-3.5 h-3.5" />
-                          {currentProject.title}
+                          <Folder className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          <span className="truncate max-w-[100px] sm:max-w-none">{currentProject.title}</span>
                         </span>
                       )}
                       <span className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5" />
+                        <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         {formatDistanceToNow(new Date(song.created_at), { addSuffix: true })}
                       </span>
                       {referenceLink && (
@@ -303,25 +303,25 @@ export default function SongDetail() {
                           rel="noreferrer"
                           className="flex items-center gap-1.5 hover:text-white transition-colors"
                         >
-                          <LinkIcon className="w-3.5 h-3.5" />
-                          Reference
+                          <LinkIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          <span className="hidden sm:inline">Reference</span>
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       )}
                     </div>
 
                     {/* Metadata Pills */}
-                    <div className="flex flex-wrap items-center gap-2 pt-2">
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-2">
                       {/* Version */}
                       {versions.length > 0 && (
                         <button 
                           onClick={() => versions.length > 1 && setShowVersions(!showVersions)}
-                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold transition-all ${versions.length > 1 ? 'hover:bg-white/10 cursor-pointer' : ''}`}
+                          className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-semibold transition-all ${versions.length > 1 ? 'hover:bg-white/10 cursor-pointer' : ''}`}
                         >
                           <div className="w-2 h-2 rounded-full" style={{ background: 'var(--accent-main, #a78bfa)' }} />
                           <span className="text-white/70">v{activeVersion?.version_number || 1}</span>
                           {activeVersion?.description && (
-                            <span className="text-white/40">· {activeVersion.description}</span>
+                            <span className="text-white/40 hidden sm:inline">· {activeVersion.description}</span>
                           )}
                           {versions.length > 1 && (
                             <ChevronDown className={`w-3 h-3 text-white/40 transition-transform ${showVersions ? 'rotate-180' : ''}`} />
@@ -330,26 +330,26 @@ export default function SongDetail() {
                       )}
                       
                       {/* BPM */}
-                      <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold cursor-text">
+                      <label className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-semibold cursor-text">
                         <span className="text-white/40">BPM</span>
                         <input
                           type="text"
                           value={bpm}
                           onChange={(e) => handleBpmChange(e.target.value)}
                           placeholder="---"
-                          className="bg-transparent border-none outline-none w-12 text-white/80 text-center font-mono"
+                          className="bg-transparent border-none outline-none w-10 sm:w-12 text-white/80 text-center font-mono"
                         />
                       </label>
 
                       {/* Key */}
-                      <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold cursor-text">
+                      <label className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-semibold cursor-text">
                         <span className="text-white/40">Key</span>
                         <input
                           type="text"
                           value={songKey}
                           onChange={(e) => handleKeyChange(e.target.value)}
                           placeholder="---"
-                          className="bg-transparent border-none outline-none w-12 text-white/80 text-center font-mono"
+                          className="bg-transparent border-none outline-none w-10 sm:w-12 text-white/80 text-center font-mono"
                         />
                       </label>
 
@@ -357,8 +357,7 @@ export default function SongDetail() {
                       <select
                         value={song.status}
                         onChange={(e) => handleStatusChange(e.target.value as SongStatus)}
-                        className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-white/70 cursor-pointer focus:outline-none hover:bg-white/10 transition-colors appearance-none"
-                        style={{ paddingRight: '2rem' }}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-semibold text-white/70 cursor-pointer focus:outline-none hover:bg-white/10 transition-colors appearance-none pr-6 sm:pr-8"
                       >
                         {SONG_STATUSES.map(s => (
                           <option key={s.value} value={s.value} className="bg-[#09090b] text-white">
@@ -367,9 +366,9 @@ export default function SongDetail() {
                         ))}
                       </select>
 
-                      {/* Tags */}
+                      {/* Tags - hidden on mobile */}
                       {song.mood_tags?.length > 0 && song.mood_tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="px-3 py-2 rounded-full bg-white/5 border border-white/10 text-xs text-white/50">
+                        <span key={tag} className="hidden sm:inline-flex px-3 py-2 rounded-full bg-white/5 border border-white/10 text-xs text-white/50">
                           {tag}
                         </span>
                       ))}
