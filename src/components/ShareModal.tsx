@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Copy, Globe, Lock, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Song } from "@/lib/types";
-import { Song } from "@/lib/types";
 
 interface ShareModalProps {
   song: Song;

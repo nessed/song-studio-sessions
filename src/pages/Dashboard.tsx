@@ -8,8 +8,8 @@ import { SongListItem } from "@/components/SongListItem";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { SessionThemeProvider } from "@/components/SessionThemeProvider";
 import { SessionsLogo } from "@/components/SessionsLogo";
-import { Plus, Music, Folder, Search, User } from "lucide-react";
-// import { motion } from "framer-motion"; // Disabled for performance
+import { Plus, Music, Folder, Search, User, Disc3 } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -50,23 +50,17 @@ export default function Dashboard() {
 
   return (
     <SessionThemeProvider>
-      <div className="min-h-screen bg-[#09090b] text-white relative overflow-hidden">
+      <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+        {/* Ambient Background - matching SongDetail */}
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-primary/8 blur-[150px]" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[300px] rounded-full bg-violet-500/5 blur-[100px]" />
+        </div>
 
-        {/* Header */}
+        {/* Header - Glass style matching SongDetail */}
         <header className="sticky top-0 z-30 relative overflow-hidden">
-          {/* Glass background */}
-          <div className="absolute inset-0 bg-[#09090b]/95" />
-          
-          {/* Theme-tinted glow */}
-          <div 
-            className="absolute inset-0 pointer-events-none opacity-15"
-            style={{ background: 'linear-gradient(90deg, var(--accent-subtle, rgba(124,58,237,0.08)) 0%, transparent 40%)' }}
-          />
-          
-          {/* Top highlight */}
+          <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" />
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
-          
-          {/* Bottom border */}
           <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/6 to-transparent" />
           
           <div className="relative max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -76,20 +70,20 @@ export default function Dashboard() {
               <nav className="hidden sm:flex items-center gap-1">
                 <Link
                   to="/dashboard"
-                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                  className={`px-4 py-2 text-sm rounded-full transition-all ${
                     isActive("/dashboard") || isActive("/song")
-                      ? "text-white bg-white/10"
-                      : "text-white/50 hover:text-white hover:bg-white/5"
+                      ? "text-foreground bg-white/10 border border-white/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                   }`}
                 >
                   Songs
                 </Link>
                 <Link
                   to="/projects"
-                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                  className={`px-4 py-2 text-sm rounded-full transition-all ${
                     isActive("/projects") || isActive("/project")
-                      ? "text-white bg-white/10"
-                      : "text-white/50 hover:text-white hover:bg-white/5"
+                      ? "text-foreground bg-white/10 border border-white/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                   }`}
                 >
                   Projects
@@ -98,16 +92,16 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Link to="/settings" className="p-2 rounded-lg hover:bg-white/5 transition-colors">
+              <Link to="/settings" className="p-2 rounded-full hover:bg-white/5 transition-colors">
                 {profile?.avatar_url ? (
                   <img
                     src={profile.avatar_url}
                     alt=""
-                    className="w-7 h-7 rounded-full object-cover"
+                    className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center">
-                    <User className="w-4 h-4 text-white/50" />
+                  <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
+                    <User className="w-4 h-4 text-muted-foreground" />
                   </div>
                 )}
               </Link>
@@ -115,23 +109,23 @@ export default function Dashboard() {
           </div>
           
           {/* Mobile nav */}
-          <nav className="sm:hidden px-6 pb-3 flex items-center gap-2">
+          <nav className="sm:hidden relative px-6 pb-3 flex items-center gap-2">
             <Link
               to="/dashboard"
-              className={`flex-1 py-2 text-center text-sm rounded-lg transition-colors ${
+              className={`flex-1 py-2 text-center text-sm rounded-full transition-all ${
                 isActive("/dashboard") || isActive("/song")
-                  ? "text-white bg-white/10"
-                  : "text-white/50 hover:text-white"
+                  ? "text-foreground bg-white/10 border border-white/10"
+                  : "text-muted-foreground"
               }`}
             >
               Songs
             </Link>
             <Link
               to="/projects"
-              className={`flex-1 py-2 text-center text-sm rounded-lg transition-colors ${
+              className={`flex-1 py-2 text-center text-sm rounded-full transition-all ${
                 isActive("/projects") || isActive("/project")
-                  ? "text-white bg-white/10"
-                  : "text-white/50 hover:text-white"
+                  ? "text-foreground bg-white/10 border border-white/10"
+                  : "text-muted-foreground"
               }`}
             >
               Projects
@@ -142,94 +136,111 @@ export default function Dashboard() {
         <main className="relative z-10 max-w-5xl mx-auto px-6 py-12">
           {/* Recent Projects */}
           {recentProjects.length > 0 && (
-            <section 
-              className="mb-12 animate-fade-in"
+            <motion.section 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-14"
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">Recent Projects</h2>
-                <Link to="/projects" className="text-xs text-white/40 hover:text-white transition-colors uppercase tracking-wider">
+                <div className="flex items-center gap-3">
+                  <div className="w-1 h-4 rounded-full bg-primary/50" />
+                  <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">Recent Projects</h2>
+                </div>
+                <Link to="/projects" className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider">
                   View all →
                 </Link>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 {recentProjects.map((project, i) => (
-                  <div
+                  <motion.div
                     key={project.id}
-                    className="animate-fade-in"
-                    style={{ animationDelay: `${i * 50}ms` }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
                   >
                     <Link to={`/project/${project.id}`} className="group block">
-                      <div className="glass-premium glass-noise aspect-square rounded-2xl overflow-hidden relative group-hover:scale-[1.02] transition-transform duration-300">
+                      <div className="relative aspect-square rounded-2xl overflow-hidden bg-white/[0.02] border border-white/[0.06] group-hover:border-white/10 transition-all">
                         {/* Glow effect on hover */}
-                        <div 
-                          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                          style={{ background: 'radial-gradient(ellipse at center, var(--accent-subtle, rgba(124,58,237,0.15)) 0%, transparent 70%)' }}
-                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         {project.cover_art_url ? (
-                          <img src={project.cover_art_url} alt="" className="w-full h-full object-cover" />
+                          <>
+                            {/* Image glow */}
+                            <div 
+                              className="absolute -inset-4 blur-xl opacity-0 group-hover:opacity-40 transition-opacity"
+                              style={{ 
+                                backgroundImage: `url(${project.cover_art_url})`,
+                                backgroundSize: "cover",
+                              }}
+                            />
+                            <img src={project.cover_art_url} alt="" className="relative w-full h-full object-cover" />
+                          </>
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center border border-white/[0.06]">
+                          <div className="w-full h-full flex items-center justify-center">
                             <Folder className="w-10 h-10 text-white/10" />
                           </div>
                         )}
                       </div>
-                      <p className="mt-3 text-sm font-medium text-white/80 truncate group-hover:text-white transition-colors">{project.title}</p>
+                      <p className="mt-3 text-sm font-medium text-muted-foreground truncate group-hover:text-foreground transition-colors">{project.title}</p>
                     </Link>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </section>
+            </motion.section>
           )}
 
           {/* All Songs */}
-          <section 
-            className="animate-fade-in"
-            style={{ animationDelay: '150ms' }}
+          <motion.section 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.5 }}
           >
             <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold tracking-tight text-white mb-2">All Songs</h1>
-                <p className="text-sm text-white/40">
-                  {songs.length === 0 ? "Start by creating your first song" : `${songs.length} song${songs.length !== 1 ? "s" : ""}`}
+                <h1 
+                  className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground mb-2"
+                  style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}
+                >
+                  All Songs
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {songs.length === 0 ? "Start by creating your first song" : `${songs.length} song${songs.length !== 1 ? "s" : ""} in your library`}
                 </p>
               </div>
 
               {/* Search Bar */}
               {songs.length > 0 && (
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                <div className="relative w-full md:w-72">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                   <input
                     type="text"
                     placeholder="Search songs..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white/[0.03] border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20 focus:bg-white/5 transition-all"
+                    className="w-full bg-white/[0.03] border border-white/[0.08] rounded-full pl-11 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-white/20 focus:bg-white/5 transition-all"
                   />
                 </div>
               )}
             </div>
 
-            {/* Create song */}
+            {/* Create song - Glass panel */}
             <div className="mb-8">
-              <div 
-                className="flex items-center gap-3 p-1 rounded-2xl transition-colors"
-                style={{
-                  background: 'rgba(255,255,255,0.02)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}
-              >
+              <div className="flex items-center gap-3 p-1.5 rounded-2xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm">
+                <div className="pl-3">
+                  <Disc3 className="w-5 h-5 text-muted-foreground/30" />
+                </div>
                 <input
                   type="text"
                   placeholder="New song title..."
                   value={newSongTitle}
                   onChange={(e) => setNewSongTitle(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="flex-1 px-4 py-3 text-sm bg-transparent text-white placeholder:text-white/30 focus:outline-none"
+                  className="flex-1 px-2 py-3 text-sm bg-transparent text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
                 />
                 <button
                   onClick={handleCreateSong}
                   disabled={!newSongTitle.trim()}
-                  className="px-5 py-2.5 mr-1 text-sm font-semibold bg-white text-black rounded-xl hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                  className="px-5 py-2.5 mr-1 text-sm font-semibold bg-foreground text-background rounded-xl hover:bg-foreground/90 transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   <Plus className="w-4 h-4" />
                   Create
@@ -237,22 +248,32 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Song List */}
+            {/* Song List - Glass panel */}
             {sortedSongs.length > 0 ? (
-              <div className="glass-premium glass-noise rounded-2xl overflow-hidden">
+              <div className="rounded-2xl overflow-hidden bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm">
                 <div className="divide-y divide-white/[0.04]">
-                  {sortedSongs.map((song) => (
-                    <SongListItem key={song.id} song={song} showProject projects={projects} />
+                  {sortedSongs.map((song, i) => (
+                    <motion.div
+                      key={song.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: i * 0.02 }}
+                    >
+                      <SongListItem song={song} showProject projects={projects} />
+                    </motion.div>
                   ))}
                 </div>
               </div>
             ) : (
-              <div className="text-center py-20 glass-premium glass-noise rounded-2xl">
-                <Music className="w-16 h-16 text-white/10 mx-auto mb-4" />
-                <p className="text-sm text-white/40">No songs yet. Enter a title above to get started.</p>
+              <div className="text-center py-20 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                <div className="w-16 h-16 rounded-full bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-4">
+                  <Music className="w-8 h-8 text-muted-foreground/20" />
+                </div>
+                <p className="text-sm text-muted-foreground/60 mb-1">No songs yet</p>
+                <p className="text-xs text-muted-foreground/40">Enter a title above to get started</p>
               </div>
             )}
-          </section>
+          </motion.section>
         </main>
       </div>
     </SessionThemeProvider>
