@@ -40,15 +40,13 @@ export function useTasks(songId: string | undefined) {
   ): Promise<Task | null> => {
     if (!songId || !user) return null;
 
-    // Get max sort_order for this song
-    const { data: existing } = await supabase
+    // Get count of existing tasks for ordering
+    const { count } = await supabase
       .from("tasks")
-      .select("sort_order")
-      .eq("song_id", songId)
-      .order("sort_order", { ascending: false })
-      .limit(1);
+      .select("*", { count: "exact", head: true })
+      .eq("song_id", songId);
     
-    const nextOrder = (existing?.[0]?.sort_order ?? -1) + 1;
+    const nextOrder = (count ?? 0) + 1;
 
     const { data, error } = await supabase
       .from("tasks")

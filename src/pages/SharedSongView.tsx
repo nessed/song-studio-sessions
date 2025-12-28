@@ -37,7 +37,7 @@ export default function SharedSongView() {
         .select("*")
         .eq("share_hash", hash)
         .eq("is_public", true)
-        .single();
+        .maybeSingle();
 
       if (songError || !songData) {
         console.error(songError);

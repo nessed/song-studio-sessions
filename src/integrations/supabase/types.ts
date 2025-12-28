@@ -167,26 +167,29 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          guest_name: string | null
           id: string
           song_id: string
           timestamp_seconds: number
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           body: string
           created_at?: string
+          guest_name?: string | null
           id?: string
           song_id: string
           timestamp_seconds: number
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           body?: string
           created_at?: string
+          guest_name?: string | null
           id?: string
           song_id?: string
           timestamp_seconds?: number
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -194,6 +197,50 @@ export type Database = {
             columns: ["song_id"]
             isOneToOne: false
             referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      song_stems: {
+        Row: {
+          created_at: string | null
+          file_url: string
+          id: string
+          is_muted: boolean | null
+          label: string | null
+          stem_type: string
+          user_id: string
+          version_id: string
+          volume: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_url: string
+          id?: string
+          is_muted?: boolean | null
+          label?: string | null
+          stem_type: string
+          user_id: string
+          version_id: string
+          volume?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          file_url?: string
+          id?: string
+          is_muted?: boolean | null
+          label?: string | null
+          stem_type?: string
+          user_id?: string
+          version_id?: string
+          volume?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_stems_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "song_versions"
             referencedColumns: ["id"]
           },
         ]
@@ -245,6 +292,7 @@ export type Database = {
           cover_art_url: string | null
           created_at: string
           id: string
+          is_public: boolean | null
           key: string | null
           lyrics: string | null
           mood_tags: string[] | null
@@ -252,6 +300,7 @@ export type Database = {
           project_id: string | null
           reference_file_url: string | null
           reference_link: string | null
+          share_hash: string | null
           status: string
           title: string
           updated_at: string
@@ -262,6 +311,7 @@ export type Database = {
           cover_art_url?: string | null
           created_at?: string
           id?: string
+          is_public?: boolean | null
           key?: string | null
           lyrics?: string | null
           mood_tags?: string[] | null
@@ -269,6 +319,7 @@ export type Database = {
           project_id?: string | null
           reference_file_url?: string | null
           reference_link?: string | null
+          share_hash?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -279,6 +330,7 @@ export type Database = {
           cover_art_url?: string | null
           created_at?: string
           id?: string
+          is_public?: boolean | null
           key?: string | null
           lyrics?: string | null
           mood_tags?: string[] | null
@@ -286,6 +338,7 @@ export type Database = {
           project_id?: string | null
           reference_file_url?: string | null
           reference_link?: string | null
+          share_hash?: string | null
           status?: string
           title?: string
           updated_at?: string
