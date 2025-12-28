@@ -137,8 +137,8 @@ export default function ProjectDetail() {
           </div>
         )}
 
-        {/* Header - SongDetail style */}
-        <header className="sticky top-0 z-30 px-6 py-4 flex items-center justify-between bg-[#09090b]/95 border-b border-white/[0.04]">
+        {/* Header */}
+        <header className="sticky top-0 z-30 px-4 sm:px-6 py-4 flex items-center justify-between bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04]">
           <Link
             to="/projects"
             className="flex items-center gap-2 text-white/50 hover:text-white transition-colors"
@@ -155,24 +155,24 @@ export default function ProjectDetail() {
           </button>
         </header>
 
-        <main className="relative z-10 max-w-4xl mx-auto px-6 py-12">
+        <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
           {/* Hero Section */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-12"
+            className="flex flex-col items-center md:flex-row md:items-start gap-6 sm:gap-8 mb-10 sm:mb-12"
           >
             {/* Cover Art */}
             <motion.button
               onClick={() => fileInputRef.current?.click()}
               whileHover={{ scale: 1.02 }}
-              className="relative w-48 h-48 md:w-56 md:h-56 flex-shrink-0 group"
+              className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 flex-shrink-0 group"
             >
               {/* Glow behind */}
               {project.cover_art_url && (
                 <div 
-                  className="absolute -inset-4 rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity"
+                  className="absolute -inset-4 rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity hidden sm:block"
                   style={{ 
                     backgroundImage: `url(${project.cover_art_url})`,
                     backgroundSize: "cover",
@@ -185,7 +185,7 @@ export default function ProjectDetail() {
                   <img src={project.cover_art_url} alt={project.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-white/[0.03] flex items-center justify-center border-2 border-dashed border-white/10 group-hover:border-white/20 transition-colors">
-                    <Folder className="w-12 h-12 text-white/10" />
+                    <Folder className="w-10 h-10 sm:w-12 sm:h-12 text-white/10" />
                   </div>
                 )}
                 {/* Hover overlay */}
@@ -196,14 +196,14 @@ export default function ProjectDetail() {
             </motion.button>
 
             {/* Title & Meta */}
-            <div className="flex-1 text-center md:text-left space-y-4">
+            <div className="flex-1 text-center md:text-left space-y-3 sm:space-y-4 w-full">
               {/* Title Input */}
               <input
                 type="text"
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder="Untitled Project"
-                className="bg-transparent border-none outline-none text-4xl md:text-5xl font-bold tracking-tight text-white placeholder:text-white/10 w-full"
+                className="bg-transparent border-none outline-none text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white placeholder:text-white/10 w-full text-center md:text-left"
                 style={{ fontFamily: "'Syne', sans-serif" }}
               />
 
@@ -213,7 +213,7 @@ export default function ProjectDetail() {
                 onChange={(e) => handleDescriptionChange(e.target.value)}
                 placeholder="Add a description..."
                 rows={2}
-                className="bg-transparent border-none outline-none text-white/50 placeholder:text-white/20 w-full resize-none focus:text-white/70 transition-colors"
+                className="bg-transparent border-none outline-none text-sm sm:text-base text-white/50 placeholder:text-white/20 w-full resize-none focus:text-white/70 transition-colors text-center md:text-left"
               />
 
               {/* Tags */}
@@ -229,36 +229,30 @@ export default function ProjectDetail() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.4 }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">Songs</h2>
-              <span className="text-xs text-white/30">{songs.length} track{songs.length !== 1 ? 's' : ''}</span>
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/40">Songs</h2>
+              <span className="text-[10px] sm:text-xs text-white/30">{songs.length} track{songs.length !== 1 ? 's' : ''}</span>
             </div>
 
             {/* Add song input */}
             <div className="mb-6">
-              <div className="glass-premium glass-noise rounded-2xl overflow-hidden relative">
-                <div 
-                  className="absolute inset-0 pointer-events-none opacity-30"
-                  style={{ background: 'radial-gradient(ellipse at top left, var(--accent-subtle, rgba(124,58,237,0.1)) 0%, transparent 60%)' }}
-                />
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-                
-                <div className="relative flex items-center gap-3 p-2">
+              <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] overflow-hidden">
+                <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2">
                   <input
                     type="text"
                     placeholder="Add a new song..."
                     value={newSongTitle}
                     onChange={(e) => setNewSongTitle(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleCreateSong()}
-                    className="flex-1 px-4 py-3 text-sm bg-transparent text-white placeholder:text-white/30 focus:outline-none"
+                    className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-sm bg-transparent text-white placeholder:text-white/30 focus:outline-none"
                   />
                   <button
                     onClick={handleCreateSong}
                     disabled={!newSongTitle.trim()}
-                    className="px-5 py-2.5 mr-1 text-sm font-semibold bg-white text-black rounded-xl hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="px-4 sm:px-5 py-2 sm:py-2.5 mr-1 text-sm font-semibold bg-white text-black rounded-xl hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
-                    Add
+                    <span className="hidden sm:inline">Add</span>
                   </button>
                 </div>
               </div>
@@ -266,7 +260,7 @@ export default function ProjectDetail() {
 
             {/* Songs list */}
             {songs.length > 0 ? (
-              <div className="glass-premium glass-noise rounded-2xl overflow-hidden">
+              <div className="rounded-2xl overflow-hidden bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40">
                 <div className="divide-y divide-white/[0.04]">
                   {songs.map((song) => (
                     <SongListItem key={song.id} song={song} />
@@ -274,14 +268,10 @@ export default function ProjectDetail() {
                 </div>
               </div>
             ) : (
-              <div className="text-center py-16 glass-premium glass-noise rounded-2xl relative overflow-hidden">
-                <div 
-                  className="absolute inset-0 pointer-events-none opacity-30"
-                  style={{ background: 'radial-gradient(ellipse at center, var(--accent-subtle, rgba(124,58,237,0.1)) 0%, transparent 60%)' }}
-                />
-                <Music className="w-14 h-14 text-white/10 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-white/50 mb-2">No songs yet</h3>
-                <p className="text-sm text-white/30">
+              <div className="text-center py-12 sm:py-16 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+                <Music className="w-10 h-10 sm:w-14 sm:h-14 text-white/10 mx-auto mb-4" />
+                <h3 className="text-base sm:text-lg font-medium text-white/50 mb-2">No songs yet</h3>
+                <p className="text-sm text-white/30 px-4">
                   Add your first song to this project above.
                 </p>
               </div>
