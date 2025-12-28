@@ -1,15 +1,14 @@
 import { Link } from "react-router-dom";
-import { Song } from "@/lib/types";
+import { Song, Project } from "@/lib/types";
 import { Music } from "lucide-react";
-import { useProjects } from "@/hooks/useProjects";
 
 interface SongListItemProps {
   song: Song;
   showProject?: boolean;
+  projects?: Project[];
 }
 
-export function SongListItem({ song, showProject }: SongListItemProps) {
-  const { projects } = useProjects();
+export function SongListItem({ song, showProject, projects = [] }: SongListItemProps) {
   const project = showProject && song.project_id 
     ? projects.find(p => p.id === song.project_id) 
     : null;

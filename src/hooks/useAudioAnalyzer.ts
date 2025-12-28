@@ -1,5 +1,47 @@
 import { useState, useEffect } from "react";
 
+// Cache peaks in localStorage to avoid re-analyzing the same audio
+const PEAKS_CACHE_KEY = "audio-peaks-cache";
+const MAX_CACHE_ENTRIES = 50;
+
+function getPeaksCache(): Record<string, number[]> {
+  try {
+    return JSON.parse(localStorage.getItem(PEAKS_CACHE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function setPeaksCache(url: string, peaks: number[]) {
+  try {
+    const cache = getPeaksCache();
+    // Use URL hash as key to keep it shorter
+    const key = url.split("?")[0].slice(-50); // Last 50 chars of base URL
+    cache[key] = peaks;
+    
+    // Limit cache size
+    const entries = Object.entries(cache);
+    if (entries.length > MAX_CACHE_ENTRIES) {
+      const toRemove = entries.slice(0, entries.length - MAX_CACHE_ENTRIES);
+      toRemove.forEach(([k]) => delete cache[k]);
+    }
+    
+    localStorage.setItem(PEAKS_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Ignore cache errors
+  }
+}
+
+function getCachedPeaks(url: string): number[] | null {
+  try {
+    const cache = getPeaksCache();
+    const key = url.split("?")[0].slice(-50);
+    return cache[key] || null;
+  } catch {
+    return null;
+  }
+}
+
 export function useAudioAnalyzer(audioUrl: string) {
   const [peaks, setPeaks] = useState<number[]>([]);
   const [isAnalyzed, setIsAnalyzed] = useState(false);
@@ -7,12 +49,22 @@ export function useAudioAnalyzer(audioUrl: string) {
   useEffect(() => {
     if (!audioUrl) return;
     
+    // Check cache first
+    const cachedPeaks = getCachedPeaks(audioUrl);
+    if (cachedPeaks) {
+      setPeaks(cachedPeaks);
+      setIsAnalyzed(true);
+      return;
+    }
+    
     // Reset state when url changes
     setPeaks([]);
     setIsAnalyzed(false);
 
     let active = true;
-    const fetchAndAnalyze = async () => {
+    
+    // Use setTimeout to defer analysis and not block initial render
+    const timeoutId = setTimeout(async () => {
       try {
         const response = await fetch(audioUrl);
         const arrayBuffer = await response.arrayBuffer();
@@ -46,16 +98,20 @@ export function useAudioAnalyzer(audioUrl: string) {
         if (active) {
           setPeaks(normalizedPeaks);
           setIsAnalyzed(true);
+          // Cache the result
+          setPeaksCache(audioUrl, normalizedPeaks);
         }
       } catch (err) {
         console.error("Error analyzing audio:", err);
       }
+    }, 100); // Small delay to let UI render first
+
+    return () => { 
+      active = false; 
+      clearTimeout(timeoutId);
     };
-
-    fetchAndAnalyze();
-
-    return () => { active = false; };
   }, [audioUrl]);
 
   return { peaks, isAnalyzed };
 }
+

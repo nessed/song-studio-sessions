@@ -18,9 +18,9 @@ const Index = () => {
     <div className="min-h-screen bg-[#09090b] text-white relative overflow-hidden">
       {/* Atmosphere */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 -left-20 h-[520px] w-[520px] rounded-full bg-white/5 blur-[140px] opacity-20" />
-        <div className="absolute top-1/3 right-[-10%] h-[640px] w-[640px] rounded-full bg-[#4dd0e1]/10 blur-[160px]" />
-        <div className="absolute bottom-[-20%] left-1/4 h-[480px] w-[520px] rounded-full bg-[#7c3aed]/10 blur-[180px]" />
+        <div className="absolute -top-24 -left-20 h-[520px] w-[520px] rounded-full bg-white/5 blur-[80px] opacity-20" />
+        <div className="absolute top-1/3 right-[-10%] h-[640px] w-[640px] rounded-full bg-[#4dd0e1]/10 blur-[90px]" />
+        <div className="absolute bottom-[-20%] left-1/4 h-[480px] w-[520px] rounded-full bg-[#7c3aed]/10 blur-[90px]" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#09090b]/40 to-[#09090b]" />
       </div>
 
@@ -119,7 +119,7 @@ const Index = () => {
 
                 {/* Floating glass player cue */}
                 <div className="relative">
-                  <div className="absolute -inset-6 bg-white/5 blur-3xl opacity-40" />
+                  <div className="absolute -inset-6 bg-white/5 blur-xl opacity-40" />
                   <div className="relative h-20 rounded-full bg-[#09090b]/80 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/50 flex items-center px-6 gap-5">
                     <div className="h-12 w-12 rounded-full bg-white text-black flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)]">
                       <PlayCircle className="h-5 w-5" />
