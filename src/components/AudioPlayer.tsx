@@ -248,23 +248,28 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
         style={{ background: 'radial-gradient(ellipse 60% 80% at 50% 100%, var(--accent-subtle, rgba(124,58,237,0.2)) 0%, transparent 70%)' }}
       />
       
-      <div className="relative h-[88px] w-full max-w-5xl rounded-[28px] overflow-hidden group/player shadow-2xl shadow-black/50">
-        {/* Glass background */}
-        <div className="absolute inset-0 bg-[#08080a]/90 backdrop-blur-3xl" />
+      {/* Main Container - Allow overflow for popups, but keep shape size */}
+      <div className="relative h-[88px] w-full max-w-5xl group/player shadow-2xl shadow-black/50">
         
-        {/* Top highlight line */}
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        {/* Background Styling Container - Clips background effects but not content */}
+        <div className="absolute inset-0 rounded-[28px] overflow-hidden pointer-events-none">
+          {/* Glass background */}
+          <div className="absolute inset-0 bg-[#08080a]/90 backdrop-blur-3xl" />
+          
+          {/* Top highlight line */}
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          
+          {/* Theme-tinted glow from left */}
+          <div 
+            className="absolute inset-0 opacity-40"
+            style={{ background: 'radial-gradient(ellipse 40% 100% at 0% 50%, var(--accent-subtle, rgba(124,58,237,0.15)) 0%, transparent 60%)' }}
+          />
+          
+          {/* Chromatic border */}
+          <div className="absolute inset-0 rounded-[28px] border border-white/[0.08]" />
+        </div>
         
-        {/* Theme-tinted glow from left */}
-        <div 
-          className="absolute inset-0 pointer-events-none opacity-40"
-          style={{ background: 'radial-gradient(ellipse 40% 100% at 0% 50%, var(--accent-subtle, rgba(124,58,237,0.15)) 0%, transparent 60%)' }}
-        />
-        
-        {/* Chromatic border */}
-        <div className="absolute inset-0 rounded-[28px] pointer-events-none border border-white/[0.08]" />
-        
-        {/* Content */}
+        {/* Content - No overflow hidden, so popups can extend out */}
         <div className="relative h-full flex items-center px-5 gap-5">
           <audio ref={audioRef} src={src} preload="metadata" />
 
@@ -308,8 +313,8 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
               {/* Track background */}
               <div className="absolute inset-0 bg-white/[0.03] rounded-xl" />
               
-              {/* Background waveform */}
-              <div className="absolute inset-0 text-white/20 group-hover:text-white/30 transition-colors">
+              {/* Background waveform - Increased contrast */}
+              <div className="absolute inset-0 text-white/50 group-hover:text-white/60 transition-colors">
                  <WaveformVisualizer peaks={peaks} color="currentColor" />
               </div>
 

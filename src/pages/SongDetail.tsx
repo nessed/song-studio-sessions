@@ -271,10 +271,10 @@ export default function SongDetail() {
             width: showTasks ? 260 : 0,
             opacity: showTasks ? 1 : 0,
           }}
-          transition={{ type: "spring", damping: 25, stiffness: 200 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
           className="border-l border-white/10 bg-[#09090b]/80 backdrop-blur-2xl shadow-2xl flex flex-col overflow-hidden"
         >
-          <div className="p-4 w-full overflow-y-auto flex-1">
+          <div className="p-4 pb-32 w-full overflow-y-auto flex-1">
 
             <SmartTaskPanel
               tasks={tasks}

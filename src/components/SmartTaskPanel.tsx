@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Task, SongSection, SONG_SECTIONS } from "@/lib/types";
 import { SmartTaskCard } from "./SmartTaskCard";
 import { parseTaskInput, taskTemplates } from "@/lib/taskParser";
-import { Plus, Sparkles, ChevronDown, Inbox } from "lucide-react";
+import { Plus, ChevronDown, Inbox } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -61,25 +61,19 @@ export function SmartTaskPanel({
     if (!inputValue.trim() || isAdding) return;
     
     setIsAdding(true);
-    const parsed = parseTaskInput(inputValue);
+    try {
+      const parsed = parseTaskInput(inputValue);
 
-    // If we are filtered to a specific section, force that section
-    // unless the user explicitly typed a section keyword that overrides it?
-    // The requirement says "default to the section you are currently viewing".
-    // So if I am in "Writing", and I type "Record vocals", it might be ambiguous.
-    // But usually "Writing" tab -> add to "Writing".
-    // Let's rely on parsed section if explicit, otherwise fall back to activeFilter if valid, otherwise currentSection.
-    
-    let targetSection = parsed.section;
-    if (!targetSection) {
+      // Simplify: If user is in a specific filter, ALWAYS add to that filter.
+      // Only use smart parsing activeFilter is "all".
+      let targetSection = parsed.section;
+      
       if (activeFilter !== "all") {
         targetSection = activeFilter;
-      } else {
+      } else if (!targetSection) {
         targetSection = currentSection || "Idea";
       }
-    }
 
-    try {
       const newTask = await onCreateTask(targetSection, parsed.title, {
         priority: parsed.priority,
         due_date: parsed.dueDate,
@@ -89,13 +83,16 @@ export function SmartTaskPanel({
         toast.success(`Task added to ${targetSection}`, {
           description: parsed.priority ? `Priority: ${parsed.priority}` : undefined
         });
+        setInputValue("");
+      } else {
+         throw new Error("Task creation returned null");
       }
     } catch (e) {
+      console.error(e);
       toast.error("Failed to add task");
+    } finally {
+      setIsAdding(false);
     }
-    
-    setInputValue("");
-    setIsAdding(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -145,7 +142,6 @@ export function SmartTaskPanel({
               onClick={() => setShowTemplates(!showTemplates)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white text-[10px] font-semibold uppercase tracking-wider transition-all"
             >
-              <Sparkles className="w-3 h-3" />
               Templates
               <ChevronDown className={`w-3 h-3 transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
             </button>
@@ -236,48 +232,28 @@ export function SmartTaskPanel({
 
       {/* Smart Input */}
       <div className="px-4 pb-4 pt-2 flex-shrink-0">
-        <div className="relative flex items-center rounded-xl overflow-hidden transition-colors duration-200 focus-within:bg-white/5"
+        <div className="relative flex items-center rounded-xl transition-colors duration-200 focus-within:bg-white/5"
           style={{
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.08)',
           }}
         >
-          <Plus className="absolute left-3 w-4 h-4 text-white/30" />
+          <button 
+            className="absolute left-3 p-1 rounded-full hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={handleSubmit}
+            disabled={isAdding || !inputValue.trim()}
+          >
+            <Plus className="w-4 h-4" />
+          </button>
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={activeFilter !== "all" ? `Add ${activeFilter} task...` : `Add task... (try "Record vocals urgent")`}
-            className="w-full py-3 pl-10 pr-4 bg-transparent text-sm text-white/90 placeholder:text-white/30 focus:outline-none"
+            placeholder={activeFilter !== "all" ? `Add ${activeFilter} task...` : `Add task...`}
+            className="w-full py-3 pl-12 pr-4 bg-transparent text-sm text-white/90 placeholder:text-white/30 focus:outline-none"
             disabled={isAdding}
           />
-          
-          {/* Tooltip trigger */}
-          <div className="group absolute right-2">
-            <div className="p-1.5 rounded-full hover:bg-white/10 cursor-help transition-colors">
-              <span className="text-[10px] font-bold text-white/30 group-hover:text-white/60">?</span>
-            </div>
-            
-            {/* Tooltip Content */}
-            <div className="absolute right-0 bottom-full mb-2 w-64 p-3 rounded-xl bg-[#09090b] border border-white/10 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-              <h5 className="text-[10px] font-bold uppercase tracking-wider text-white/60 mb-2">Smart Keywords</h5>
-              <div className="space-y-2 text-[10px] text-white/50">
-                <div className="flex justify-between">
-                  <span>Priority</span>
-                  <span className="text-white/80">"high", "urgent", "low"</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Due Date</span>
-                  <span className="text-white/80">"by friday", "tomorrow"</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Sections</span>
-                  <span className="text-white/80">"rec", "mix", "write"</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

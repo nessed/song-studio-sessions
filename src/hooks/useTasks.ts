@@ -22,7 +22,7 @@ export function useTasks(songId: string | undefined) {
       .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("Error fetching tasks:", error);
+      console.error("Error fetching tasks:", JSON.stringify(error, null, 2));
     } else {
       setTasks((data as Task[]) || []);
     }
@@ -33,7 +33,7 @@ export function useTasks(songId: string | undefined) {
     fetchTasks();
   }, [fetchTasks]);
 
-  const createTask = async (
+  const createTask = useCallback(async (
     section: SongSection, 
     title: string,
     options?: { priority?: 'high' | 'medium' | 'low'; due_date?: Date }
@@ -57,24 +57,25 @@ export function useTasks(songId: string | undefined) {
         user_id: user.id,
         section,
         title,
-        priority: options?.priority || 'medium',
-        due_date: options?.due_date?.toISOString() || null,
-        sort_order: nextOrder,
+        // Templated for future migration:
+        // priority: options?.priority || 'medium',
+        // due_date: options?.due_date?.toISOString() || null,
+        // sort_order: nextOrder,
       })
       .select()
       .single();
 
     if (error) {
-      console.error("Error creating task:", error);
+      console.error("Error creating task:", JSON.stringify(error, null, 2));
       return null;
     }
 
     const newTask = data as Task;
     setTasks((prev) => [...prev, newTask]);
     return newTask;
-  };
+  }, [songId, user]);
 
-  const updateTask = async (id: string, updates: Partial<Pick<Task, "title" | "done">>) => {
+  const updateTask = useCallback(async (id: string, updates: Partial<Pick<Task, "title" | "done">>) => {
     const { error } = await supabase.from("tasks").update(updates).eq("id", id);
 
     if (!error) {
@@ -82,9 +83,9 @@ export function useTasks(songId: string | undefined) {
     }
 
     return { error };
-  };
+  }, []);
 
-  const deleteTask = async (id: string) => {
+  const deleteTask = useCallback(async (id: string) => {
     const { error } = await supabase.from("tasks").delete().eq("id", id);
 
     if (!error) {
@@ -92,7 +93,7 @@ export function useTasks(songId: string | undefined) {
     }
 
     return { error };
-  };
+  }, []);
 
   return { tasks, loading, createTask, updateTask, deleteTask, refetch: fetchTasks };
 }

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Task, TaskPriority } from "@/lib/types";
 import { Check, Trash2, Calendar, AlertCircle } from "lucide-react";
 import { formatDistanceToNow, isPast, isToday } from "date-fns";
@@ -16,7 +17,7 @@ const priorityConfig: Record<TaskPriority, { color: string; bg: string; label: s
   low: { color: 'text-white/40', bg: 'bg-white/5', label: 'LOW' },
 };
 
-export function SmartTaskCard({ task, onToggle, onDelete, accentColor }: SmartTaskCardProps) {
+export const SmartTaskCard = memo(function SmartTaskCard({ task, onToggle, onDelete, accentColor }: SmartTaskCardProps) {
   const priority = priorityConfig[task.priority] || priorityConfig.medium;
   
   const dueDate = task.due_date ? new Date(task.due_date) : null;
@@ -32,6 +33,8 @@ export function SmartTaskCard({ task, onToggle, onDelete, accentColor }: SmartTa
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
+      layout
+      transition={{ duration: 0.2 }}
       className={`group relative rounded-xl p-4 transition-all duration-200 ${
         task.done ? 'opacity-50' : ''
       }`}
@@ -106,4 +109,4 @@ export function SmartTaskCard({ task, onToggle, onDelete, accentColor }: SmartTa
       </div>
     </motion.div>
   );
-}
+});

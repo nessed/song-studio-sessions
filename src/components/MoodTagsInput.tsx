@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Plus, Sparkles } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface MoodTagsInputProps {
@@ -93,7 +93,6 @@ export function MoodTagsInput({ tags, onUpdate }: MoodTagsInputProps) {
             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/5 blur-sm" />
             <Plus className="relative w-3 h-3 group-hover:rotate-90 transition-transform" />
             <span className="relative">Add vibe</span>
-            <Sparkles className="relative w-3 h-3 opacity-0 group-hover:opacity-70 transition-opacity text-white/50" />
           </motion.button>
         )}
       </AnimatePresence>

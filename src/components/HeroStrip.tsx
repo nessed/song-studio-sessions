@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Image, Upload, ChevronDown, Link as LinkIcon, ExternalLink, Music2, Sparkles, Folder } from "lucide-react";
+import { Image, Upload, ChevronDown, Link as LinkIcon, ExternalLink, Music2, Folder } from "lucide-react";
 import { motion } from "framer-motion";
 import { VibeBox } from "./VibeBox";
 import { MoodTagsInput } from "./MoodTagsInput";
@@ -154,7 +154,6 @@ export function HeroStrip({
               <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-white/5 via-white/[0.02] to-transparent border-2 border-dashed border-white/10 group-hover:border-white/20 transition-colors">
                 <div className="relative">
                   <Music2 className="w-10 h-10 text-white/15" />
-                  <Sparkles className="w-3.5 h-3.5 text-white/20 absolute -top-1 -right-1" />
                 </div>
                 <span className="text-[9px] uppercase tracking-wider font-medium text-white/25 group-hover:text-white/40 transition-colors">Click to upload</span>
               </div>

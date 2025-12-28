@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { SessionsLogo } from "@/components/SessionsLogo";
-import { ArrowRight, PlayCircle, Sparkles, Check, Infinity } from "lucide-react";
+import { ArrowRight, PlayCircle, Check, Infinity } from "lucide-react";
 
 const stagger = {
   hidden: { opacity: 0, y: 20 },
@@ -49,7 +49,6 @@ const Index = () => {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-center py-12 sm:py-16">
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-80px" }} className="space-y-8">
             <motion.div variants={stagger} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5">
-              <Sparkles className="h-4 w-4 text-white/70" />
               <span className="text-xs font-mono text-white/60">No more Song_v3_Final_REAL.mp3</span>
             </motion.div>
             <motion.h1
