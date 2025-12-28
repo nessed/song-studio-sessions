@@ -9,7 +9,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { SessionThemeProvider } from "@/components/SessionThemeProvider";
 import { SessionsLogo } from "@/components/SessionsLogo";
 import { Plus, Music, Folder, Search, User } from "lucide-react";
-import { motion } from "framer-motion";
+// import { motion } from "framer-motion"; // Disabled for performance
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -55,7 +55,7 @@ export default function Dashboard() {
         {/* Header */}
         <header className="sticky top-0 z-30 relative overflow-hidden">
           {/* Glass background */}
-          <div className="absolute inset-0 bg-[#09090b]/85 backdrop-blur-2xl" />
+          <div className="absolute inset-0 bg-[#09090b]/95" />
           
           {/* Theme-tinted glow */}
           <div 
@@ -142,11 +142,8 @@ export default function Dashboard() {
         <main className="relative z-10 max-w-5xl mx-auto px-6 py-12">
           {/* Recent Projects */}
           {recentProjects.length > 0 && (
-            <motion.section 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="mb-12"
+            <section 
+              className="mb-12 animate-fade-in"
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-white/40">Recent Projects</h2>
@@ -156,11 +153,10 @@ export default function Dashboard() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
                 {recentProjects.map((project, i) => (
-                  <motion.div
+                  <div
                     key={project.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05, duration: 0.3 }}
+                    className="animate-fade-in"
+                    style={{ animationDelay: `${i * 50}ms` }}
                   >
                     <Link to={`/project/${project.id}`} className="group block">
                       <div className="glass-premium glass-noise aspect-square rounded-2xl overflow-hidden relative group-hover:scale-[1.02] transition-transform duration-300">
@@ -179,17 +175,16 @@ export default function Dashboard() {
                       </div>
                       <p className="mt-3 text-sm font-medium text-white/80 truncate group-hover:text-white transition-colors">{project.title}</p>
                     </Link>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
-            </motion.section>
+            </section>
           )}
 
           {/* All Songs */}
-          <motion.section 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.4 }}
+          <section 
+            className="animate-fade-in"
+            style={{ animationDelay: '150ms' }}
           >
             <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
@@ -247,7 +242,7 @@ export default function Dashboard() {
               <div className="glass-premium glass-noise rounded-2xl overflow-hidden">
                 <div className="divide-y divide-white/[0.04]">
                   {sortedSongs.map((song) => (
-                    <SongListItem key={song.id} song={song} showProject />
+                    <SongListItem key={song.id} song={song} showProject projects={projects} />
                   ))}
                 </div>
               </div>
@@ -257,7 +252,7 @@ export default function Dashboard() {
                 <p className="text-sm text-white/40">No songs yet. Enter a title above to get started.</p>
               </div>
             )}
-          </motion.section>
+          </section>
         </main>
       </div>
     </SessionThemeProvider>

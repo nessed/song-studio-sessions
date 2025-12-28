@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, memo } from "react";
 
 interface WaveformVisualizerProps {
   peaks: number[];
@@ -6,7 +6,12 @@ interface WaveformVisualizerProps {
   height?: number;
 }
 
-export function WaveformVisualizer({ peaks, color = "rgba(255, 255, 255, 0.25)", height = 56 }: WaveformVisualizerProps) {
+// Static loading bars - computed once
+const LOADING_BARS = Array.from({ length: 20 }, (_, i) => ({
+  height: 10 + (Math.sin(i * 0.5) * 30 + 30), // Smooth wave pattern, not random
+}));
+
+function WaveformVisualizerInner({ peaks, color = "rgba(255, 255, 255, 0.25)", height = 56 }: WaveformVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -17,9 +22,6 @@ export function WaveformVisualizer({ peaks, color = "rgba(255, 255, 255, 0.25)",
     if (!ctx) return;
 
     const dpr = window.devicePixelRatio || 1;
-    // We rely on parent to set width via CSS (w-full), but we need to read it.
-    // However, if we are in a hidden 'overflow' container, offsetWidth might be tricky if not careful.
-    // Assuming this component is always rendered full width of its container.
     const width = canvas.offsetWidth;
     const canvasHeight = canvas.offsetHeight || height;
 
@@ -29,22 +31,18 @@ export function WaveformVisualizer({ peaks, color = "rgba(255, 255, 255, 0.25)",
 
     ctx.clearRect(0, 0, width, canvasHeight);
     
-    // Config
     const barWidth = width / peaks.length;
     const gap = 2;
-    const effectiveBarWidth = Math.max(2, barWidth - gap); // Maintain minimum visibility
+    const effectiveBarWidth = Math.max(2, barWidth - gap);
 
     ctx.fillStyle = color;
 
     peaks.forEach((peak, i) => {
       const x = i * barWidth;
-      // Scale height relative to canvas, ensure min height of 4px
       const barHeight = Math.max(4, peak * (canvasHeight * 0.8)); 
       const yCenter = (canvasHeight - barHeight) / 2; 
 
-      // Draw rounded rect
       ctx.beginPath();
-      // ctx.roundRect is not available in all TS envs yet, use simple rect or polyfill
       if (ctx.roundRect) {
          ctx.roundRect(x, yCenter, effectiveBarWidth, barHeight, 2);
       } else {
@@ -56,17 +54,14 @@ export function WaveformVisualizer({ peaks, color = "rgba(255, 255, 255, 0.25)",
   }, [peaks, color, height]);
 
   if (!peaks.length) {
+    // Simple static loading state - no animations
     return (
-       <div className="w-full h-full flex items-center justify-between gap-[2px] opacity-50 px-1 overflow-hidden">
-          {[...Array(40)].map((_, i) => (
+       <div className="w-full h-full flex items-center justify-center gap-1 opacity-30 px-1">
+          {LOADING_BARS.map((bar, i) => (
              <div 
                key={i} 
-               className="w-full bg-white/30 rounded-full animate-pulse" 
-               style={{ 
-                 height: `${Math.max(10, Math.random() * 80)}%`, 
-                 animationDelay: `${Math.random() * 1.5}s`,
-                 animationDuration: `${0.8 + Math.random()}s`
-               }} 
+               className="flex-1 bg-white/40 rounded-full" 
+               style={{ height: `${bar.height}%` }} 
              />
           ))}
        </div>
@@ -80,3 +75,7 @@ export function WaveformVisualizer({ peaks, color = "rgba(255, 255, 255, 0.25)",
     />
   );
 }
+
+// Memoize to prevent re-renders when parent updates
+export const WaveformVisualizer = memo(WaveformVisualizerInner);
+

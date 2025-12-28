@@ -84,7 +84,7 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
           <img 
             src={coverUrl} 
             alt="" 
-            className="absolute inset-0 w-full h-full object-cover opacity-[0.08] blur-[100px] scale-150 saturate-150"
+            className="absolute inset-0 w-full h-full object-cover opacity-[0.08] blur-[60px] scale-150 saturate-150"
           />
         </div>
       )}
@@ -97,9 +97,10 @@ export const SessionThemeProvider: React.FC<SessionThemeProviderProps> = ({
       
       {/* Noise Texture for depth */}
       <div 
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.025] mix-blend-overlay" 
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.03] mix-blend-overlay" 
         style={{ 
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` 
+          backgroundImage: `url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyBAMAAADsEZWCAAAAGFBMVEUAAAA5OTkAAABMTExERERmZmYzMzMzMzP/760HAAAACHRSTlMAMwAqzMz//75r9SgAAABcSURBVDjLY2AYBaNgKLChgYFhIwMDw0YGBoYNDAwMGxkYGDYyMDBsZGBg2MjAwLCRgYFhIwMDw0YGBoYNDAwMGxkYGDYyMDBsZGBg2MjAwLCRgYFhIwMDw0YGBgYGAPuAA4Vn/R8rAAAAAElFTkSuQmCC")`,
+          backgroundSize: '64px'
         }} 
       />
 

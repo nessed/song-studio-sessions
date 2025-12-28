@@ -44,6 +44,16 @@ export default function SongDetail() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+  const lastTimeUpdateRef = useRef(0);
+
+  // Throttle time updates to reduce re-renders (update every 250ms max)
+  const handleTimeUpdate = (time: number) => {
+    const now = Date.now();
+    if (now - lastTimeUpdateRef.current > 250) {
+      lastTimeUpdateRef.current = now;
+      setCurrentTime(time);
+    }
+  };
 
   useEffect(() => {
     if (song) {
@@ -193,7 +203,7 @@ export default function SongDetail() {
         )}
 
         {/* Header */}
-        <header className="sticky top-0 z-30 px-6 py-4 flex items-center justify-between bg-[#09090b]/80 backdrop-blur-2xl border-b border-white/[0.04]">
+        <header className="sticky top-0 z-30 px-6 py-4 flex items-center justify-between bg-[#09090b]/95 border-b border-white/[0.04]">
           <Link
             to={song.project_id ? `/project/${song.project_id}` : "/dashboard"}
             className="flex items-center gap-2 text-white/50 hover:text-white transition-colors"
@@ -468,7 +478,7 @@ export default function SongDetail() {
         {/* Floating Audio Player */}
         <AudioPlayer
           src={activeVersion?.file_url || song.mp3_url || ""}
-          onTimeUpdate={setCurrentTime}
+          onTimeUpdate={handleTimeUpdate}
           timelineNotes={timelineNotes}
           onRequestAddNote={(time) =>
             setNoteAddTime((prev) => (prev === time ? time + 0.001 : time))
