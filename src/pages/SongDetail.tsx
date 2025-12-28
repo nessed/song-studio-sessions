@@ -3,14 +3,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useSong, useSongs } from "@/hooks/useSongs";
 import { useSongVersions } from "@/hooks/useSongVersions";
+// import { useSongStems } from "@/hooks/useSongStems"; // Removed
+
 import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
 import { useSongNotes } from "@/hooks/useSongNotes";
 import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
-import { TaskSection } from "@/components/TaskSection";
+import { SmartTaskPanel } from "@/components/SmartTaskPanel";
 import { TimelineNotes } from "@/components/TimelineNotes";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
+// import { StemMixer } from "@/components/StemMixer"; // Removed
+
 import { SessionThemeProvider } from "@/components/SessionThemeProvider";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -29,6 +33,9 @@ export default function SongDetail() {
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
   const { projects } = useProjects();
   const { notes: timelineNotes, createNote, updateNote, deleteNote } = useSongNotes(id);
+  // const { stems, uploadStem, updateStem, deleteStem, isUploading: isStemUploading, uploadProgress: stemUploadProgress } = useSongStems(currentVersion?.id); // Removed
+
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const [title, setTitle] = useState("");
   const [bpm, setBpm] = useState("");
@@ -219,17 +226,26 @@ export default function SongDetail() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="mb-8"
+                className="py-4"
               >
                 <button
                   onClick={() => audioInputRef.current?.click()}
-                  className="w-full px-6 py-5 rounded-full bg-[#09090b]/80 backdrop-blur-2xl border border-white/10 shadow-2xl text-white/80 hover:text-white hover:border-white/20 transition-colors flex items-center justify-center gap-3 group"
+                  className="relative w-full group"
                 >
-                  <div className="relative">
-                    <Upload className="w-5 h-5" />
-                    <div className="absolute inset-0 blur-md bg-white/30 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {/* Subtle hover glow */}
+                  <div className="absolute -inset-px rounded-2xl bg-white/5 opacity-0 group-hover:opacity-100 blur-sm transition-all duration-500" />
+                  
+                  <div className="relative px-8 py-6 rounded-2xl bg-gradient-to-br from-white/[0.06] to-white/[0.02] border border-white/10 group-hover:border-white/15 transition-all flex items-center justify-center gap-4">
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Upload className="w-5 h-5 text-white/50 group-hover:text-white/80 transition-colors" />
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-white/90">Upload your first mix</p>
+                      <p className="text-xs text-white/40">Drag and drop or click to browse</p>
+                    </div>
                   </div>
-                  <span>Upload your first mix</span>
                 </button>
               </motion.div>
             )}
@@ -239,13 +255,12 @@ export default function SongDetail() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.25 }}
-              className="space-y-3"
             >
-              <div className="flex items-center justify-between">
-                <h3 className="section-heading">Lyrics</h3>
-              </div>
               <LyricsEditor value={song.lyrics || ""} onChange={handleLyricsChange} />
             </motion.div>
+
+            {/* Stem Mixer - REMOVED */}
+
           </div>
         </div>
 
@@ -259,20 +274,15 @@ export default function SongDetail() {
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="border-l border-white/10 bg-[#09090b]/80 backdrop-blur-2xl shadow-2xl flex flex-col overflow-hidden"
         >
-          <div className="p-6 w-64 overflow-y-auto flex-1">
-            <h3 className="section-heading">Tasks</h3>
-            <div className="space-y-8">
-              {SONG_SECTIONS.map((section) => (
-                <TaskSection
-                  key={section}
-                  section={section}
-                  tasks={tasks.filter((t) => t.section === section)}
-                  onCreateTask={(taskTitle) => createTask(section, taskTitle)}
-                  onUpdateTask={updateTask}
-                  onDeleteTask={deleteTask}
-                />
-              ))}
-            </div>
+          <div className="p-4 w-full overflow-y-auto flex-1">
+
+            <SmartTaskPanel
+              tasks={tasks}
+              onCreateTask={createTask}
+              onUpdateTask={updateTask}
+              onDeleteTask={deleteTask}
+              currentSection={song.status === 'idea' ? 'Idea' : song.status === 'writing' ? 'Writing' : song.status === 'recording' ? 'Recording' : song.status === 'mixing' ? 'Mixing' : song.status === 'mastering' ? 'Mastering' : 'Production'}
+            />
           </div>
         </motion.div>
       </div>
@@ -285,7 +295,7 @@ export default function SongDetail() {
         onRequestAddNote={(time) =>
           setNoteAddTime((prev) => (prev === time ? time + 0.001 : time))
         }
-        noteTray={
+        notesComponent={
           <TimelineNotes
             songId={song.id}
             currentTime={currentTime}

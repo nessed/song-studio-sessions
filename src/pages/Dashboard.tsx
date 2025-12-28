@@ -41,7 +41,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b]">
+    <div className="min-h-screen bg-[#09090b] relative">
+      {/* Subtle ambient glow (default purple when no theme) */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse 80% 40% at 50% -5%, var(--accent-subtle, rgba(124,58,237,0.1)) 0%, transparent 60%)' }}
+      />
+      
       <AppHeader />
 
       <main className="max-w-5xl mx-auto px-6 py-12">
@@ -57,7 +63,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
               {recentProjects.map((project) => (
                 <Link key={project.id} to={`/project/${project.id}`} className="group">
-                  <div className="aspect-square rounded-xl overflow-hidden bg-white/5 shadow-lg group-hover:scale-[1.02] transition-transform duration-300">
+                  <div className="glass-tinted aspect-square rounded-xl overflow-hidden group-hover:scale-[1.02] transition-transform duration-300">
                     {project.cover_art_url ? (
                       <img src={project.cover_art_url} alt="" className="w-full h-full object-cover" />
                     ) : (

@@ -132,9 +132,15 @@ export default function SharedSongView() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090b] text-white flex flex-col">
+    <div className="min-h-screen bg-[#09090b] text-white flex flex-col relative">
+      {/* Subtle ambient glow */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse 80% 40% at 50% -5%, rgba(16, 185, 129, 0.1) 0%, transparent 60%)' }}
+      />
       {/* Minimal Header */}
-      <header className="px-6 py-6 flex items-center justify-between border-b border-white/5 bg-black/20 backdrop-blur-md sticky top-0 z-20">
+      <header className="px-6 py-6 flex items-center justify-between bg-[#09090b]/80 backdrop-blur-2xl sticky top-0 z-20 relative overflow-hidden">
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/8 to-transparent" />
         <div className="flex items-center gap-3">
            <div className="opacity-80 scale-90 origin-left">
               <SessionsLogo to="/" />
@@ -189,7 +195,7 @@ export default function SharedSongView() {
 
         {/* Player Section - Big & Centered */}
         <div className="w-full space-y-4">
-            <div className="w-full bg-[#121214] border border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-visible group">
+            <div className="glass-premium w-full p-6 md:p-8 relative overflow-visible group">
                <div className="absolute top-0 right-0 p-40 bg-emerald-500/5 blur-[100px] rounded-full pointer-events-none" />
                <div className="relative z-10">
                   {audioSrc ? (
@@ -198,15 +204,13 @@ export default function SharedSongView() {
                         timelineNotes={notes}
                         onTimeUpdate={setCurrentTime}
                         onRequestAddNote={(time) => setAddNoteTrigger(time)}
-                        noteTray={
+                        notesComponent={
                            <TimelineNotes 
                               songId={song.id}
                               currentTime={currentTime}
                               notes={notes}
                               onCreateNote={handleCreateGuestNote}
                               triggerAddTime={addNoteTrigger}
-                              // Guests cannot update/delete others' notes usually, but for MVP we might hide it or allow it.
-                              // For now, disable update/delete for guests (passing undefined/noop)
                               onUpdateNote={async () => toast.error("Guest editing not allowed")}
                               onDeleteNote={async () => toast.error("Guest deletion not allowed")}
                            />
@@ -219,7 +223,7 @@ export default function SharedSongView() {
             </div>
             
             <p className="text-center text-xs text-white/30 pt-2">
-               Tip: Press <span className="text-white/60 font-bold bg-white/10 px-1 rounded">+</span> to add feedback at current time
+               Tip: <span className="text-white/60 font-bold bg-white/10 px-1 rounded">Double-click</span> on waveform to add feedback
             </p>
         </div>
 
