@@ -3,16 +3,18 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useSong, useSongs } from "@/hooks/useSongs";
 import { useSongVersions } from "@/hooks/useSongVersions";
-import { useSongStems } from "@/hooks/useSongStems";
+// import { useSongStems } from "@/hooks/useSongStems"; // Removed
+
 import { useTasks } from "@/hooks/useTasks";
 import { useProjects } from "@/hooks/useProjects";
 import { useSongNotes } from "@/hooks/useSongNotes";
-import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song, StemType } from "@/lib/types";
+import { SONG_STATUSES, SongStatus, SONG_SECTIONS, Song } from "@/lib/types";
 import { SmartTaskPanel } from "@/components/SmartTaskPanel";
 import { TimelineNotes } from "@/components/TimelineNotes";
 import { AudioPlayer } from "@/components/AudioPlayer";
 import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
-import { StemMixer } from "@/components/StemMixer";
+// import { StemMixer } from "@/components/StemMixer"; // Removed
+
 import { SessionThemeProvider } from "@/components/SessionThemeProvider";
 import { Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -31,7 +33,8 @@ export default function SongDetail() {
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
   const { projects } = useProjects();
   const { notes: timelineNotes, createNote, updateNote, deleteNote } = useSongNotes(id);
-  const { stems, uploadStem, updateStem, deleteStem, isUploading: isStemUploading, uploadProgress: stemUploadProgress } = useSongStems(currentVersion?.id);
+  // const { stems, uploadStem, updateStem, deleteStem, isUploading: isStemUploading, uploadProgress: stemUploadProgress } = useSongStems(currentVersion?.id); // Removed
+
   const [isPlaying, setIsPlaying] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -256,31 +259,8 @@ export default function SongDetail() {
               <LyricsEditor value={song.lyrics || ""} onChange={handleLyricsChange} />
             </motion.div>
 
-            {/* Stem Mixer */}
-            {currentVersion && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-              >
-                <StemMixer
-                  stems={stems}
-                  isPlaying={isPlaying}
-                  currentTime={currentTime}
-                  onUpdateStem={updateStem}
-                  onDeleteStem={async (stemId) => {
-                    await deleteStem(stemId);
-                    toast.success("Stem deleted");
-                  }}
-                  onUploadStem={async (file, stemType) => {
-                    await uploadStem(file, stemType);
-                    toast.success("Stem uploaded");
-                  }}
-                  isUploading={isStemUploading}
-                  uploadProgress={stemUploadProgress}
-                />
-              </motion.div>
-            )}
+            {/* Stem Mixer - REMOVED */}
+
           </div>
         </div>
 
@@ -294,7 +274,8 @@ export default function SongDetail() {
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="border-l border-white/10 bg-[#09090b]/80 backdrop-blur-2xl shadow-2xl flex flex-col overflow-hidden"
         >
-          <div className="p-4 w-80 overflow-y-auto flex-1">
+          <div className="p-4 w-full overflow-y-auto flex-1">
+
             <SmartTaskPanel
               tasks={tasks}
               onCreateTask={createTask}
