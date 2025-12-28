@@ -59,74 +59,89 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Header - matching SongDetail header exactly */}
-        <header className="sticky top-0 z-30 px-6 py-4 flex items-center justify-between bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04]">
-          <div className="flex items-center gap-8">
-            <SessionsLogo />
+        {/* Header - Premium Design */}
+        <header className="sticky top-0 z-30 border-b border-white/[0.06]">
+          {/* Glass background */}
+          <div className="absolute inset-0 bg-[#09090b]/90 backdrop-blur-2xl" />
+          
+          <div className="relative px-4 sm:px-6 py-3 flex items-center justify-between">
+            <div className="flex items-center gap-6 sm:gap-10">
+              <SessionsLogo />
 
-            <nav className="hidden sm:flex items-center gap-1">
-              <Link
-                to="/dashboard"
-                className={`px-4 py-2 text-sm rounded-full transition-all ${
-                  isActive("/dashboard") || isActive("/song")
-                    ? "text-white bg-white/10 border border-white/10"
-                    : "text-white/50 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                Songs
-              </Link>
-              <Link
-                to="/projects"
-                className={`px-4 py-2 text-sm rounded-full transition-all ${
-                  isActive("/projects") || isActive("/project")
-                    ? "text-white bg-white/10 border border-white/10"
-                    : "text-white/50 hover:text-white hover:bg-white/5"
-                }`}
-              >
-                Projects
-              </Link>
-            </nav>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link to="/settings" className="p-2 rounded-full hover:bg-white/5 transition-colors">
-              {profile?.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt=""
-                  className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                  <User className="w-4 h-4 text-white/50" />
+              {/* Navigation Tabs - Desktop */}
+              <nav className="hidden sm:flex items-center">
+                <div className="flex items-center bg-white/[0.04] rounded-full p-1 border border-white/[0.06]">
+                  <Link
+                    to="/dashboard"
+                    className={`relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
+                      isActive("/dashboard") || isActive("/song")
+                        ? "text-white bg-white/[0.12] shadow-sm"
+                        : "text-white/50 hover:text-white/80"
+                    }`}
+                  >
+                    Songs
+                  </Link>
+                  <Link
+                    to="/projects"
+                    className={`relative px-5 py-2 text-sm font-medium rounded-full transition-all duration-200 ${
+                      isActive("/projects") || isActive("/project")
+                        ? "text-white bg-white/[0.12] shadow-sm"
+                        : "text-white/50 hover:text-white/80"
+                    }`}
+                  >
+                    Projects
+                  </Link>
                 </div>
-              )}
-            </Link>
+              </nav>
+            </div>
+
+            {/* Right side */}
+            <div className="flex items-center gap-3">
+              {/* Mobile menu toggle could go here */}
+              <Link 
+                to="/settings" 
+                className="group relative p-1.5 rounded-full hover:bg-white/5 transition-all"
+              >
+                {profile?.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt=""
+                    className="w-9 h-9 rounded-full object-cover ring-2 ring-white/10 group-hover:ring-white/20 transition-all"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center group-hover:border-white/20 transition-all">
+                    <User className="w-4 h-4 text-white/60" />
+                  </div>
+                )}
+              </Link>
+            </div>
           </div>
         </header>
         
-        {/* Mobile nav */}
-        <nav className="sm:hidden sticky top-[65px] z-20 px-6 py-3 bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04] flex items-center gap-2">
-          <Link
-            to="/dashboard"
-            className={`flex-1 py-2 text-center text-sm rounded-full transition-all ${
-              isActive("/dashboard") || isActive("/song")
-                ? "text-white bg-white/10 border border-white/10"
-                : "text-white/50"
-            }`}
-          >
-            Songs
-          </Link>
-          <Link
-            to="/projects"
-            className={`flex-1 py-2 text-center text-sm rounded-full transition-all ${
-              isActive("/projects") || isActive("/project")
-                ? "text-white bg-white/10 border border-white/10"
-                : "text-white/50"
-            }`}
-          >
-            Projects
-          </Link>
+        {/* Mobile Navigation Bar */}
+        <nav className="sm:hidden sticky top-[57px] z-20 bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04] px-4 py-2">
+          <div className="flex items-center bg-white/[0.03] rounded-full p-1 border border-white/[0.05]">
+            <Link
+              to="/dashboard"
+              className={`flex-1 py-2.5 text-center text-sm font-medium rounded-full transition-all ${
+                isActive("/dashboard") || isActive("/song")
+                  ? "text-white bg-white/10"
+                  : "text-white/40"
+              }`}
+            >
+              Songs
+            </Link>
+            <Link
+              to="/projects"
+              className={`flex-1 py-2.5 text-center text-sm font-medium rounded-full transition-all ${
+                isActive("/projects") || isActive("/project")
+                  ? "text-white bg-white/10"
+                  : "text-white/40"
+              }`}
+            >
+              Projects
+            </Link>
+          </div>
         </nav>
 
         <main className="relative z-10 max-w-4xl mx-auto px-6 py-12">
