@@ -44,6 +44,16 @@ export default function SongDetail() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<NodeJS.Timeout>();
+  const lastTimeUpdateRef = useRef(0);
+
+  // Throttle time updates to reduce re-renders (update every 250ms max)
+  const handleTimeUpdate = (time: number) => {
+    const now = Date.now();
+    if (now - lastTimeUpdateRef.current > 250) {
+      lastTimeUpdateRef.current = now;
+      setCurrentTime(time);
+    }
+  };
 
   useEffect(() => {
     if (song) {
@@ -468,7 +478,7 @@ export default function SongDetail() {
         {/* Floating Audio Player */}
         <AudioPlayer
           src={activeVersion?.file_url || song.mp3_url || ""}
-          onTimeUpdate={setCurrentTime}
+          onTimeUpdate={handleTimeUpdate}
           timelineNotes={timelineNotes}
           onRequestAddNote={(time) =>
             setNoteAddTime((prev) => (prev === time ? time + 0.001 : time))
