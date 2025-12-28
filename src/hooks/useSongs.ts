@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { Song, SongStatus } from "@/lib/types";
@@ -115,31 +116,31 @@ export function useSongs(projectId?: string) {
     },
   });
 
-  const createSong = async (title: string, projectId?: string): Promise<Song | null> => {
+  const createSong = useCallback(async (title: string, projectId?: string): Promise<Song | null> => {
     try {
       return await createSongMutation.mutateAsync({ title, projectId });
     } catch {
       return null;
     }
-  };
+  }, [createSongMutation]);
 
-  const updateSong = async (id: string, updates: Partial<Omit<Song, "id" | "user_id" | "created_at">>) => {
+  const updateSong = useCallback(async (id: string, updates: Partial<Omit<Song, "id" | "user_id" | "created_at">>) => {
     try {
       return await updateSongMutation.mutateAsync({ id, updates });
     } catch (error) {
       return { error };
     }
-  };
+  }, [updateSongMutation]);
 
-  const deleteSong = async (id: string) => {
+  const deleteSong = useCallback(async (id: string) => {
     try {
       return await deleteSongMutation.mutateAsync({ id });
     } catch (error) {
       return { error };
     }
-  };
+  }, [deleteSongMutation]);
 
-  const uploadCoverArt = async (songId: string, file: File): Promise<string | null> => {
+  const uploadCoverArt = useCallback(async (songId: string, file: File): Promise<string | null> => {
     if (!user) return null;
 
     const fileExt = file.name.split(".").pop();
@@ -159,9 +160,9 @@ export function useSongs(projectId?: string) {
 
     await updateSong(songId, { cover_art_url: url });
     return url;
-  };
+  }, [user, updateSong]);
 
-  const uploadMp3 = async (songId: string, file: File): Promise<string | null> => {
+  const uploadMp3 = useCallback(async (songId: string, file: File): Promise<string | null> => {
     if (!user) return null;
 
     const fileExt = file.name.split(".").pop();
@@ -181,7 +182,7 @@ export function useSongs(projectId?: string) {
 
     await updateSong(songId, { mp3_url: url });
     return url;
-  };
+  }, [user, updateSong]);
 
   return {
     songs,

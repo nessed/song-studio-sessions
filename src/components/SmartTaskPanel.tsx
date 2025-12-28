@@ -125,13 +125,9 @@ export function SmartTaskPanel({
   };
 
   return (
-    <div className="glass-premium glass-noise rounded-2xl overflow-hidden flex flex-col h-full max-h-full">
+    <div className="glass-panel glass-noise rounded-2xl overflow-hidden flex flex-col h-full max-h-full">
       {/* Header */}
       <div className="relative border-b border-white/[0.06] px-5 py-4 flex-shrink-0">
-        <div className="absolute inset-0 pointer-events-none opacity-20" 
-          style={{ background: 'radial-gradient(ellipse at top left, var(--accent-subtle, rgba(124,58,237,0.1)) 0%, transparent 50%)' }} 
-        />
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         
         <div className="relative flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Tasks</h3>

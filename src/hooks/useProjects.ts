@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { Project } from "@/lib/types";
@@ -90,31 +91,31 @@ export function useProjects() {
     },
   });
 
-  const createProject = async (title: string): Promise<Project | null> => {
+  const createProject = useCallback(async (title: string): Promise<Project | null> => {
     try {
       return await createProjectMutation.mutateAsync({ title });
     } catch {
       return null;
     }
-  };
+  }, [createProjectMutation]);
 
-  const updateProject = async (id: string, updates: Partial<Omit<Project, "id" | "user_id" | "created_at">>) => {
+  const updateProject = useCallback(async (id: string, updates: Partial<Omit<Project, "id" | "user_id" | "created_at">>) => {
     try {
       return await updateProjectMutation.mutateAsync({ id, updates });
     } catch (error) {
       return { error };
     }
-  };
+  }, [updateProjectMutation]);
 
-  const deleteProject = async (id: string) => {
+  const deleteProject = useCallback(async (id: string) => {
     try {
       return await deleteProjectMutation.mutateAsync({ id });
     } catch (error) {
       return { error };
     }
-  };
+  }, [deleteProjectMutation]);
 
-  const uploadCoverArt = async (projectId: string, file: File): Promise<string | null> => {
+  const uploadCoverArt = useCallback(async (projectId: string, file: File): Promise<string | null> => {
     if (!user) return null;
 
     const fileExt = file.name.split(".").pop();
@@ -134,7 +135,7 @@ export function useProjects() {
 
     await updateProject(projectId, { cover_art_url: url });
     return url;
-  };
+  }, [user, updateProject]);
 
   return { projects, loading, createProject, updateProject, deleteProject, uploadCoverArt, refetch };
 }

@@ -273,19 +273,19 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
         <div className="relative h-full flex items-center px-5 gap-5">
           <audio ref={audioRef} src={src} preload="metadata" />
 
-          {/* Play/Pause Button - Premium */}
+          {/* Play/Pause Button - Circular Premium */}
           <button
             onClick={togglePlay}
-            className="relative h-14 w-14 min-w-[3.5rem] rounded-2xl flex items-center justify-center transition-all active:scale-95 z-10 group/play"
+            className="relative h-14 w-14 min-w-[3.5rem] rounded-full flex items-center justify-center transition-all active:scale-95 z-10 group/play"
           >
             {/* Glow behind button */}
             <div 
-              className="absolute inset-0 rounded-2xl opacity-50 blur-xl transition-opacity group-hover/play:opacity-80"
+              className="absolute inset-0 rounded-full opacity-50 blur-xl transition-opacity group-hover/play:opacity-80"
               style={{ background: isPlaying ? 'var(--accent-main, #fff)' : 'rgba(255,255,255,0.3)' }}
             />
             
             {/* Button face */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white via-white to-white/90 shadow-lg" />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white via-white to-white/90 shadow-[0_4px_20px_rgba(255,255,255,0.25)]" />
             
             {/* Icon */}
             <div className="relative text-black">
@@ -296,9 +296,9 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
           {/* Time & Waveform */}
           <div className="flex-1 flex flex-col justify-center gap-1.5">
             {/* Time display row */}
-            <div className="flex items-center justify-between text-[10px] font-medium uppercase px-0.5">
-               <div ref={timeDisplayRef} className="tabular-nums text-white/60 font-mono tracking-wide">0:00</div>
-               <div className="text-white/25 font-mono tabular-nums tracking-wide">{formatTime(duration)}</div>
+            <div className="flex items-center justify-between text-[11px] font-medium px-0.5">
+               <div ref={timeDisplayRef} className="tabular-nums text-white/80 font-mono tracking-wide">0:00</div>
+               <div className="text-white/40 font-mono tabular-nums tracking-wide">{formatTime(duration)}</div>
             </div>
 
             {/* Waveform track */}
@@ -318,24 +318,29 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                  <WaveformVisualizer peaks={peaks} color="currentColor" />
               </div>
 
-              {/* Progress waveform with theme color */}
+              {/* Progress waveform with cyan/teal color */}
               <div 
                 ref={progressBarRef}
                 className="absolute inset-0 pointer-events-none will-change-[clip-path]"
                 style={{ clipPath: "inset(0 100% 0 0)" }}
               >
-                {/* Main colored waveform */}
-                <div style={{ color: 'var(--accent-main, #a78bfa)' }}>
+                {/* Main colored waveform - bright cyan */}
+                <div className="text-cyan-400">
                   <WaveformVisualizer peaks={peaks} color="currentColor" />
                 </div>
-                {/* Glow layer */}
-                <div 
-                  className="absolute inset-0 blur-[3px] opacity-60"
-                  style={{ color: 'var(--accent-main, #a78bfa)' }}
-                >
+                {/* Glow layer for luminous effect */}
+                <div className="absolute inset-0 blur-[4px] opacity-70 text-cyan-400">
                   <WaveformVisualizer peaks={peaks} color="currentColor" />
                 </div>
               </div>
+
+              {/* Playhead indicator line */}
+              {duration > 0 && (
+                <div 
+                  className="absolute top-0 bottom-0 w-[2px] bg-white shadow-[0_0_8px_rgba(255,255,255,0.8)] rounded-full pointer-events-none z-30 transition-[left] duration-75"
+                  style={{ left: `${(audioRef.current?.currentTime || 0) / duration * 100}%`, transform: 'translateX(-50%)' }}
+                />
+              )}
 
               {/* Loop Region Overlay */}
               {loopRegion && duration > 0 && (
@@ -389,9 +394,9 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
 
           {/* Right controls */}
           <div className="flex items-center gap-2.5">
-            {/* Volume */}
-            <div className="flex items-center gap-2 group/volume px-1">
-               <div className="h-1.5 w-16 bg-white/10 rounded-full overflow-hidden relative">
+            {/* Volume - always visible inline slider */}
+            <div className="flex items-center gap-2 px-1">
+               <div className="h-1.5 w-20 bg-white/10 rounded-full overflow-hidden relative">
                  <input
                   type="range"
                   min={0}
@@ -401,21 +406,18 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
                 <div 
-                  className="h-full rounded-full transition-all" 
-                  style={{ 
-                    width: `${volume * 100}%`,
-                    background: 'var(--accent-main, #a78bfa)'
-                  }}
+                  className="h-full rounded-full transition-all bg-gradient-to-r from-purple-500 to-violet-400" 
+                  style={{ width: `${volume * 100}%` }}
                 />
                </div>
             </div>
             
-            {/* Loop */}
+            {/* Loop - uses theme accent when active */}
             <button
               onClick={() => setIsLooping((l) => !l)}
               className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border transition-all ${
                 isLooping 
-                ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400" 
+                ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-400" 
                 : "border-white/10 text-white/35 hover:text-white/60 hover:border-white/20"
               }`}
             >
@@ -434,10 +436,15 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
               </button>
             )}
             
-            {/* Notes */}
+            {/* Notes with count badge */}
             {notesComponent && (
               <div className="relative">
                 {notesComponent}
+                {timelineNotes.length > 0 && (
+                  <div className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px] font-bold text-white/70 pointer-events-none">
+                    {timelineNotes.length}
+                  </div>
+                )}
               </div>
             )}
             

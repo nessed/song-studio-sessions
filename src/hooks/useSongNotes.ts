@@ -33,7 +33,7 @@ export function useSongNotes(songId: string | undefined) {
     fetchNotes();
   }, [fetchNotes]);
 
-  const createNote = async (timestampSeconds: number, body: string): Promise<SongNote | null> => {
+  const createNote = useCallback(async (timestampSeconds: number, body: string): Promise<SongNote | null> => {
     if (!songId || !user) return null;
 
     const { data, error } = await supabase
@@ -55,9 +55,9 @@ export function useSongNotes(songId: string | undefined) {
     const newNote = data as SongNote;
     setNotes((prev) => [...prev, newNote].sort((a, b) => a.timestamp_seconds - b.timestamp_seconds));
     return newNote;
-  };
+  }, [songId, user]);
 
-  const updateNote = async (id: string, body: string) => {
+  const updateNote = useCallback(async (id: string, body: string) => {
     const { error } = await supabase
       .from("song_notes")
       .update({ body })
@@ -69,9 +69,9 @@ export function useSongNotes(songId: string | undefined) {
       );
     }
     return { error };
-  };
+  }, []);
 
-  const deleteNote = async (id: string) => {
+  const deleteNote = useCallback(async (id: string) => {
     const { error } = await supabase.from("song_notes").delete().eq("id", id);
 
     if (!error) {
@@ -79,7 +79,7 @@ export function useSongNotes(songId: string | undefined) {
     }
 
     return { error };
-  };
+  }, []);
 
   return { notes, loading, createNote, updateNote, deleteNote, refetch: fetchNotes };
 }
