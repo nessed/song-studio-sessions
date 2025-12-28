@@ -4,6 +4,7 @@ import { SmartTaskCard } from "./SmartTaskCard";
 import { parseTaskInput, taskTemplates } from "@/lib/taskParser";
 import { Plus, Sparkles, ChevronDown, Inbox } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 interface SmartTaskPanelProps {
   tasks: Task[];
@@ -61,12 +62,37 @@ export function SmartTaskPanel({
     
     setIsAdding(true);
     const parsed = parseTaskInput(inputValue);
-    const section = parsed.section || currentSection || "Idea";
+
+    // If we are filtered to a specific section, force that section
+    // unless the user explicitly typed a section keyword that overrides it?
+    // The requirement says "default to the section you are currently viewing".
+    // So if I am in "Writing", and I type "Record vocals", it might be ambiguous.
+    // But usually "Writing" tab -> add to "Writing".
+    // Let's rely on parsed section if explicit, otherwise fall back to activeFilter if valid, otherwise currentSection.
     
-    await onCreateTask(section, parsed.title, {
-      priority: parsed.priority,
-      due_date: parsed.dueDate,
-    });
+    let targetSection = parsed.section;
+    if (!targetSection) {
+      if (activeFilter !== "all") {
+        targetSection = activeFilter;
+      } else {
+        targetSection = currentSection || "Idea";
+      }
+    }
+
+    try {
+      const newTask = await onCreateTask(targetSection, parsed.title, {
+        priority: parsed.priority,
+        due_date: parsed.dueDate,
+      });
+
+      if (newTask) {
+        toast.success(`Task added to ${targetSection}`, {
+          description: parsed.priority ? `Priority: ${parsed.priority}` : undefined
+        });
+      }
+    } catch (e) {
+      toast.error("Failed to add task");
+    }
     
     setInputValue("");
     setIsAdding(false);
@@ -81,9 +107,12 @@ export function SmartTaskPanel({
 
   const handleAddTemplate = async (section: SongSection) => {
     const templates = taskTemplates[section] || [];
+    let count = 0;
     for (const title of templates) {
       await onCreateTask(section, title);
+      count++;
     }
+    toast.success(`Added ${count} template tasks to ${section}`);
     setShowTemplates(false);
   };
 
@@ -99,9 +128,9 @@ export function SmartTaskPanel({
   };
 
   return (
-    <div className="glass-premium glass-noise rounded-2xl overflow-hidden">
+    <div className="glass-premium glass-noise rounded-2xl overflow-hidden flex flex-col h-full max-h-full">
       {/* Header */}
-      <div className="relative border-b border-white/[0.06] px-5 py-4">
+      <div className="relative border-b border-white/[0.06] px-5 py-4 flex-shrink-0">
         <div className="absolute inset-0 pointer-events-none opacity-20" 
           style={{ background: 'radial-gradient(ellipse at top left, var(--accent-subtle, rgba(124,58,237,0.1)) 0%, transparent 50%)' }} 
         />
@@ -151,7 +180,7 @@ export function SmartTaskPanel({
       </div>
 
       {/* Phase Filter Tabs */}
-      <div className="px-4 py-3 border-b border-white/[0.04] overflow-x-auto no-scrollbar">
+      <div className="px-4 py-3 border-b border-white/[0.04] overflow-x-auto no-scrollbar flex-shrink-0">
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setActiveFilter("all")}
@@ -183,8 +212,8 @@ export function SmartTaskPanel({
         </div>
       </div>
 
-      {/* Task List */}
-      <div className="p-4 space-y-2 max-h-[400px] overflow-y-auto scrollbar-thin">
+      {/* Task List - Flexible height */}
+      <div className="p-4 space-y-2 overflow-y-auto scrollbar-thin flex-1 min-h-0">
         <AnimatePresence mode="popLayout">
           {filteredTasks.map((task) => (
             <SmartTaskCard
@@ -206,8 +235,8 @@ export function SmartTaskPanel({
       </div>
 
       {/* Smart Input */}
-      <div className="px-4 pb-4">
-        <div className="relative flex items-center rounded-xl overflow-hidden"
+      <div className="px-4 pb-4 pt-2 flex-shrink-0">
+        <div className="relative flex items-center rounded-xl overflow-hidden transition-colors duration-200 focus-within:bg-white/5"
           style={{
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.08)',
@@ -219,14 +248,37 @@ export function SmartTaskPanel({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder='Add task... (try "Record vocals by friday urgent")'
+            placeholder={activeFilter !== "all" ? `Add ${activeFilter} task...` : `Add task... (try "Record vocals urgent")`}
             className="w-full py-3 pl-10 pr-4 bg-transparent text-sm text-white/90 placeholder:text-white/30 focus:outline-none"
             disabled={isAdding}
           />
+          
+          {/* Tooltip trigger */}
+          <div className="group absolute right-2">
+            <div className="p-1.5 rounded-full hover:bg-white/10 cursor-help transition-colors">
+              <span className="text-[10px] font-bold text-white/30 group-hover:text-white/60">?</span>
+            </div>
+            
+            {/* Tooltip Content */}
+            <div className="absolute right-0 bottom-full mb-2 w-64 p-3 rounded-xl bg-[#09090b] border border-white/10 shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+              <h5 className="text-[10px] font-bold uppercase tracking-wider text-white/60 mb-2">Smart Keywords</h5>
+              <div className="space-y-2 text-[10px] text-white/50">
+                <div className="flex justify-between">
+                  <span>Priority</span>
+                  <span className="text-white/80">"high", "urgent", "low"</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Due Date</span>
+                  <span className="text-white/80">"by friday", "tomorrow"</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Sections</span>
+                  <span className="text-white/80">"rec", "mix", "write"</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="mt-2 text-[9px] text-white/30 px-2">
-          Tip: Include "high", "by tomorrow", or section keywords for smart parsing
-        </p>
       </div>
     </div>
   );
