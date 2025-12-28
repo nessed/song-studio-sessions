@@ -125,18 +125,24 @@ export function SmartTaskPanel({
   };
 
   return (
-    <div className="glass-panel glass-noise rounded-2xl overflow-hidden flex flex-col h-full max-h-full">
-      {/* Header */}
-      <div className="relative border-b border-white/[0.06] px-5 py-4 flex-shrink-0">
-        
-        <div className="relative flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Tasks</h3>
+    <div className="relative w-full overflow-hidden rounded-2xl">
+      {/* Main container - simple styling without shine */}
+      <div 
+        className="relative rounded-2xl overflow-hidden flex flex-col h-full max-h-full"
+        style={{
+          background: 'rgba(255, 255, 255, 0.02)',
+          border: '1px solid rgba(255, 255, 255, 0.06)',
+        }}
+      >
+        {/* Header */}
+        <div className="relative border-b border-white/[0.06] px-5 py-3.5 flex items-center justify-between flex-shrink-0">
+          <h4 className="text-xs font-semibold text-white/80 tracking-tight">Tasks</h4>
           
           {/* Template dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowTemplates(!showTemplates)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white text-[10px] font-semibold uppercase tracking-wider transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-white/5 text-white/40 hover:text-white text-[10px] font-semibold uppercase tracking-wider transition-all"
             >
               Templates
               <ChevronDown className={`w-3 h-3 transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
@@ -169,7 +175,6 @@ export function SmartTaskPanel({
             </AnimatePresence>
           </div>
         </div>
-      </div>
 
       {/* Phase Filter Tabs */}
       <div className="px-4 py-3 border-b border-white/[0.04] overflow-x-auto no-scrollbar flex-shrink-0">
@@ -251,6 +256,7 @@ export function SmartTaskPanel({
             disabled={isAdding}
           />
         </div>
+      </div>
       </div>
     </div>
   );
