@@ -324,10 +324,12 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                 className="absolute inset-0 pointer-events-none will-change-[clip-path]"
                 style={{ clipPath: "inset(0 100% 0 0)" }}
               >
-                <div className="text-cyan-400">
+                {/* Main colored waveform - violet instead of cyan */}
+                <div className="text-violet-400">
                   <WaveformVisualizer peaks={peaks} color="currentColor" />
                 </div>
-                <div className="absolute inset-0 blur-[4px] opacity-70 text-cyan-400">
+                {/* Glow layer for luminous effect */}
+                <div className="absolute inset-0 blur-[4px] opacity-70 text-violet-400">
                   <WaveformVisualizer peaks={peaks} color="currentColor" />
                 </div>
               </div>
@@ -364,7 +366,7 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                 return (
                   <div
                     key={`${note.timestamp_seconds}-${idx}`}
-                    className="absolute bottom-0 top-0 w-0.5 bg-emerald-400/70 hover:bg-emerald-300 hover:w-1 transition-all z-20 group/marker cursor-pointer"
+                    className="absolute bottom-0 top-0 w-0.5 bg-violet-400/70 hover:bg-violet-300 hover:w-1 transition-all z-20 group/marker cursor-pointer"
                     style={{ left: `${pct}%` }}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -375,9 +377,9 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                       }
                     }}
                   >
-                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-emerald-400 border-2 border-[#08080a] opacity-0 group-hover/marker:opacity-100 transition-opacity" />
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-violet-400 border-2 border-[#08080a] opacity-0 group-hover/marker:opacity-100 transition-opacity" />
                     <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 px-3 py-2 rounded-xl bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 text-xs text-white whitespace-nowrap opacity-0 group-hover/marker:opacity-100 pointer-events-none transition-opacity shadow-2xl max-w-[200px] hidden sm:block">
-                      <div className="text-[9px] font-mono text-emerald-400 mb-0.5">{formatTime(note.timestamp_seconds)}</div>
+                      <div className="text-[9px] font-mono text-violet-400 mb-0.5">{formatTime(note.timestamp_seconds)}</div>
                       <div className="text-white/80 truncate">{note.body}</div>
                     </div>
                   </div>
@@ -412,9 +414,9 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
             {/* Loop */}
             <button
               onClick={() => setIsLooping((l) => !l)}
-              className={`text-[8px] sm:text-[9px] font-bold uppercase tracking-wider px-2 sm:px-2.5 py-1.5 rounded-lg border transition-all ${
+              className={`text-[9px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg border transition-all ${
                 isLooping 
-                ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-400" 
+                ? "border-violet-500/40 bg-violet-500/15 text-violet-400" 
                 : "border-white/10 text-white/35 hover:text-white/60 hover:border-white/20"
               }`}
             >
@@ -451,7 +453,7 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
                   const audio = audioRef.current;
                   if (audio) onRequestAddNote?.(audio.currentTime);
               }}
-              className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg border border-white/10 bg-white/5 text-white/40 flex items-center justify-center hover:bg-emerald-500/15 hover:border-emerald-500/30 hover:text-emerald-400 transition-all"
+              className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg border border-white/10 bg-white/5 text-white/40 flex items-center justify-center hover:bg-violet-500/15 hover:border-violet-500/30 hover:text-violet-400 transition-all"
               title="Add note at current time"
             >
               <span className="text-sm sm:text-base leading-none">+</span>

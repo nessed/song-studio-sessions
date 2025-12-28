@@ -105,7 +105,7 @@ export function TimelineNotes({
         onClick={() => notes.length > 0 ? setIsOpen(!isOpen) : startAdd()}
         className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all ${
           isOpen 
-            ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400" 
+            ? "bg-violet-500/20 border-violet-500/40 text-violet-400" 
             : notes.length > 0 
               ? "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white" 
               : "bg-white/5 border-dashed border-white/20 text-white/40 hover:bg-white/10 hover:text-white hover:border-white/30"
@@ -154,7 +154,7 @@ export function TimelineNotes({
                   className="group flex items-start gap-2 px-3 py-2 hover:bg-white/5 border-b border-white/5 last:border-0 cursor-pointer"
                 >
                   {/* Timestamp */}
-                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded flex-shrink-0">
+                  <span className="text-[10px] font-mono text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded flex-shrink-0">
                     {formatTime(note.timestamp_seconds)}
                   </span>
 
@@ -169,12 +169,12 @@ export function TimelineNotes({
                           if (e.key === "Escape") setEditingId(null);
                         }}
                         onClick={(e) => e.stopPropagation()}
-                        className="flex-1 bg-black/40 text-xs text-white px-2 py-1 rounded border border-white/20 focus:border-emerald-500/50 outline-none"
+                        className="flex-1 bg-black/40 text-xs text-white px-2 py-1 rounded border border-white/20 focus:border-violet-500/50 outline-none"
                         autoFocus
                       />
                       <button
                         onClick={(e) => { e.stopPropagation(); handleUpdate(); }}
-                        className="text-emerald-400 hover:text-emerald-300 px-1"
+                        className="text-violet-400 hover:text-violet-300 px-1"
                       >
                         <Send className="w-3 h-3" />
                       </button>
@@ -218,9 +218,9 @@ export function TimelineNotes({
 
             {/* Add Form */}
             {isAdding ? (
-              <div className="p-3 border-t border-white/5 bg-emerald-500/5">
+              <div className="p-3 border-t border-white/5 bg-violet-500/5">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/20 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-mono text-violet-400 bg-violet-500/20 px-1.5 py-0.5 rounded">
                     {formatTime(draftTime)}
                   </span>
                   <span className="text-[10px] text-white/30">Adding note...</span>
@@ -235,12 +235,12 @@ export function TimelineNotes({
                       if (e.key === "Escape") setIsAdding(false);
                     }}
                     placeholder="Type your note..."
-                    className="flex-1 bg-black/40 text-xs text-white px-3 py-2 rounded-lg border border-white/10 focus:border-emerald-500/50 outline-none placeholder:text-white/20"
+                    className="flex-1 bg-black/40 text-xs text-white px-3 py-2 rounded-lg border border-white/10 focus:border-violet-500/50 outline-none placeholder:text-white/20"
                   />
                   <button
                     onClick={handleAdd}
                     disabled={!noteText.trim()}
-                    className="px-3 py-2 rounded-lg bg-emerald-500 text-black text-xs font-bold disabled:opacity-50 hover:bg-emerald-400 transition-colors"
+                    className="px-3 py-2 rounded-lg bg-violet-500 text-white text-xs font-bold disabled:opacity-50 hover:bg-violet-400 transition-colors"
                   >
                     <Send className="w-3 h-3" />
                   </button>

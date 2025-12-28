@@ -87,7 +87,7 @@ export function ShareModal({ song, onUpdate, trigger }: ShareModalProps) {
       <DialogContent className="bg-[#09090b] border-white/10 text-white sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl font-bold font-syne">
-             <Globe className="w-5 h-5 text-emerald-400" />
+             <Globe className="w-5 h-5 text-violet-400" />
              Public Sharing
           </DialogTitle>
         </DialogHeader>
@@ -105,7 +105,7 @@ export function ShareModal({ song, onUpdate, trigger }: ShareModalProps) {
                  checked={isPublic} 
                  onCheckedChange={togglePublic}
                  disabled={loading}
-                 className="data-[state=checked]:bg-emerald-500"
+                 className="data-[state=checked]:bg-violet-500"
               />
            </div>
 
@@ -130,10 +130,10 @@ export function ShareModal({ song, onUpdate, trigger }: ShareModalProps) {
                       onClick={copyToClipboard}
                       className="bg-white/5 border-white/10 hover:bg-white/10 hover:text-white shrink-0"
                    >
-                      {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                      {copied ? <Check className="w-4 h-4 text-violet-400" /> : <Copy className="w-4 h-4" />}
                    </Button>
                 </div>
-                <div className="p-3 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs text-center">
+                <div className="p-3 rounded bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs text-center">
                    Verified clean link. No login required for visitors.
                 </div>
              </div>

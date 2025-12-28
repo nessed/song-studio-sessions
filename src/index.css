@@ -269,14 +269,24 @@
          transition-all duration-200;
 }
 
-/* Theming */
+/* Theming - Refined Violet Palette */
 :root {
   --bg-main: #09090b;
   --bg-card: #0c0c10;
   --bg-tinted: rgba(255, 255, 255, 0.03);
-  --accent-main: #7c3aed;
-  --accent-soft: rgba(124, 58, 237, 0.35);
-  --accent-subtle: rgba(124, 58, 237, 0.15);
+  
+  /* Primary: Violet family */
+  --accent-main: #8b5cf6;           /* violet-500 - primary */
+  --accent-hover: #a78bfa;          /* violet-400 - hover states */
+  --accent-muted: #c4b5fd;          /* violet-300 - muted elements */
+  --accent-soft: rgba(139, 92, 246, 0.25);
+  --accent-subtle: rgba(139, 92, 246, 0.12);
+  --accent-glow: rgba(139, 92, 246, 0.08);
+  
+  /* Contrast accent: Amber for CTAs and emphasis */
+  --accent-contrast: #fbbf24;       /* amber-400 */
+  --accent-contrast-soft: rgba(251, 191, 36, 0.15);
+  
   --border-weak: rgba(255, 255, 255, 0.08);
 }
 

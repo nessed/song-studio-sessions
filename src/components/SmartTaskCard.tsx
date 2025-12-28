@@ -57,7 +57,7 @@ export const SmartTaskCard = memo(function SmartTaskCard({ task, onToggle, onDel
           onClick={onToggle}
           className={`flex-shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
             task.done 
-              ? 'bg-emerald-500 border-emerald-500' 
+              ? 'bg-violet-500 border-violet-500' 
               : 'border-white/20 hover:border-white/40'
           }`}
         >
