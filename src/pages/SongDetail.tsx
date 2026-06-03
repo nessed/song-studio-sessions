@@ -1,565 +1,377 @@
-import { useState, useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, ChevronRight, ChevronDown, List, Share2, Check, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useSong, useSongs } from "@/hooks/useSongs";
+import { useSongNotes } from "@/hooks/useSongNotes";
 import { useSongVersions } from "@/hooks/useSongVersions";
 import { useTasks } from "@/hooks/useTasks";
-import { useProjects } from "@/hooks/useProjects";
-import { useSongNotes } from "@/hooks/useSongNotes";
-import { SONG_STATUSES, SongStatus, Song } from "@/lib/types";
-import { SmartTaskPanel } from "@/components/SmartTaskPanel";
-import { TimelineNotes } from "@/components/TimelineNotes";
-import { AudioPlayer } from "@/components/AudioPlayer";
-import { LyricsEditor } from "@/components/lyrics/LyricsEditor";
-import { SessionThemeProvider } from "@/components/SessionThemeProvider";
-import { ShareModal } from "@/components/ShareModal";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { 
-  ArrowLeft, Upload, Trash2, 
-  Music2, ChevronDown, Clock, Folder, Link as LinkIcon, ExternalLink
-} from "lucide-react";
-import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
-import { formatDistanceToNow } from "date-fns";
-import { OnboardingTour, TourStep } from "@/components/OnboardingTour";
+import { SessionsShell } from "@/components/sessions/Room";
+import { CoverArt } from "@/components/sessions/CoverArt";
+import { StageMeter } from "@/components/sessions/StageMeter";
+import { GlassPlayer } from "@/components/sessions/GlassPlayer";
+import { TaskDrawer } from "@/components/sessions/Tasks";
+import { palette, hueForSong, buildWave, fmt } from "@/lib/sessions/theme";
+import { SONG_STATUSES, SongStatus, Song, Task } from "@/lib/types";
+
+const FALLBACK_DUR = 210;
+
+/* status dropdown built on the stage meter */
+function StatusPill({ value, onChange }: { value: SongStatus; onChange: (s: SongStatus) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+  return (
+    <div className="statwrap" ref={ref}>
+      <button className="status-ctl" onClick={() => setOpen((o) => !o)}>
+        <StageMeter status={value} frac />
+        <ChevronDown size={13} className="chev" />
+      </button>
+      {open && (
+        <div className="menu">
+          {SONG_STATUSES.map((s) => (
+            <div
+              key={s.value}
+              className={"menu-item" + (s.value === value ? " sel" : "")}
+              onClick={() => {
+                onChange(s.value);
+                setOpen(false);
+              }}
+            >
+              {s.label}
+              {s.value === value && <Check size={13} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* split freeform lyrics into label/line rows */
+function lyricRows(lyrics: string | null): { label: boolean; text: string }[] {
+  if (!lyrics || !lyrics.trim()) return [];
+  return lyrics.split("\n").map((raw) => {
+    const t = raw.trim();
+    const isLabel = /^\[.*\]$/.test(t) || /^(verse|chorus|bridge|intro|outro|pre[- ]?chorus|hook|refrain)\b/i.test(t);
+    return { label: isLabel, text: t.replace(/^\[|\]$/g, "") };
+  });
+}
 
 export default function SongDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { profile } = useProfile();
   const { song, loading } = useSong(id);
-  const { updateSong, deleteSong, uploadCoverArt } = useSongs();
-  const { versions, currentVersion, uploadVersion, setCurrentVersion, deleteVersion, uploadProgress } = useSongVersions(id);
-  const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
-  const { projects } = useProjects();
-  const { notes: timelineNotes, createNote, updateNote, deleteNote } = useSongNotes(id);
+  const { updateSong } = useSongs();
+  const { notes, createNote } = useSongNotes(id);
+  const { versions, currentVersion } = useSongVersions(id);
+  const { tasks, createTask, updateTask } = useTasks(id);
 
-  const [title, setTitle] = useState("");
-  const [bpm, setBpm] = useState("");
-  const [songKey, setSongKey] = useState("");
-  const [referenceLink, setReferenceLink] = useState("");
-  const [currentTime, setCurrentTime] = useState(0);
-  const [noteAddTime, setNoteAddTime] = useState<number | null>(null);
-  const [showVersions, setShowVersions] = useState(false);
-  const [showTaskPanel, setShowTaskPanel] = useState(false);
+  const [status, setStatus] = useState<SongStatus>("idea");
+  const [playing, setPlaying] = useState(false);
+  const [time, setTime] = useState(0);
+  const [duration, setDuration] = useState(FALLBACK_DUR);
+  const [composer, setComposer] = useState({ t: 0, text: "", armed: false });
+  const [drawer, setDrawer] = useState(false);
 
-  const coverInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
-  const lastTimeUpdateRef = useRef(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const rafRef = useRef<number>();
+  const lastTick = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Throttle time updates to reduce re-renders (update every 250ms max)
-  const handleTimeUpdate = (time: number) => {
-    const now = Date.now();
-    if (now - lastTimeUpdateRef.current > 250) {
-      lastTimeUpdateRef.current = now;
-      setCurrentTime(time);
-    }
-  };
+  const audioUrl = currentVersion?.file_url || song?.mp3_url || null;
+  const wave = useMemo(() => buildWave(song ? hueForSong(song) : 1), [song]);
 
   useEffect(() => {
-    if (song) {
-      setTitle(song.title);
-      setBpm(song.bpm?.toString() || "");
-      setSongKey(song.key || "");
-      setReferenceLink(song.reference_link || "");
-    }
+    if (song) setStatus(song.status);
   }, [song]);
 
-  const debouncedUpdate = (updates: Parameters<typeof updateSong>[1]) => {
-    if (!id) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      updateSong(id, updates);
-    }, 500);
-  };
-
-  const handleTitleChange = (value: string) => {
-    setTitle(value);
-    debouncedUpdate({ title: value });
-  };
-
-  const handleBpmChange = (value: string) => {
-    setBpm(value);
-    const numBpm = parseInt(value);
-    debouncedUpdate({ bpm: isNaN(numBpm) ? null : numBpm });
-  };
-
-  const handleKeyChange = (value: string) => {
-    setSongKey(value);
-    debouncedUpdate({ key: value || null });
-  };
-
-  const handleStatusChange = (status: SongStatus) => {
-    if (id) updateSong(id, { status });
-  };
-
-  const handleProjectChange = (projectId: string) => {
-    if (id) {
-      const newProjectId = projectId === "none" ? null : projectId;
-      updateSong(id, { project_id: newProjectId });
-    }
-  };
-
-  const handleTagsUpdate = (tags: string[]) => {
-    if (id && song) {
-      updateSong(id, { mood_tags: tags });
-    }
-  };
-
-  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
-    await uploadCoverArt(id, file);
-    toast.success("Cover uploaded");
-  };
-
+  /* simulated playback when there's no real audio file yet */
   useEffect(() => {
-    if (uploadProgress > 0 && uploadProgress < 100) {
-      toast.loading(`Uploading... ${uploadProgress}%`, { id: "upload-progress" });
-    } else if (uploadProgress === 100) {
-      toast.dismiss("upload-progress");
+    if (audioUrl || !playing) return;
+    lastTick.current = performance.now();
+    const step = (now: number) => {
+      const dt = (now - lastTick.current) / 1000;
+      lastTick.current = now;
+      setTime((t) => {
+        const nt = t + dt;
+        if (nt >= duration) {
+          setPlaying(false);
+          return duration;
+        }
+        return nt;
+      });
+      rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [playing, audioUrl, duration]);
+
+  /* spacebar play/pause */
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.code === "Space" && e.target === document.body) {
+        e.preventDefault();
+        togglePlay();
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, audioUrl]);
+
+  const togglePlay = useCallback(() => {
+    if (audioUrl && audioRef.current) {
+      if (playing) audioRef.current.pause();
+      else audioRef.current.play().catch(() => {});
     }
-  }, [uploadProgress]);
+    setPlaying((p) => !p);
+  }, [audioUrl, playing]);
 
-  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
-    try {
-      await uploadVersion(file, `Mix v${versions.length + 1}`);
-      toast.success("Version uploaded");
-    } catch (err) {
-      toast.error("Failed to upload");
-      toast.dismiss("upload-progress");
+  const seek = useCallback(
+    (t: number) => {
+      const clamped = Math.max(0, Math.min(duration, t));
+      if (audioUrl && audioRef.current) audioRef.current.currentTime = clamped;
+      setTime(clamped);
+    },
+    [duration, audioUrl]
+  );
+
+  const armComposer = () => {
+    setComposer((c) => ({ ...c, t: Math.round(time), armed: true }));
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+  const commitNote = async (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && composer.text.trim()) {
+      await createNote(composer.t, composer.text.trim());
+      setComposer({ t: composer.t, text: "", armed: false });
     }
   };
 
-  const handleVersionSelect = async (versionId: string) => {
-    await setCurrentVersion(versionId);
-    const ver = versions.find(v => v.id === versionId);
-    toast.success(`Loaded ${ver?.description || `v${ver?.version_number}`}`);
-    setShowVersions(false);
+  const onStatus = (s: SongStatus) => {
+    setStatus(s);
+    if (id) updateSong(id, { status: s });
   };
 
-  const handleDelete = async () => {
-    if (!id || !window.confirm("Delete this song and all its tasks?")) return;
-    await deleteSong(id);
-    navigate("/dashboard");
-  };
+  const toggleTask = (t: Task) => updateTask(t.id, { done: !t.done });
+  const addTask = (section: Task["section"], title: string) => createTask(section, title);
 
-  const handleLyricsChange = (lyrics: string) => {
-    if (id) {
-      debouncedUpdate({ lyrics: lyrics || null });
+  const share = () => {
+    if (song?.share_hash) {
+      navigator.clipboard?.writeText(`${window.location.origin}/s/${song.share_hash}`);
+      toast.success("Share link copied");
+    } else {
+      toast("Publish this song from settings to get a share link");
     }
   };
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
+  if (loading) return <LoadingScreen />;
   if (!song) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center text-white p-6">
-        <Music2 className="w-16 h-16 text-white/10 mb-6" />
-        <h1 className="text-2xl font-bold mb-3">Song Not Found</h1>
-        <p className="text-white/40 mb-8">This song doesn't exist or has been deleted.</p>
-        <Link 
-          to="/dashboard" 
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-medium hover:bg-white/90 transition-all"
-        >
-          Back to Dashboard
-        </Link>
-      </div>
+      <SessionsShell vars={palette(250, 0.045)}>
+        <div style={{ padding: 60, textAlign: "center", color: "var(--fg-2)" }}>
+          Song not found.{" "}
+          <button className="lp-signin" onClick={() => navigate("/dashboard")}>
+            Back to library
+          </button>
+        </div>
+      </SessionsShell>
     );
   }
 
-  const currentProject = projects.find((p) => p.id === song.project_id);
-  const activeVersion = currentVersion || versions[0];
-
-  // Song detail tour steps
-  const songTourSteps: TourStep[] = [
-    {
-      target: "song-cover",
-      title: "Cover Art",
-      description: "Upload artwork. It sets the ambient background.",
-      position: "right"
-    },
-    {
-      target: "song-metadata",
-      title: "Metadata",
-      description: "Set BPM, key, and production status.",
-      position: "bottom"
-    },
-    {
-      target: "lyrics-editor",
-      title: "Lyrics",
-      description: "Write lyrics or production notes here.",
-      position: "top"
-    },
-    {
-      target: "task-panel",
-      title: "Tasks",
-      description: "Break down your workflow into trackable tasks.",
-      position: "left"
-    }
-  ];
+  const subtitle =
+    (profile?.display_name || "You") + (currentVersion ? ` · v${currentVersion.version_number}` : "");
+  const initial = (profile?.display_name || user?.email || "N").trim().charAt(0).toUpperCase();
+  const openTasks = tasks.filter((t) => !t.done).length;
+  const sortedNotes = [...notes].sort((a, b) => a.timestamp_seconds - b.timestamp_seconds);
+  const rows = lyricRows(song.lyrics);
+  const versionCount = versions.length || (song.mp3_url ? 1 : 0);
 
   return (
-    <SessionThemeProvider coverUrl={song.cover_art_url} themeColor={(song as any).theme_color}>
-      <div className="min-h-screen bg-[#09090b] text-white relative overflow-hidden">
-        {/* Hidden inputs */}
-        <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
-        <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
+    <SessionsShell vars={palette(hueForSong(song))}>
+      {audioUrl && (
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          preload="metadata"
+          onLoadedMetadata={(e) => {
+            const d = (e.target as HTMLAudioElement).duration;
+            if (isFinite(d) && d > 0) setDuration(d);
+          }}
+          onTimeUpdate={(e) => setTime((e.target as HTMLAudioElement).currentTime)}
+          onEnded={() => setPlaying(false)}
+          style={{ display: "none" }}
+        />
+      )}
 
-        {/* Ambient Background */}
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[150px]" 
-            style={{ background: 'var(--accent-subtle, rgba(124,58,237,0.1))' }} 
-          />
-        </div>
-
-        {/* Cover Art Glow */}
-        {song.cover_art_url && (
-          <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-            <div 
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] blur-[120px] opacity-25 saturate-150"
-              style={{ 
-                backgroundImage: `url(${song.cover_art_url})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            />
-          </div>
-        )}
-
-        {/* Header */}
-        <header className="sticky top-0 z-30 px-4 sm:px-6 py-4 flex items-center justify-between bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04]">
-          <Link
-            to={song.project_id ? `/project/${song.project_id}` : "/dashboard"}
-            className="flex items-center gap-2 text-white/50 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium truncate max-w-[120px] sm:max-w-none">{currentProject?.title || "Dashboard"}</span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <ShareModal 
-              song={song} 
-              onUpdate={() => queryClient.invalidateQueries({ queryKey: ["song", id] })} 
-            />
-            <button
-              onClick={handleDelete}
-              className="p-2.5 text-white/40 hover:text-red-400 transition-colors rounded-xl hover:bg-white/5"
-            >
-              <Trash2 className="w-4 h-4" />
+      <div className="fade-in">
+        <header className="ws-hd">
+          <div className="ws-hd-l">
+            <button className="ws-back" onClick={() => navigate("/dashboard")} aria-label="Back">
+              <ArrowLeft size={17} />
             </button>
+            <div className="ws-crumb">
+              Library <ChevronRight size={12} style={{ opacity: 0.5 }} /> <b>{song.title}</b>
+            </div>
+          </div>
+          <div className="ws-hd-r">
+            <StatusPill value={status} onChange={onStatus} />
+            <button className="ghost-btn" onClick={() => setDrawer(true)}>
+              <List size={15} />
+              Tasks <span className="b">{openTasks}</span>
+            </button>
+            <button className="ghost-btn" onClick={share}>
+              <Share2 size={15} />
+              Share
+            </button>
+            <div className="avatar2">{initial}</div>
           </div>
         </header>
 
-        {/* Main Layout */}
-        <div className="flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden relative z-10">
-          {/* Main Content */}
-          <div className="flex-1 overflow-y-auto" style={{ paddingBottom: "120px" }}>
-            <div className="max-w-4xl mx-auto py-8 sm:py-12 px-4 sm:px-6 space-y-8 sm:space-y-10">
-
-              {/* Hero Section */}
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="space-y-6 sm:space-y-8"
-              >
-                {/* Cover Art */}
-                <div className="flex flex-col items-center md:flex-row md:items-start gap-6 sm:gap-8">
-                  <motion.button
-                    onClick={() => coverInputRef.current?.click()}
-                    whileHover={{ scale: 1.02 }}
-                    className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 flex-shrink-0 group"
-                    data-tour="song-cover"
-                  >
-                    {/* Glow */}
-                    {song.cover_art_url && (
-                      <div 
-                        className="absolute -inset-4 rounded-3xl blur-2xl opacity-50 group-hover:opacity-70 transition-opacity hidden sm:block"
-                        style={{ 
-                          backgroundImage: `url(${song.cover_art_url})`,
-                          backgroundSize: "cover",
-                        }}
-                      />
-                    )}
-                    {/* Image */}
-                    <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl shadow-black/50 ring-1 ring-white/10">
-                      {song.cover_art_url ? (
-                        <img src={song.cover_art_url} alt={song.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-white/[0.03] flex items-center justify-center border-2 border-dashed border-white/10 group-hover:border-white/20 transition-colors">
-                          <Music2 className="w-10 h-10 sm:w-12 sm:h-12 text-white/10" />
-                        </div>
-                      )}
-                      {/* Hover overlay */}
-                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center backdrop-blur-sm">
-                        <Upload className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                  </motion.button>
-
-                  {/* Title & Meta */}
-                  <div className="flex-1 text-center md:text-left space-y-3 sm:space-y-4 w-full">
-                    {/* Title Input */}
-                    <input
-                      type="text"
-                      value={title}
-                      onChange={(e) => handleTitleChange(e.target.value)}
-                      placeholder="Untitled Song"
-                      className="bg-transparent border-none outline-none text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white placeholder:text-white/10 w-full text-center md:text-left"
-                      style={{ fontFamily: "'Syne', sans-serif" }}
-                    />
-
-                    {/* Context Line */}
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 sm:gap-3 text-xs sm:text-sm text-white/40">
-                      {currentProject && (
-                        <span className="flex items-center gap-1.5">
-                          <Folder className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                          <span className="truncate max-w-[100px] sm:max-w-none">{currentProject.title}</span>
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1.5">
-                        <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                        {formatDistanceToNow(new Date(song.created_at), { addSuffix: true })}
-                      </span>
-                      {referenceLink && (
-                        <a 
-                          href={referenceLink} 
-                          target="_blank" 
-                          rel="noreferrer"
-                          className="flex items-center gap-1.5 hover:text-white transition-colors"
-                        >
-                          <LinkIcon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                          <span className="hidden sm:inline">Reference</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </a>
+        <main className="ws-shell">
+          <div className="ws-grid">
+            <div className="ws-cover-col">
+              <CoverArt song={song} />
+              <div className="title-block">
+                <h1 className="song-title display">{song.title}</h1>
+                <div className="meta-row">
+                  <span className="accent">{song.bpm ?? "—"} BPM</span>
+                  <span>{song.key || "—"}</span>
+                  <span>{fmt(duration)}</span>
+                  <span>{profile?.display_name || "You"}</span>
+                </div>
+              </div>
+              <div>
+                <div className="sec-head2">
+                  <div className="kicker">Lyrics</div>
+                </div>
+                <div className="lyrics">
+                  {rows.length > 0 ? (
+                    <div>
+                      {rows.map((r, i) =>
+                        r.label ? (
+                          <div className="ly-label" key={i}>
+                            {r.text}
+                          </div>
+                        ) : r.text ? (
+                          <div className="ly-line" key={i}>
+                            {r.text}
+                          </div>
+                        ) : (
+                          <div style={{ height: 12 }} key={i} />
+                        )
                       )}
                     </div>
+                  ) : (
+                    <div className="ly-line" style={{ color: "var(--fg-3)" }}>
+                      (empty — start writing)
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-                    {/* Metadata Pills */}
-                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 pt-2" data-tour="song-metadata">
-                      {/* Version */}
-                      {versions.length > 0 && (
-                        <button 
-                          onClick={() => versions.length > 1 && setShowVersions(!showVersions)}
-                          className={`inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-semibold transition-all ${versions.length > 1 ? 'hover:bg-white/10 cursor-pointer' : ''}`}
-                        >
-                          <div className="w-2 h-2 rounded-full" style={{ background: 'var(--accent-main, #a78bfa)' }} />
-                          <span className="text-white/70">v{activeVersion?.version_number || 1}</span>
-                          {activeVersion?.description && (
-                            <span className="text-white/40 hidden sm:inline">· {activeVersion.description}</span>
-                          )}
-                          {versions.length > 1 && (
-                            <ChevronDown className={`w-3 h-3 text-white/40 transition-transform ${showVersions ? 'rotate-180' : ''}`} />
-                          )}
-                        </button>
-                      )}
-                      
-                      {/* BPM */}
-                      <label className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-semibold cursor-text">
-                        <span className="text-white/40">BPM</span>
-                        <input
-                          type="text"
-                          value={bpm}
-                          onChange={(e) => handleBpmChange(e.target.value)}
-                          placeholder="---"
-                          className="bg-transparent border-none outline-none w-10 sm:w-12 text-white/80 text-center font-mono"
-                        />
-                      </label>
-
-                      {/* Key */}
-                      <label className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-semibold cursor-text">
-                        <span className="text-white/40">Key</span>
-                        <input
-                          type="text"
-                          value={songKey}
-                          onChange={(e) => handleKeyChange(e.target.value)}
-                          placeholder="---"
-                          className="bg-transparent border-none outline-none w-10 sm:w-12 text-white/80 text-center font-mono"
-                        />
-                      </label>
-
-                      {/* Status */}
-                      <select
-                        value={song.status}
-                        onChange={(e) => handleStatusChange(e.target.value as SongStatus)}
-                        className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-semibold text-white/70 cursor-pointer focus:outline-none hover:bg-white/10 transition-colors appearance-none pr-6 sm:pr-8"
-                      >
-                        {SONG_STATUSES.map(s => (
-                          <option key={s.value} value={s.value} className="bg-[#09090b] text-white">
-                            {s.label}
-                          </option>
-                        ))}
-                      </select>
-
-                      {/* Tags - hidden on mobile */}
-                      {song.mood_tags?.length > 0 && song.mood_tags.slice(0, 3).map(tag => (
-                        <span key={tag} className="hidden sm:inline-flex px-3 py-2 rounded-full bg-white/5 border border-white/10 text-xs text-white/50">
-                          {tag}
-                        </span>
-                      ))}
+            <div>
+              <div className="sec-head2">
+                <div className="kicker">Notes</div>
+                <div className="count">{notes.length}</div>
+              </div>
+              <div className={"composer" + (composer.armed ? " armed" : "")}>
+                <span className="ts">{fmt(composer.t)}</span>
+                <input
+                  ref={inputRef}
+                  value={composer.text}
+                  placeholder="Note at the playhead…"
+                  onChange={(e) => setComposer({ ...composer, text: e.target.value })}
+                  onKeyDown={commitNote}
+                  onFocus={() => setComposer((c) => ({ ...c, armed: true }))}
+                  onBlur={() => setComposer((c) => ({ ...c, armed: false }))}
+                />
+              </div>
+              {sortedNotes.length === 0 && (
+                <div style={{ padding: "16px 4px", color: "var(--fg-3)", fontSize: 13 }}>
+                  No notes yet — press <b style={{ color: "var(--fg-2)" }}>+</b> on the player to drop one at the
+                  playhead.
+                </div>
+              )}
+              {sortedNotes.map((n) => (
+                <div className="note" key={n.id} onClick={() => seek(n.timestamp_seconds)}>
+                  <div className="tstamp">{fmt(n.timestamp_seconds)}</div>
+                  <div className="ndot" />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="ntext">{n.body}</div>
+                    <div className="nwho">
+                      {n.guest_name && <span className="guest-badge">guest</span>}
+                      {n.guest_name || "You"}
                     </div>
                   </div>
                 </div>
+              ))}
 
-                {/* Version Dropdown */}
-                <AnimatePresence>
-                  {showVersions && versions.length > 1 && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl"
-                    >
-                      {versions.map((ver) => (
-                        <button
-                          key={ver.id}
-                          onClick={() => handleVersionSelect(ver.id)}
-                          className={`w-full flex items-center justify-between px-4 py-3 border-b border-white/5 last:border-0 transition-all ${
-                            activeVersion?.id === ver.id 
-                              ? "bg-white/10 text-white" 
-                              : "hover:bg-white/5 text-white/60"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                              activeVersion?.id === ver.id ? "text-black" : "bg-white/10 text-white/40"
-                            }`} style={{ background: activeVersion?.id === ver.id ? 'var(--accent-main, #a78bfa)' : undefined }}>
-                              {ver.version_number}
-                            </div>
-                            <div className="text-left">
-                              <div className="text-sm font-medium">{ver.description || `Version ${ver.version_number}`}</div>
-                              <div className="text-[10px] text-white/30">
-                                {formatDistanceToNow(new Date(ver.created_at), { addSuffix: true })}
-                              </div>
-                            </div>
-                          </div>
-                          {activeVersion?.id === ver.id && (
-                            <div className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--accent-main, #a78bfa)' }}>Playing</div>
-                          )}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-
-              {/* Upload Audio CTA */}
-              {!song.mp3_url && versions.length === 0 && (
-                <motion.button
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  onClick={() => audioInputRef.current?.click()}
-                  className="w-full group relative"
-                >
-                  <div className="absolute -inset-px rounded-2xl bg-white/5 opacity-0 group-hover:opacity-100 blur-sm transition-all" />
-                  <div className="relative px-8 py-8 rounded-2xl bg-white/[0.03] border border-dashed border-white/10 group-hover:border-white/20 transition-all flex items-center justify-center gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Upload className="w-6 h-6 text-white/40 group-hover:text-white/70 transition-colors" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-base font-semibold text-white/80">Upload your first mix</p>
-                      <p className="text-sm text-white/40">MP3, WAV, or other audio formats</p>
-                    </div>
-                  </div>
-                </motion.button>
-              )}
-
-              {/* Lyrics Editor */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                data-tour="lyrics-editor"
-              >
-                <LyricsEditor value={song.lyrics || ""} onChange={handleLyricsChange} />
-              </motion.div>
-
-            </div>
-          </div>
-
-          {/* Right Side - Tasks Panel - Hidden on mobile by default */}
-          <div className={`
-            fixed lg:relative inset-0 lg:inset-auto z-40 lg:z-auto
-            w-full lg:w-80 flex-shrink-0 
-            transition-transform duration-300 ease-out
-            ${showTaskPanel ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
-          `}>
-            {/* Mobile backdrop */}
-            <div 
-              className={`absolute inset-0 bg-black/60 lg:hidden ${showTaskPanel ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition-opacity`}
-              onClick={() => setShowTaskPanel(false)}
-            />
-            {/* Panel content */}
-            <div className="absolute right-0 top-0 bottom-0 w-80 lg:w-full lg:relative bg-[#09090b] lg:bg-transparent overflow-hidden">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="h-full"
-            >
-              {/* SmartTaskPanel has its own glass-premium styling */}
-              <div className="p-4 pb-36 h-full overflow-y-auto scrollbar-thin" data-tour="task-panel">
-                <SmartTaskPanel
-                  tasks={tasks}
-                  onCreateTask={createTask}
-                  onUpdateTask={updateTask}
-                  onDeleteTask={deleteTask}
-                  currentSection={song.status === 'idea' ? 'Idea' : song.status === 'writing' ? 'Writing' : song.status === 'recording' ? 'Recording' : song.status === 'mixing' ? 'Mixing' : song.status === 'mastering' ? 'Mastering' : 'Production'}
-                />
+              <div className="sec-head2 subhead">
+                <div className="kicker">Versions</div>
+                <div className="count">{versionCount}</div>
               </div>
-            </motion.div>
+              {versions.length > 0 ? (
+                versions.map((v) => (
+                  <div className={"ver" + (v.is_current ? " cur" : "")} key={v.id}>
+                    <span className="vtag">v{v.version_number}</span>
+                    <span className="vname">{v.description || `${song.title.toLowerCase().replace(/\s+/g, "-")}_v${v.version_number}`}</span>
+                    {v.is_current ? (
+                      <span className="vcur">current</span>
+                    ) : (
+                      <span className="vdate">{(() => { try { return new Date(v.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch { return ""; } })()}</span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="ver cur">
+                  <span className="vtag">v1</span>
+                  <span className="vname">{song.mp3_url ? "current upload" : "no audio yet"}</span>
+                  {song.mp3_url ? <span className="vcur">current</span> : <span className="vdate">upload a take</span>}
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        </main>
 
-        {/* Mobile Task Panel Toggle */}
-        <button
-          onClick={() => setShowTaskPanel(!showTaskPanel)}
-          className="fixed bottom-28 right-4 z-50 lg:hidden w-14 h-14 rounded-full bg-[#09090b]/90 border border-white/15 flex items-center justify-center text-white shadow-2xl"
-        >
-          <div className="relative">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-            {tasks.length > 0 && (
-              <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] rounded-full bg-white text-black text-[10px] font-bold flex items-center justify-center">
-                {tasks.length}
-              </span>
-            )}
-          </div>
-        </button>
-
-        {/* Floating Audio Player */}
-        <AudioPlayer
-          src={activeVersion?.file_url || song.mp3_url || ""}
-          onTimeUpdate={handleTimeUpdate}
-          timelineNotes={timelineNotes}
-          onRequestAddNote={(time) =>
-            setNoteAddTime((prev) => (prev === time ? time + 0.001 : time))
-          }
-          notesComponent={
-            <TimelineNotes
-              songId={song.id}
-              currentTime={currentTime}
-              notes={timelineNotes}
-              onCreateNote={createNote}
-              onUpdateNote={updateNote}
-              onDeleteNote={deleteNote}
-              triggerAddTime={noteAddTime ?? undefined}
-            />
-          }
+        <GlassPlayer
+          song={song}
+          subtitle={subtitle}
+          wave={wave}
+          playing={playing}
+          onTogglePlay={togglePlay}
+          time={time}
+          duration={duration}
+          onSeek={seek}
+          notes={notes}
+          onAddNoteHere={armComposer}
+          onStems={() => toast("Stem mixer coming soon")}
         />
 
-        {/* Onboarding Tour */}
-        <OnboardingTour steps={songTourSteps} tourId="song-detail" />
+        {drawer && (
+          <TaskDrawer
+            song={song}
+            tasks={tasks}
+            onToggle={toggleTask}
+            onCreate={addTask}
+            onClose={() => setDrawer(false)}
+          />
+        )}
       </div>
-    </SessionThemeProvider>
+    </SessionsShell>
   );
 }

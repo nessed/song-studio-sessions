@@ -1,374 +1,381 @@
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, Play, Check, Sparkles, Share2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { SessionsLogo } from "@/components/SessionsLogo";
-import { ArrowRight, PlayCircle, Check, Disc3, Waves, MessageCircle } from "lucide-react";
+import { SessionsShell } from "@/components/sessions/Room";
+import { CoverArt } from "@/components/sessions/CoverArt";
+import { StageMeter } from "@/components/sessions/StageMeter";
+import { Avatar } from "@/components/sessions/Avatar";
+import { palette, paletteStyle, buildWave } from "@/lib/sessions/theme";
+import { SongStatus } from "@/lib/types";
 
-const stagger = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
+/* Marketing imagery uses a fixed art-directed set of "songs" — they
+   only drive cover art + palettes on the landing page. */
+type MockSong = { id: string; title: string; status: SongStatus; hue: number };
+const HERO: MockSong = { id: "slow-light", title: "Slow Light", status: "production", hue: 58 };
+const ROOMS: MockSong[] = [
+  { id: "slow-light", title: "Slow Light", status: "production", hue: 58 },
+  { id: "paper-radio", title: "Paper Radio", status: "mixing", hue: 212 },
+  { id: "cinders", title: "Cinders", status: "writing", hue: 22 },
+  { id: "understory", title: "Understory", status: "writing", hue: 152 },
+  { id: "salt-air", title: "Salt Air", status: "mastering", hue: 194 },
+];
 
-const Index = () => {
-  const { user, loading } = useAuth();
-  const primaryCta = user ? "/dashboard" : "/auth";
-
+function MiniWave({ hue, n = 46, played = 0.42 }: { hue: number; n?: number; played?: number }) {
+  const w = useMemo(() => buildWave(hue, n), [hue, n]);
+  const cut = Math.round(n * played);
   return (
-    <div className="min-h-screen bg-[#09090b] text-white relative overflow-hidden">
-      {/* Ambient Background - matching SongDetail exactly */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div 
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[150px]" 
-          style={{ background: 'var(--accent-subtle, rgba(124,58,237,0.1))' }} 
-        />
-        <div className="absolute bottom-0 right-0 w-[400px] h-[300px] rounded-full bg-violet-500/5 blur-[100px]" />
-      </div>
-
-      {/* Header - matching SongDetail header style */}
-      <header className="sticky top-0 z-30 px-6 py-4 flex items-center justify-between bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04]">
-        <SessionsLogo subtitle="Studio Console" to="/" />
-        {!loading && (
-          <div className="flex items-center gap-4">
-            {!user && (
-              <Link to="/auth" className="text-sm text-white/50 hover:text-white transition-colors">
-                Sign in
-              </Link>
-            )}
-            <Link
-              to={primaryCta}
-              className="px-5 py-2.5 rounded-full bg-white text-black text-sm font-medium hover:bg-white/90 transition-all"
-            >
-              {user ? "Go to dashboard" : "Start Session"}
-            </Link>
-          </div>
-        )}
-      </header>
-
-      {/* Hero */}
-      <main className="relative z-10 px-6">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-16 items-center py-16 lg:py-24">
-          <motion.div initial="hidden" whileInView="show" viewport={{ once: true, margin: "-80px" }} className="space-y-8">
-            <motion.div variants={stagger} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-              <Disc3 className="w-3.5 h-3.5 text-white/40" />
-              <span className="text-xs font-mono text-white/50">No more Song_v3_Final_REAL.mp3</span>
-            </motion.div>
-            <motion.h1
-              variants={stagger}
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.95] tracking-tight"
-              style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}
-            >
-              Your music. <br />
-              <span className="bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">Mastered.</span>
-            </motion.h1>
-            <motion.p variants={stagger} className="text-lg sm:text-xl text-white/50 max-w-xl leading-relaxed">
-              The studio console for modern producers. Manage versions, feedback, and tasks in a workspace that feels as good as your studio looks.
-            </motion.p>
-            <motion.div variants={stagger} className="flex flex-col sm:flex-row gap-3 sm:items-center">
-              <Link
-                to={primaryCta}
-                className="inline-flex items-center gap-3 px-7 py-3.5 rounded-full bg-white text-black font-medium text-base hover:bg-white/90 transition-all shadow-lg shadow-white/5"
-              >
-                Start Session
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white/5 border border-white/10 text-white/70 hover:text-white hover:border-white/20 transition-colors"
-              >
-                <PlayCircle className="h-5 w-5" />
-                Watch demo
-              </button>
-            </motion.div>
-            <motion.div
-              variants={stagger}
-              className="flex flex-wrap items-center gap-4 text-[10px] font-mono text-white/30 uppercase tracking-[0.2em]"
-            >
-              <span>Mix versioning</span>
-              <span className="h-[1px] w-8 bg-white/10" />
-              <span>Timeline notes</span>
-              <span className="h-[1px] w-8 bg-white/10" />
-              <span>Secure sharing</span>
-            </motion.div>
-          </motion.div>
-
-          {/* Hero Visual - Glass Console Preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            viewport={{ once: true, margin: "-80px" }}
-            className="relative h-full"
-          >
-            <div className="relative aspect-[4/5] rounded-3xl overflow-hidden">
-              {/* Glass background matching SongDetail panels */}
-              <div className="absolute inset-0 bg-[#0a0a0c]/80 backdrop-blur-xl" />
-              <div className="absolute inset-[1px] rounded-3xl border border-white/[0.06]" />
-              
-              {/* Glow effect */}
-              <div 
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[200px] blur-[80px] opacity-50"
-                style={{ background: 'var(--accent-subtle, rgba(124,58,237,0.15))' }}
-              />
-              
-              {/* Content */}
-              <div className="absolute inset-6 flex flex-col justify-between">
-                <div className="space-y-5">
-                  <div className="flex items-center gap-3">
-                    <div className="h-3 w-3 rounded-full" style={{ background: 'var(--accent-main, #7c3aed)' }} />
-                    <div className="h-2 w-24 rounded-full bg-white/10" />
-                  </div>
-                  
-                  {/* Version pills - matching SongDetail metadata pills */}
-                  <div className="flex gap-2">
-                    {["v3", "v2", "v1"].map((v, i) => (
-                      <div 
-                        key={v}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-mono ${
-                          i === 0 
-                            ? "bg-white/10 border border-white/20 text-white/80" 
-                            : "bg-white/5 border border-white/10 text-white/40"
-                        }`}
-                      >
-                        {v}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Waveform preview */}
-                  <div className="h-20 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-center gap-1 px-4">
-                    {Array.from({ length: 40 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="w-1 rounded-full"
-                        style={{ 
-                          height: `${Math.sin(i * 0.3) * 30 + 35}%`,
-                          opacity: i < 20 ? 0.6 : 0.2,
-                          background: 'var(--accent-main, #7c3aed)'
-                        }}
-                      />
-                    ))}
-                  </div>
-                  
-                  {/* Timeline notes */}
-                  <div className="space-y-2">
-                    {[
-                      { time: "1:42", note: "Fix the hi-hat here" },
-                      { time: "2:15", note: "Louder kick" },
-                    ].map((item) => (
-                      <div key={item.time} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                        <span className="text-[10px] font-mono text-white/50">{item.time}</span>
-                        <span className="text-xs text-white/40">{item.note}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Floating glass player - matching AudioPlayer style */}
-                <div className="relative">
-                  <div className="absolute -inset-6 bg-white/5 blur-xl opacity-40" />
-                  <div className="relative h-16 rounded-full bg-[#09090b]/90 backdrop-blur-2xl border border-white/10 shadow-2xl shadow-black/50 flex items-center px-5 gap-4">
-                    <div className="h-10 w-10 rounded-full bg-white text-black flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.15)]">
-                      <PlayCircle className="h-5 w-5" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="h-[3px] w-full bg-white/10 rounded-full overflow-hidden relative">
-                        <div className="absolute inset-0 w-1/2 rounded-full" style={{ background: 'var(--accent-main, #7c3aed)' }} />
-                      </div>
-                      <div className="mt-1.5 flex items-center justify-between text-[10px] font-mono text-white/30">
-                        <span>01:12</span>
-                        <span>03:47</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </main>
-
-      {/* Features Grid */}
-      <section className="relative z-10 px-6 py-20">
-        <div className="max-w-6xl mx-auto">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="mb-12"
-          >
-            <p className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-mono mb-4">Core Features</p>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}>
-              Stop texting MP3s to yourself.
-            </h2>
-          </motion.div>
-          
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Disc3,
-                title: "Version Roller",
-                description: "Stack every mix version in one slot. Compare instantly, delete the bad ones.",
-              },
-              {
-                icon: MessageCircle,
-                title: "Timeline Notes",
-                description: "Drop notes at exact timestamps. Every comment locked to the second.",
-              },
-              {
-                icon: Waves,
-                title: "Public Sharing",
-                description: "Send secure, branded links. Premium player, no login required.",
-              },
-            ].map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className="group relative"
-              >
-                {/* Glass panel matching SongDetail */}
-                <div className="relative p-6 rounded-2xl bg-white/[0.02] border border-white/[0.06] h-full">
-                  <div className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mb-5">
-                    <feature.icon className="w-5 h-5 text-white/50" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2 text-white" style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}>
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm text-white/40 leading-relaxed">{feature.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Comparison */}
-      <section className="relative z-10 px-6 py-16">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Old way */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="relative rounded-2xl bg-white/[0.02] border border-white/[0.06] p-8 space-y-5"
-            >
-              <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/30">The old way</p>
-              <div className="space-y-3">
-                {["Song_v3_FINAL_REAL.mp3", "Mix-v3-FINAL-(1).mp3", "voice-note-1120.m4a"].map((item) => (
-                  <div key={item} className="flex items-center justify-between text-white/40">
-                    <span className="text-sm font-mono">{item}</span>
-                    <span className="text-[10px] text-red-400/50">Lost?</span>
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm text-white/30 italic pt-4 border-t border-white/[0.06]">
-                "Where's the mix with the louder kick?"
-              </p>
-            </motion.div>
-
-            {/* Sessions way - glass panel matching SongDetail version dropdown */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="relative rounded-2xl bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 p-8 space-y-5 shadow-2xl shadow-black/40"
-            >
-              <div 
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-[200px] h-[100px] blur-[60px] opacity-50"
-                style={{ background: 'var(--accent-subtle, rgba(124,58,237,0.15))' }}
-              />
-              <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/50 relative">The Sessions way</p>
-              <div className="space-y-4 relative">
-                {[
-                  { title: "Mix 07 – Sparkle", meta: "Timestamps + notes" },
-                  { title: "Mix 08 – Club", meta: "A/B vs. ref track" },
-                  { title: "Vocal comp", meta: "Linked to lyrics" },
-                ].map((item) => (
-                  <div key={item.title} className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-white/80">{item.title}</p>
-                      <p className="text-[10px] text-white/30 font-mono">{item.meta}</p>
-                    </div>
-                    <div className="h-7 w-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
-                      <Check className="h-3.5 w-3.5 text-white/70" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonial - glass panel */}
-      <section className="relative z-10 px-6 py-16">
-        <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="relative rounded-2xl bg-[#0c0c0f]/80 backdrop-blur-xl border border-white/[0.08] p-8 md:p-12 shadow-2xl"
-          >
-            <div 
-              className="absolute top-0 right-0 w-[300px] h-[200px] blur-[80px] opacity-30"
-              style={{ background: 'var(--accent-subtle, rgba(124,58,237,0.15))' }}
-            />
-            <p className="text-[10px] font-mono uppercase tracking-[0.25em] text-white/30 mb-6 relative">Studio note</p>
-            <p className="text-xl md:text-2xl text-white/80 leading-relaxed relative">
-              "Sessions finally matches how we work. Version stacks, timeline notes, and the floating player mean I never dig through Dropbox again."
-            </p>
-            <div className="mt-8 flex items-center gap-4 text-sm relative">
-              <div className="h-12 w-12 rounded-full bg-white/5 border border-white/10" />
-              <div>
-                <p className="font-medium text-white/80">Rhea Park</p>
-                <p className="text-white/40">Mixer, EchoHaus</p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="relative z-10 px-6 py-20">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-white/30 mb-4">Ready?</p>
-            <h3 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4" style={{ fontFamily: "'Syne', 'Space Grotesk', sans-serif" }}>
-              Start a Session and keep every mix in flow.
-            </h3>
-            <p className="text-white/40 max-w-2xl mx-auto mb-8">
-              One place for versions, notes, and tasks. Built for producers who live in the studio.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to={primaryCta}
-                className="inline-flex items-center gap-3 px-8 py-3.5 rounded-full bg-white text-black font-medium hover:bg-white/90 transition-all shadow-lg shadow-white/5"
-              >
-                {user ? "Resume Session" : "Start Session"}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="relative z-10 px-6 py-8 border-t border-white/[0.04]">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-white/20 text-xs">
-            Built for producers. Powered by <span className="text-white/40 font-medium">Sessions</span>.
-          </p>
-        </div>
-      </footer>
+    <div className="mini-wave">
+      {w.map((h, i) => (
+        <div key={i} className={"b" + (i < cut ? " on" : "")} style={{ height: Math.round(h * 100) + "%" }} />
+      ))}
     </div>
   );
-};
+}
 
-export default Index;
+export default function Index() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const start = () => navigate(user ? "/dashboard" : "/auth");
+  const signIn = () => navigate("/auth");
+  const nm = useMemo(() => buildWave(58, 44), []);
+
+  return (
+    <SessionsShell vars={palette(58)}>
+      <div className="lp fade-in">
+        <nav className="lp-nav">
+          <div className="nb">
+            <span className="dot" />
+            <b>Sessions</b>
+          </div>
+          <div className="links">
+            <a onClick={start}>Features</a>
+            <a onClick={start}>For bands</a>
+            <a onClick={start}>Pricing</a>
+          </div>
+          <div className="sp" />
+          <span className="lp-signin" onClick={signIn}>
+            Sign in
+          </span>
+          <span className="lp-cta" onClick={start}>
+            Start free
+            <ArrowRight size={15} />
+          </span>
+        </nav>
+
+        {/* hero */}
+        <div className="lp-wrap">
+          <div className="lp-hero">
+            <div>
+              <div className="kicker">Boutique workspace for songwriters</div>
+              <h1 className="lp-h1">
+                Where voice memos
+                <br />
+                become <span className="em">records.</span>
+              </h1>
+              <p className="lp-sub">
+                Sessions is the quiet studio between the spark and the master. Drop a take, leave notes on
+                the exact second, keep every version — and watch the whole room color itself around the song.
+              </p>
+              <div className="lp-actions">
+                <span className="lp-cta lp-cta-lg" onClick={start}>
+                  Start your first song
+                  <ArrowRight size={16} />
+                </span>
+                <span className="lp-ghost" onClick={start}>
+                  <Play size={15} />
+                  See a session
+                </span>
+              </div>
+              <div className="lp-trust">
+                <Sparkles size={14} style={{ color: "var(--accent-bright)" }} />
+                <span className="l">No card · bring a song in under a minute</span>
+              </div>
+            </div>
+
+            <div className="lp-shot">
+              <div className="cover-frame">
+                <CoverArt song={HERO} hue={HERO.hue} radius={18} />
+              </div>
+              <div className="float-note glass">
+                <div className="fn-top">
+                  <span className="fn-ts">0:42</span>
+                  <span className="guest-badge">guest</span>
+                  <span className="fn-who">Mara</span>
+                </div>
+                <div className="fn-text">love this harmony stack — keep it</div>
+              </div>
+              <div className="float-player">
+                <div className="mini-player glass">
+                  <div className="mp-cover">
+                    <CoverArt song={HERO} hue={HERO.hue} radius={12} />
+                  </div>
+                  <div className="mp-play">
+                    <Play size={18} fill="currentColor" style={{ marginLeft: 2 }} />
+                  </div>
+                  <MiniWave hue={58} />
+                  <div className="mp-time">1:24 / 3:48</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="lp-stats">
+            <div className="lp-stat">
+              <div className="n">
+                <span className="em">7</span> stages
+              </div>
+              <div className="l">idea → release, tracked</div>
+            </div>
+            <div className="lp-stat">
+              <div className="n">
+                every <span className="em">take</span>
+              </div>
+              <div className="l">versioned automatically</div>
+            </div>
+            <div className="lp-stat">
+              <div className="n">
+                notes on the <span className="em">second</span>
+              </div>
+              <div className="l">timestamped feedback</div>
+            </div>
+          </div>
+        </div>
+
+        {/* rooms band */}
+        <div className="lp-rooms">
+          <div className="lp-wrap">
+            <div className="lp-sechead">
+              <div className="kicker">The idea</div>
+              <h2>Every song becomes its own room.</h2>
+              <p>
+                Sessions reads the color out of your cover art and themes the entire workspace around it — so
+                opening a different song feels like walking into a different room, not refreshing a dashboard.
+              </p>
+            </div>
+            <div className="rooms-strip">
+              {ROOMS.map((s) => (
+                <div className="room-cell" key={s.id} style={paletteStyle(palette(s.hue))}>
+                  <CoverArt song={s} hue={s.hue} radius={13} />
+                  <div className="rc-meta">
+                    <div className="rc-title">{s.title}</div>
+                    <div className="rc-stage">
+                      <StageMeter status={s.status} label={false} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* features */}
+        <div className="lp-wrap">
+          <div className="lp-features">
+            {/* 1 notes */}
+            <div className="feat">
+              <div className="feat-text">
+                <div className="num">01</div>
+                <h3>Feedback that lives on the timeline.</h3>
+                <p>
+                  Stop describing the second you mean. Click the waveform, leave a note where it happened, and
+                  send a private link — collaborators reply on the exact bar.
+                </p>
+                <div className="feat-list">
+                  <div className="fi">
+                    <Check size={15} className="ck" />
+                    Timestamped notes from you and guests
+                  </div>
+                  <div className="fi">
+                    <Check size={15} className="ck" />
+                    Hover the wave to preview any comment
+                  </div>
+                  <div className="fi">
+                    <Check size={15} className="ck" />
+                    Read-only rooms — no files handed over
+                  </div>
+                </div>
+              </div>
+              <div className="feat-mock glass" style={paletteStyle(palette(58))}>
+                <div className="mock-head">
+                  <span className="mh-l">Slow Light · notes</span>
+                  <span className="mh-l">5</span>
+                </div>
+                <div className="nm-wave">
+                  {nm.map((h, i) => (
+                    <div key={i} className={"b" + (i < 18 ? " on" : "")} style={{ height: Math.round(h * 100) + "%" }} />
+                  ))}
+                  <div className="dot" style={{ left: "18%" }} />
+                  <div className="dot" style={{ left: "42%" }} />
+                  <div className="dot" style={{ left: "74%" }} />
+                </div>
+                <div className="nm-row">
+                  <div className="ts">0:42</div>
+                  <div>
+                    <div className="tx">love this harmony stack — keep it</div>
+                    <div className="wh">Mara · guest</div>
+                  </div>
+                </div>
+                <div className="nm-row">
+                  <div className="ts">1:18</div>
+                  <div>
+                    <div className="tx">pull the reverb back here</div>
+                    <div className="wh">You</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2 tasks */}
+            <div className="feat rev">
+              <div className="feat-text">
+                <div className="num">02</div>
+                <h3>A to-do list that speaks studio.</h3>
+                <p>
+                  Type it the way you'd say it. Sessions parses the priority and the date and files the task
+                  under the right stage — recording, production, mixing — so the work sorts itself.
+                </p>
+                <div className="feat-list">
+                  <div className="fi">
+                    <Check size={15} className="ck" />
+                    Natural language:{" "}
+                    <span className="mono" style={{ color: "var(--fg)", marginLeft: 4 }}>
+                      !high due fri
+                    </span>
+                  </div>
+                  <div className="fi">
+                    <Check size={15} className="ck" />
+                    Grouped by where you are in the pipeline
+                  </div>
+                  <div className="fi">
+                    <Check size={15} className="ck" />
+                    Lives in a sidecar, never over the song
+                  </div>
+                </div>
+              </div>
+              <div className="feat-mock glass" style={paletteStyle(palette(212))}>
+                <div className="tm-add">
+                  <Sparkles size={14} style={{ color: "var(--accent-bright)" }} />
+                  <span className="tx">
+                    re-cut vocal <span className="hl">!high</span> <span className="hl">due fri</span>
+                  </span>
+                </div>
+                <div className="tm-row">
+                  <span className="pd" style={{ background: "var(--accent-bright)" }} />
+                  <span className="tx">Re-cut lead vocal, chorus 2</span>
+                  <span className="due">Thu</span>
+                  <span className="ck" />
+                </div>
+                <div className="tm-row">
+                  <span className="pd" style={{ background: "var(--fg-2)" }} />
+                  <span className="tx">Layer room mics on the bridge</span>
+                  <span className="ck" />
+                </div>
+                <div className="tm-row done">
+                  <span className="pd" style={{ background: "var(--fg-3)" }} />
+                  <span className="tx">Automate the pad swell</span>
+                  <span className="ck">
+                    <Check size={12} />
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 3 versions */}
+            <div className="feat">
+              <div className="feat-text">
+                <div className="num">03</div>
+                <h3>Every take, kept and named.</h3>
+                <p>
+                  New mix? It stacks as the next version and becomes current automatically. The whole history
+                  stays one tap away, and the song's progress is always on the wall.
+                </p>
+                <div className="feat-list">
+                  <div className="fi">
+                    <Check size={15} className="ck" />
+                    Automatic versioning on every upload
+                  </div>
+                  <div className="fi">
+                    <Check size={15} className="ck" />
+                    One link to share a listening room
+                  </div>
+                  <div className="fi">
+                    <Check size={15} className="ck" />
+                    Stage meter from idea to release prep
+                  </div>
+                </div>
+              </div>
+              <div className="feat-mock glass" style={paletteStyle(palette(152))}>
+                <div className="mock-head">
+                  <span className="mh-l">Understory · versions</span>
+                  <StageMeter status="writing" label={false} />
+                </div>
+                <div className="vm-row">
+                  <span className="vt">v3</span>
+                  <span className="vn">understory_mix-b</span>
+                  <span className="vc">current</span>
+                </div>
+                <div className="vm-row">
+                  <span className="vt">v2</span>
+                  <span className="vn">understory_rough</span>
+                  <span className="vd">may 28</span>
+                </div>
+                <div className="vm-row">
+                  <span className="vt">v1</span>
+                  <span className="vn">voice-memo</span>
+                  <span className="vd">may 11</span>
+                </div>
+                <div className="vm-share">
+                  <Share2 size={15} style={{ color: "var(--accent-bright)" }} />
+                  <span className="lk">sessions.fm/s/u7x2a9</span>
+                  <span className="cp">Copy</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* quote */}
+        <div className="lp-wrap lp-quote">
+          <blockquote>
+            "I stopped losing songs in voice-memo hell. Now an idea has somewhere to live until it's actually
+            finished."
+          </blockquote>
+          <div className="qby">
+            <Avatar ch="J" s={32} />
+            <div style={{ textAlign: "left" }}>
+              <div className="qn">Jonah Reyes</div>
+              <div className="qr">producer · 4× release on Sessions</div>
+            </div>
+          </div>
+        </div>
+
+        {/* final */}
+        <div className="lp-wrap lp-final">
+          <h2>Finish the song.</h2>
+          <p>Your next record is one quiet room away.</p>
+          <span className="lp-cta lp-cta-lg" onClick={start} style={{ height: 50, padding: "0 26px", fontSize: 15 }}>
+            Start free
+            <ArrowRight size={16} />
+          </span>
+        </div>
+
+        <footer className="lp-foot">
+          <div className="fin">
+            <div className="fl">
+              <span className="dot" style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--accent-bright)" }} />
+              <b>Sessions</b>
+            </div>
+            <div className="fr">
+              <a>Product</a>
+              <a>For bands</a>
+              <a>Changelog</a>
+              <a>Privacy</a>
+            </div>
+            <div className="cc">© 2026 Sessions</div>
+          </div>
+        </footer>
+      </div>
+    </SessionsShell>
+  );
+}

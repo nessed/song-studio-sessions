@@ -9,6 +9,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 // Lazy load all page components for better initial load performance
 const Index = lazy(() => import("@/pages/Index"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Tasks = lazy(() => import("@/pages/Tasks"));
 const SongDetail = lazy(() => import("@/pages/SongDetail"));
 const Projects = lazy(() => import("@/pages/Projects"));
 const ProjectDetail = lazy(() => import("@/pages/ProjectDetail"));
@@ -38,6 +39,7 @@ function AppRoutes() {
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
         <Route path="/song/:id" element={<ProtectedRoute><SongDetail /></ProtectedRoute>} />
         <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
         <Route path="/project/:id" element={<ProtectedRoute><ProjectDetail /></ProtectedRoute>} />
