@@ -67,15 +67,16 @@ export default function Index() {
         <div className="lp-wrap">
           <div className="lp-hero">
             <div>
-              <div className="kicker">Boutique workspace for songwriters</div>
+              <div className="kicker">For people who make music together</div>
               <h1 className="lp-h1">
-                Where voice memos
+                Everything that goes into a song,
                 <br />
-                become <span className="em">records.</span>
+                in <span className="em">one place.</span>
               </h1>
               <p className="lp-sub">
-                Sessions is the quiet studio between the spark and the master. Drop a take, leave notes on
-                the exact second, keep every version — and watch the whole room color itself around the song.
+                Making a song means juggling recordings, lyrics, edits, feedback and a dozen versions across
+                your phone, Dropbox, Docs and chats. Sessions puts all of it in one workspace, tracks how far
+                along each song is, and lets the people you work with leave feedback on the exact spot they mean.
               </p>
               <div className="lp-actions">
                 <span className="lp-cta lp-cta-lg" onClick={start}>
@@ -84,12 +85,12 @@ export default function Index() {
                 </span>
                 <span className="lp-ghost" onClick={start}>
                   <Play size={15} />
-                  See a session
+                  See how it works
                 </span>
               </div>
               <div className="lp-trust">
                 <Sparkles size={14} style={{ color: "var(--accent-bright)" }} />
-                <span className="l">No card · bring a song in under a minute</span>
+                <span className="l">No card needed. Set up a song in under a minute.</span>
               </div>
             </div>
 
@@ -123,21 +124,21 @@ export default function Index() {
           <div className="lp-stats">
             <div className="lp-stat">
               <div className="n">
-                <span className="em">7</span> stages
+                Every stage <span className="em">tracked</span>
               </div>
-              <div className="l">idea → release, tracked</div>
+              <div className="l">see what's done and what's left</div>
             </div>
             <div className="lp-stat">
               <div className="n">
-                every <span className="em">take</span>
+                One <span className="em">workspace</span>
               </div>
-              <div className="l">versioned automatically</div>
+              <div className="l">recordings, lyrics, feedback, versions</div>
             </div>
             <div className="lp-stat">
               <div className="n">
-                notes on the <span className="em">second</span>
+                Notes on the <span className="em">second</span>
               </div>
-              <div className="l">timestamped feedback</div>
+              <div className="l">no more "the part around 1:20"</div>
             </div>
           </div>
         </div>
@@ -147,10 +148,11 @@ export default function Index() {
           <div className="lp-wrap">
             <div className="lp-sechead">
               <div className="kicker">The idea</div>
-              <h2>Every song becomes its own room.</h2>
+              <h2>Always know what's left.</h2>
               <p>
-                Sessions reads the color out of your cover art and themes the entire workspace around it — so
-                opening a different song feels like walking into a different room, not refreshing a dashboard.
+                Every song moves through clear stages, from first idea to finished. Sessions shows you exactly
+                where each one is, so you can look at your whole project and instantly see what's done and what
+                still needs work.
               </p>
             </div>
             <div className="rooms-strip">
@@ -176,23 +178,23 @@ export default function Index() {
             <div className="feat">
               <div className="feat-text">
                 <div className="num">01</div>
-                <h3>Feedback that lives on the timeline.</h3>
+                <h3>Point to the exact moment you mean.</h3>
                 <p>
-                  Stop describing the second you mean. Click the waveform, leave a note where it happened, and
-                  send a private link — collaborators reply on the exact bar.
+                  Stop describing the second you mean. Click that spot in the song, leave a note right there,
+                  and share one link. Anyone can listen and reply without making an account.
                 </p>
                 <div className="feat-list">
                   <div className="fi">
                     <Check size={15} className="ck" />
-                    Timestamped notes from you and guests
+                    Comments pinned to the exact second
                   </div>
                   <div className="fi">
                     <Check size={15} className="ck" />
-                    Hover the wave to preview any comment
+                    Share with one link, no sign-up for guests
                   </div>
                   <div className="fi">
                     <Check size={15} className="ck" />
-                    Read-only rooms — no files handed over
+                    Everyone stays on the same up-to-date version
                   </div>
                 </div>
               </div>
@@ -230,26 +232,23 @@ export default function Index() {
             <div className="feat rev">
               <div className="feat-text">
                 <div className="num">02</div>
-                <h3>A to-do list that speaks studio.</h3>
+                <h3>A to-do list that understands the work.</h3>
                 <p>
-                  Type it the way you'd say it. Sessions parses the priority and the date and files the task
-                  under the right stage — recording, production, mixing — so the work sorts itself.
+                  Write a task the way you'd say it, like "redo the vocals by Friday," and Sessions sorts it
+                  into the right stage automatically, sitting right next to the song it belongs to.
                 </p>
                 <div className="feat-list">
                   <div className="fi">
                     <Check size={15} className="ck" />
-                    Natural language:{" "}
-                    <span className="mono" style={{ color: "var(--fg)", marginLeft: 4 }}>
-                      !high due fri
-                    </span>
+                    Plain language, like "redo vocals by Friday"
                   </div>
                   <div className="fi">
                     <Check size={15} className="ck" />
-                    Grouped by where you are in the pipeline
+                    Sorted into the right stage for you
                   </div>
                   <div className="fi">
                     <Check size={15} className="ck" />
-                    Lives in a sidecar, never over the song
+                    Lives next to the song, never in the way
                   </div>
                 </div>
               </div>
@@ -285,23 +284,23 @@ export default function Index() {
             <div className="feat">
               <div className="feat-text">
                 <div className="num">03</div>
-                <h3>Every take, kept and named.</h3>
+                <h3>Never lose a version again.</h3>
                 <p>
-                  New mix? It stacks as the next version and becomes current automatically. The whole history
-                  stays one tap away, and the song's progress is always on the wall.
+                  Every time you save a new edit, Sessions keeps the old one and makes the new one current. The
+                  full history is one click away, so nobody ever works off the wrong file.
                 </p>
                 <div className="feat-list">
                   <div className="fi">
                     <Check size={15} className="ck" />
-                    Automatic versioning on every upload
+                    Old versions saved automatically
                   </div>
                   <div className="fi">
                     <Check size={15} className="ck" />
-                    One link to share a listening room
+                    One link to share the latest version
                   </div>
                   <div className="fi">
                     <Check size={15} className="ck" />
-                    Stage meter from idea to release prep
+                    See each song's progress at a glance
                   </div>
                 </div>
               </div>
@@ -353,7 +352,7 @@ export default function Index() {
         {/* final */}
         <div className="lp-wrap lp-final">
           <h2>Finish the song.</h2>
-          <p>Your next record is one quiet room away.</p>
+          <p>One place to start an idea, work on it with others, and actually get it done.</p>
           <span className="lp-cta lp-cta-lg" onClick={start} style={{ height: 50, padding: "0 26px", fontSize: 15 }}>
             Start free
             <ArrowRight size={16} />
