@@ -11,6 +11,7 @@ interface TopNavProps {
   search?: string;
   onSearch?: (v: string) => void;
   initial?: string;
+  avatarUrl?: string | null;
 }
 
 const TABS: [NavTab, string][] = [
@@ -19,7 +20,7 @@ const TABS: [NavTab, string][] = [
   ["tasks", "Tasks"],
 ];
 
-export function TopNav({ tab, onTab, onNew, search, onSearch, initial = "N" }: TopNavProps) {
+export function TopNav({ tab, onTab, onNew, search, onSearch, initial = "N", avatarUrl }: TopNavProps) {
   const navigate = useNavigate();
   return (
     <nav className="nav drop">
@@ -54,7 +55,9 @@ export function TopNav({ tab, onTab, onNew, search, onSearch, initial = "N" }: T
         {/* <span className="badge" /> */}
       </button>
       <button className="nav-av" onClick={() => navigate("/settings")} aria-label="Settings">
-        {initial}
+        {avatarUrl
+          ? <img src={avatarUrl} alt={initial} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          : initial}
       </button>
     </nav>
   );

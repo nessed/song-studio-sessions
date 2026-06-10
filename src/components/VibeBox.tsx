@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronUp, ChevronDown, Download, Clock, X, Trash2 } from "lucide-react";
 import { SongVersion } from "@/hooks/useSongVersions";
 import { formatDistanceToNow } from "date-fns";
+import { useDialogs } from "@/components/sessions/Dialogs";
 
 interface VibeBoxProps {
   versions: SongVersion[];
@@ -17,6 +18,7 @@ export function VibeBox({ versions, currentVersion, onSelectVersion, onDeleteVer
   const [isOpen, setIsOpen] = useState(false);
   const [viewIndex, setViewIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { confirm } = useDialogs();
 
   const displayVersion = versions[viewIndex] || currentVersion;
   const versionNumber = currentVersion?.version_number || 1;
@@ -114,9 +116,16 @@ export function VibeBox({ versions, currentVersion, onSelectVersion, onDeleteVer
                       <div className="flex items-center gap-1">
                         {onDeleteVersion && versions.length > 0 && (
                           <button
-                            onClick={(e) => {
+                            onClick={async (e) => {
                               e.stopPropagation();
-                              if (displayVersion && window.confirm(`Delete v${displayVersion.version_number}? This cannot be undone.`)) {
+                              if (!displayVersion) return;
+                              const ok = await confirm({
+                                title: `Delete v${displayVersion.version_number}?`,
+                                message: "This take will be removed for good. This can't be undone.",
+                                confirmText: "Delete take",
+                                danger: true,
+                              });
+                              if (ok) {
                                 onDeleteVersion(displayVersion);
                                 setIsOpen(false);
                               }

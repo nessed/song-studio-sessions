@@ -71,6 +71,7 @@ export default function Tasks() {
         }}
         onNew={() => navigate("/dashboard")}
         initial={initial}
+        avatarUrl={profile?.avatar_url}
       />
       <div className="tov fade-in">
         <div className="sec-row" style={{ margin: "14px 0 6px" }}>

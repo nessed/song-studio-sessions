@@ -122,6 +122,8 @@ interface GlassPlayerProps {
   /* when true the player rests below the viewport edge (used while the
      in-page deck is visible) and glides up once the deck scrolls away */
   hidden?: boolean;
+  /* when provided, clicking the cover/title navigates to the song page */
+  onGoToSong?: () => void;
 }
 
 export function GlassPlayer({
@@ -137,15 +139,25 @@ export function GlassPlayer({
   onAddNoteHere,
   onStems,
   hidden = false,
+  onGoToSong,
 }: GlassPlayerProps) {
   const progress = duration ? time / duration : 0;
   return (
     <div className={"player-wrap" + (hidden ? " hide" : "")}>
       <div className="player glass">
-        <div className="p-cover">
+        <div
+          className={"p-cover" + (onGoToSong ? " p-cover-link" : "")}
+          onClick={onGoToSong}
+          role={onGoToSong ? "button" : undefined}
+          aria-label={onGoToSong ? `Go to ${song.title}` : undefined}
+        >
           <CoverArt song={song} radius={13} />
         </div>
-        <div className="p-meta">
+        <div
+          className={"p-meta" + (onGoToSong ? " p-meta-link" : "")}
+          onClick={onGoToSong}
+          role={onGoToSong ? "button" : undefined}
+        >
           <div className="p-title">{song.title}</div>
           <div className="p-sub">{subtitle}</div>
         </div>

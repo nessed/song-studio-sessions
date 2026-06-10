@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, ChevronRight, ChevronDown, List, Share2, Check, X, Play, Pause, Plus, SlidersHorizontal, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -8,16 +8,21 @@ import { useSongVersions, SongVersion } from "@/hooks/useSongVersions";
 import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { usePlayer } from "@/contexts/PlayerContext";
+import { useDialogs } from "@/components/sessions/Dialogs";
+import { ShareSheet } from "@/components/sessions/ShareSheet";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { SessionsShell } from "@/components/sessions/Room";
 import { CoverArt } from "@/components/sessions/CoverArt";
 import { StageMeter } from "@/components/sessions/StageMeter";
-import { GlassPlayer, Waveform } from "@/components/sessions/GlassPlayer";
+import { Waveform } from "@/components/sessions/GlassPlayer";
 import { TaskDrawer } from "@/components/sessions/Tasks";
 import { palette, hueForSong, buildWave, fmt } from "@/lib/sessions/theme";
-import { SONG_STATUSES, SongStatus, Song, Task } from "@/lib/types";
+import { SONG_STATUSES, SongStatus, Task } from "@/lib/types";
 
-const FALLBACK_DUR = 210;
+const HASH_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const makeShareHash = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => HASH_CHARS[b % HASH_CHARS.length]).join("");
 
 /* status dropdown built on the stage meter */
 function StatusPill({ value, onChange }: { value: SongStatus; onChange: (s: SongStatus) => void }) {
@@ -57,10 +62,6 @@ function StatusPill({ value, onChange }: { value: SongStatus; onChange: (s: Song
   );
 }
 
-const HASH_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-const makeShareHash = () =>
-  Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => HASH_CHARS[b % HASH_CHARS.length]).join("");
-
 /* split freeform lyrics into label/line rows */
 function lyricRows(lyrics: string | null): { label: boolean; text: string }[] {
   if (!lyrics || !lyrics.trim()) return [];
@@ -81,107 +82,83 @@ export default function SongDetail() {
   const { notes, createNote } = useSongNotes(id);
   const { versions, currentVersion, uploadVersion, setCurrentVersion, deleteVersion, isUploading, uploadProgress } = useSongVersions(id);
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
+  const player = usePlayer();
+  const { confirm } = useDialogs();
 
   const [status, setStatus] = useState<SongStatus>("idea");
   const [titleEdit, setTitleEdit] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
-  const [playing, setPlaying] = useState(false);
-  const [time, setTime] = useState(0);
-  const [duration, setDuration] = useState(FALLBACK_DUR);
   const [composer, setComposer] = useState({ t: 0, text: "", armed: false });
   const [drawer, setDrawer] = useState(false);
-  const [deckVisible, setDeckVisible] = useState(true);
+  const [shareOpen, setShareOpen] = useState(false);
 
-  const audioRef = useRef<HTMLAudioElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
-  const rafRef = useRef<number>();
-  const lastTick = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const deckRef = useRef<HTMLElement>(null);
 
   const audioUrl = currentVersion?.file_url || song?.mp3_url || null;
   const wave = useMemo(() => buildWave(song ? hueForSong(song) : 1), [song]);
 
+  // status tracks DB value
   useEffect(() => {
     if (song) setStatus(song.status);
   }, [song]);
 
-  /* switching takes (or losing audio) restarts the transport */
+  // Register song in the global player when this song becomes active or version switches.
+  // Skip if a *different* song is already playing — don't interrupt playback.
   useEffect(() => {
-    setPlaying(false);
-    setTime(0);
-    setDuration(FALLBACK_DUR);
-  }, [audioUrl]);
-
-  /* simulated playback when there's no real audio file yet */
-  useEffect(() => {
-    if (audioUrl || !playing) return;
-    lastTick.current = performance.now();
-    const step = (now: number) => {
-      const dt = (now - lastTick.current) / 1000;
-      lastTick.current = now;
-      setTime((t) => {
-        const nt = t + dt;
-        if (nt >= duration) {
-          setPlaying(false);
-          return duration;
-        }
-        return nt;
-      });
-      rafRef.current = requestAnimationFrame(step);
-    };
-    rafRef.current = requestAnimationFrame(step);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [playing, audioUrl, duration]);
-
-  /* spacebar play/pause */
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      if (e.code === "Space" && e.target === document.body) {
-        e.preventDefault();
-        togglePlay();
-      }
-    };
-    window.addEventListener("keydown", h);
-    return () => window.removeEventListener("keydown", h);
+    if (!song) return;
+    if (player.playing && player.song?.id !== song.id) return;
+    const subtitle =
+      (profile?.display_name || "You") + (currentVersion ? ` · v${currentVersion.version_number}` : "");
+    player.loadSong(song, audioUrl, wave, notes, subtitle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playing, audioUrl]);
+  }, [song?.id, audioUrl]);
 
-  /* the floating player docks in only once the deck leaves the viewport */
+  // Keep notes in sync — only while this song is the active player song.
+  useEffect(() => {
+    if (player.song?.id !== id) return;
+    player.setNotes(notes);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes]);
+
+  // Hide the miniplayer while the in-page deck is visible AND this song is the active one.
+  // If a different song is playing, keep the miniplayer showing.
   useEffect(() => {
     const el = deckRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([entry]) => setDeckVisible(entry.isIntersecting), {
-      threshold: 0.2,
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [loading, song]);
-
-  const togglePlay = useCallback(() => {
-    if (audioUrl && audioRef.current) {
-      if (playing) audioRef.current.pause();
-      else audioRef.current.play().catch(() => {});
+    const isActive = player.song?.id === song?.id;
+    if (!isActive) {
+      player.setDeckVisible(false);
+      return () => { player.addNoteRef.current = null; };
     }
-    setPlaying((p) => !p);
-  }, [audioUrl, playing]);
+    if (!el || typeof IntersectionObserver === "undefined") {
+      player.setDeckVisible(true);
+      return () => {
+        player.setDeckVisible(false);
+        player.addNoteRef.current = null;
+      };
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => player.setDeckVisible(entry.isIntersecting),
+      { threshold: 0.2 },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      player.setDeckVisible(false);
+      player.addNoteRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player.song?.id, song?.id, loading]);
 
-  const seek = useCallback(
-    (t: number) => {
-      const clamped = Math.max(0, Math.min(duration, t));
-      if (audioUrl && audioRef.current) audioRef.current.currentTime = clamped;
-      setTime(clamped);
-    },
-    [duration, audioUrl]
-  );
-
+  // keep addNoteRef fresh every render (armComposer reads `player.time` directly)
   const armComposer = () => {
-    setComposer((c) => ({ ...c, t: Math.round(time), armed: true }));
+    setComposer((c) => ({ ...c, t: Math.round(player.time), armed: true }));
     requestAnimationFrame(() => inputRef.current?.focus());
   };
+  if (player.song?.id === song?.id) player.addNoteRef.current = armComposer;
+
   const commitNote = async (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && composer.text.trim()) {
       await createNote(composer.t, composer.text.trim());
@@ -220,28 +197,23 @@ export default function SongDetail() {
   const toggleTask = (t: Task) => updateTask(t.id, { done: !t.done });
   const addTask = (section: Task["section"], title: string) => createTask(section, title);
 
-  const share = async () => {
-    if (!song || !id) return;
-    if (song.is_public && song.share_hash) {
-      navigator.clipboard?.writeText(`${window.location.origin}/s/${song.share_hash}`);
-      toast.success("Share link copied");
-      return;
+  /* enable/disable the public link; returns the live hash for the share sheet */
+  const setPublic = async (enabled: boolean): Promise<string | null> => {
+    if (!song || !id) return null;
+    if (!enabled) {
+      await updateSong(id, { is_public: false });
+      return null;
     }
     const hash = song.share_hash || makeShareHash();
     const res = await updateSong(id, { is_public: true, share_hash: hash });
-    if (res?.error) {
-      toast.error("Couldn't publish song");
-      return;
-    }
-    navigator.clipboard?.writeText(`${window.location.origin}/s/${hash}`);
-    toast.success("Published — link copied");
+    if (res?.error) return null;
+    return hash;
   };
 
   const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    setPlaying(false);
     try {
       await uploadVersion(file, file.name.replace(/\.[^/.]+$/, ""));
       toast.success("Take uploaded");
@@ -261,7 +233,13 @@ export default function SongDetail() {
   };
 
   const removeVersion = async (v: SongVersion) => {
-    if (!window.confirm(`Delete v${v.version_number}? This can't be undone.`)) return;
+    const ok = await confirm({
+      title: `Delete v${v.version_number}?`,
+      message: "This take will be removed for good. This can't be undone.",
+      confirmText: "Delete take",
+      danger: true,
+    });
+    if (!ok) return;
     try {
       await deleteVersion(v.id);
       toast.success(`v${v.version_number} deleted`);
@@ -284,32 +262,33 @@ export default function SongDetail() {
     );
   }
 
-  const subtitle =
-    (profile?.display_name || "You") + (currentVersion ? ` · v${currentVersion.version_number}` : "");
+  // Show this song's playback state only while it's the active player song.
+  const isActiveSong = player.song?.id === song.id;
+  const playing = isActiveSong && player.playing;
+  const time = isActiveSong ? player.time : 0;
+  const duration = isActiveSong ? player.duration : 210;
+  const progress = duration ? time / duration : 0;
+  const seek = isActiveSong ? player.seek : () => {};
+
+  // Clicking play on this deck either starts this song or toggles it if already loaded.
+  const handleDeckPlay = () => {
+    if (!isActiveSong) {
+      const subtitle =
+        (profile?.display_name || "You") + (currentVersion ? ` · v${currentVersion.version_number}` : "");
+      player.loadSong(song, audioUrl, wave, notes, subtitle, true);
+    } else {
+      player.togglePlay();
+    }
+  };
+
   const initial = (profile?.display_name || user?.email || "N").trim().charAt(0).toUpperCase();
   const openTasks = tasks.filter((t) => !t.done).length;
   const sortedNotes = [...notes].sort((a, b) => a.timestamp_seconds - b.timestamp_seconds);
   const rows = lyricRows(song.lyrics);
   const versionCount = versions.length || (song.mp3_url ? 1 : 0);
-  const progress = duration ? time / duration : 0;
 
   return (
     <SessionsShell vars={palette(hueForSong(song))}>
-      {audioUrl && (
-        <audio
-          ref={audioRef}
-          src={audioUrl}
-          preload="metadata"
-          onLoadedMetadata={(e) => {
-            const d = (e.target as HTMLAudioElement).duration;
-            if (isFinite(d) && d > 0) setDuration(d);
-          }}
-          onTimeUpdate={(e) => setTime((e.target as HTMLAudioElement).currentTime)}
-          onEnded={() => setPlaying(false)}
-          style={{ display: "none" }}
-        />
-      )}
-
       <div>
         <header className="ws-hd drop">
           <div className="ws-hd-l">
@@ -326,7 +305,7 @@ export default function SongDetail() {
               <List size={15} />
               Tasks <span className="b">{openTasks}</span>
             </button>
-            <button className="ghost-btn" onClick={share}>
+            <button className="ghost-btn" onClick={() => setShareOpen(true)}>
               <Share2 size={15} />
               Share
             </button>
@@ -393,7 +372,7 @@ export default function SongDetail() {
 
           {/* the deck — transport + performed waveform, the room's centerpiece */}
           <section className="ws-deck glass rise" style={{ "--d": "0.22s" } as React.CSSProperties} ref={deckRef}>
-            <button className="deck-play" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
+            <button className="deck-play" onClick={handleDeckPlay} aria-label={playing ? "Pause" : "Play"}>
               {playing ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" style={{ marginLeft: 2 }} />}
             </button>
             <div className="wave-hero">
@@ -535,21 +514,6 @@ export default function SongDetail() {
           </div>
         </main>
 
-        <GlassPlayer
-          song={song}
-          subtitle={subtitle}
-          wave={wave}
-          playing={playing}
-          onTogglePlay={togglePlay}
-          time={time}
-          duration={duration}
-          onSeek={seek}
-          notes={notes}
-          onAddNoteHere={armComposer}
-          onStems={() => toast("Stem mixer coming soon")}
-          hidden={deckVisible}
-        />
-
         {drawer && (
           <TaskDrawer
             song={song}
@@ -559,6 +523,16 @@ export default function SongDetail() {
             onClose={() => setDrawer(false)}
             onDelete={(t) => deleteTask(t.id)}
             onEdit={(t, title) => updateTask(t.id, { title })}
+          />
+        )}
+
+        {shareOpen && (
+          <ShareSheet
+            title={song.title}
+            isPublic={!!song.is_public}
+            shareHash={song.share_hash ?? null}
+            onSetPublic={setPublic}
+            onClose={() => setShareOpen(false)}
           />
         )}
       </div>

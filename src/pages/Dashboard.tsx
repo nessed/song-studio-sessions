@@ -115,6 +115,7 @@ export default function Dashboard() {
         search={search}
         onSearch={setSearch}
         initial={initial}
+        avatarUrl={profile?.avatar_url}
       />
 
       <div className="lib fade-in">

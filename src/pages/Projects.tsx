@@ -141,6 +141,7 @@ export default function Projects() {
         search={search}
         onSearch={setSearch}
         initial={initial}
+        avatarUrl={profile?.avatar_url}
       />
 
       <div className="lib">

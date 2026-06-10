@@ -1,28 +1,54 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Song, SongVersion, SongNote } from "@/lib/types";
-import { AudioPlayer } from "@/components/AudioPlayer";
-import { SessionsLogo } from "@/components/SessionsLogo";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { AlertCircle, Clock, Music2, MessageCircle, ChevronDown, ArrowRight } from "lucide-react";
-import { formatDistanceToNow, format } from "date-fns";
-import { TimelineNotes } from "@/components/TimelineNotes";
+import { SessionsShell } from "@/components/sessions/Room";
+import { CoverArt } from "@/components/sessions/CoverArt";
+import { StageMeter } from "@/components/sessions/StageMeter";
+import { GlassPlayer, Waveform } from "@/components/sessions/GlassPlayer";
+import { SessionsLogo } from "@/components/SessionsLogo";
+import { useDialogs } from "@/components/sessions/Dialogs";
+import { palette, hueForSong, buildWave, fmt } from "@/lib/sessions/theme";
+import { AlertCircle, ArrowRight, Play, Pause, Plus, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+
+const FALLBACK_DUR = 210;
+
+/* split freeform lyrics into label/line rows — matches the workspace */
+function lyricRows(lyrics: string | null): { label: boolean; text: string }[] {
+  if (!lyrics || !lyrics.trim()) return [];
+  return lyrics.split("\n").map((raw) => {
+    const t = raw.trim();
+    const isLabel = /^\[.*\]$/.test(t) || /^(verse|chorus|bridge|intro|outro|pre[- ]?chorus|hook|refrain)\b/i.test(t);
+    return { label: isLabel, text: t.replace(/^\[|\]$/g, "") };
+  });
+}
 
 export default function SharedSongView() {
   const { hash } = useParams<{ hash: string }>();
+  const { prompt } = useDialogs();
+
   const [song, setSong] = useState<Song | null>(null);
   const [versions, setVersions] = useState<SongVersion[]>([]);
   const [notes, setNotes] = useState<SongNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [addNoteTrigger, setAddNoteTrigger] = useState<number | undefined>(undefined);
-  const [showVersions, setShowVersions] = useState(false);
 
+  const [playing, setPlaying] = useState(false);
+  const [time, setTime] = useState(0);
+  const [duration, setDuration] = useState(FALLBACK_DUR);
+  const [composer, setComposer] = useState({ t: 0, text: "", armed: false });
+  const [deckVisible, setDeckVisible] = useState(true);
+
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const deckRef = useRef<HTMLElement>(null);
+  const rafRef = useRef<number>();
+  const lastTick = useRef(0);
+
+  /* ── data (unchanged logic) ── */
   useEffect(() => {
     async function fetchSharedSong() {
       if (!hash) {
@@ -31,7 +57,6 @@ export default function SharedSongView() {
         return;
       }
 
-      // 1. Fetch Song
       const { data: songData, error: songError } = await supabase
         .from("songs")
         .select("*")
@@ -48,7 +73,6 @@ export default function SharedSongView() {
 
       setSong(songData as Song);
 
-      // 2. Fetch Versions
       const { data: versionsData } = await supabase
         .from("song_versions")
         .select("*")
@@ -61,16 +85,13 @@ export default function SharedSongView() {
         if (current) setActiveVersionId(current.id);
       }
 
-      // 3. Fetch Notes
       const { data: notesData } = await supabase
         .from("song_notes")
         .select("*")
         .eq("song_id", songData.id)
         .order("timestamp_seconds", { ascending: true });
 
-      if (notesData) {
-        setNotes(notesData as SongNote[]);
-      }
+      if (notesData) setNotes(notesData as SongNote[]);
 
       setLoading(false);
     }
@@ -78,305 +99,363 @@ export default function SharedSongView() {
     fetchSharedSong();
   }, [hash]);
 
-  const handleCreateGuestNote = async (timestamp: number, body: string) => {
-    if (!song) return null;
+  const activeVersion = versions.find((v) => v.id === activeVersionId) || versions[0];
+  const audioUrl = activeVersion?.file_url || song?.mp3_url || null;
+  const wave = useMemo(() => buildWave(song ? hueForSong(song) : 1), [song]);
 
-    let guestName = localStorage.getItem("sessions-guest-name");
-    if (!guestName) {
-      guestName = prompt("Enter your name to leave feedback:");
-      if (!guestName) return null;
-      localStorage.setItem("sessions-guest-name", guestName);
+  /* switching takes (or losing audio) restarts the transport */
+  useEffect(() => {
+    setPlaying(false);
+    setTime(0);
+    setDuration(FALLBACK_DUR);
+  }, [audioUrl]);
+
+  /* simulated playback when there's no real audio file */
+  useEffect(() => {
+    if (audioUrl || !playing) return;
+    lastTick.current = performance.now();
+    const step = (now: number) => {
+      const dt = (now - lastTick.current) / 1000;
+      lastTick.current = now;
+      setTime((t) => {
+        const nt = t + dt;
+        if (nt >= duration) {
+          setPlaying(false);
+          return duration;
+        }
+        return nt;
+      });
+      rafRef.current = requestAnimationFrame(step);
+    };
+    rafRef.current = requestAnimationFrame(step);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [playing, audioUrl, duration]);
+
+  /* spacebar play/pause */
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.code === "Space" && e.target === document.body) {
+        e.preventDefault();
+        togglePlay();
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, audioUrl]);
+
+  /* the floating player docks in only once the deck leaves the viewport */
+  useEffect(() => {
+    const el = deckRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => setDeckVisible(entry.isIntersecting), {
+      threshold: 0.2,
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [loading, song]);
+
+  const togglePlay = useCallback(() => {
+    if (audioUrl && audioRef.current) {
+      if (playing) audioRef.current.pause();
+      else audioRef.current.play().catch(() => {});
     }
+    setPlaying((p) => !p);
+  }, [audioUrl, playing]);
 
-    const { data, error } = await supabase
+  const seek = useCallback(
+    (t: number) => {
+      const clamped = Math.max(0, Math.min(duration, t));
+      if (audioUrl && audioRef.current) audioRef.current.currentTime = clamped;
+      setTime(clamped);
+    },
+    [duration, audioUrl]
+  );
+
+  const armComposer = () => {
+    setComposer((c) => ({ ...c, t: Math.round(time), armed: true }));
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  /* in-app name prompt (replaces the native browser prompt) */
+  const ensureGuestName = async (): Promise<string | null> => {
+    let name = localStorage.getItem("sessions-guest-name");
+    if (!name) {
+      const entered = await prompt({
+        title: "Leave feedback as…",
+        message: "Your name shows next to the notes you leave. You only set this once.",
+        placeholder: "e.g. Alex",
+        confirmText: "Continue",
+      });
+      if (!entered || !entered.trim()) return null;
+      name = entered.trim();
+      localStorage.setItem("sessions-guest-name", name);
+    }
+    return name;
+  };
+
+  /* guest note creation (data logic unchanged) */
+  const addGuestNote = async (timestamp: number, body: string) => {
+    if (!song) return;
+    const guestName = await ensureGuestName();
+    if (!guestName) return;
+
+    const { data, error: insErr } = await supabase
       .from("song_notes")
       .insert({
         song_id: song.id,
         timestamp_seconds: timestamp,
-        body: body,
+        body,
         guest_name: guestName,
-        user_id: null
+        user_id: null,
       })
       .select()
       .single();
 
-    if (error) {
-      toast.error("Failed to post note. Try again.");
-      console.error(error);
-      return null;
+    if (insErr) {
+      toast.error("Couldn't post your note — try again.");
+      console.error(insErr);
+      return;
     }
 
     const newNote = data as SongNote;
-    setNotes(prev => [...prev, newNote].sort((a, b) => a.timestamp_seconds - b.timestamp_seconds));
-    toast.success("Feedback added!");
-    return newNote;
+    setNotes((prev) => [...prev, newNote].sort((a, b) => a.timestamp_seconds - b.timestamp_seconds));
+    toast.success("Feedback added");
   };
 
-  const activeVersion = versions.find(v => v.id === activeVersionId) || versions[0];
-  const audioSrc = activeVersion?.file_url || song?.mp3_url;
+  const commitGuestNote = async (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && composer.text.trim()) {
+      const body = composer.text.trim();
+      setComposer((c) => ({ t: c.t, text: "", armed: false }));
+      await addGuestNote(composer.t, body);
+    }
+  };
 
   if (loading) return <LoadingScreen />;
 
   if (error || !song) {
     return (
-      <div className="min-h-screen bg-[#09090b] flex flex-col items-center justify-center text-white p-6">
-        <AlertCircle className="w-16 h-16 text-red-500/60 mb-6" />
-        <h1 className="text-3xl font-bold mb-3 tracking-tight">Access Denied</h1>
-        <p className="text-white/40 mb-8 text-center max-w-md">{error || "This song doesn't exist or is no longer shared."}</p>
-        <Link 
-          to="/" 
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-black font-medium hover:bg-white/90 transition-all"
-        >
-          Go to Sessions
-          <ArrowRight className="w-4 h-4" />
-        </Link>
-      </div>
+      <SessionsShell vars={palette(250, 0.045)}>
+        <div className="share-error">
+          <AlertCircle size={40} className="se-ic" />
+          <h1 className="display">Link unavailable</h1>
+          <p>{error || "This song doesn't exist or is no longer shared."}</p>
+          <Link to="/" className="ws-cta">
+            Go to Sessions <ArrowRight size={15} />
+          </Link>
+        </div>
+      </SessionsShell>
     );
   }
 
+  const rows = lyricRows(song.lyrics);
+  const sortedNotes = [...notes].sort((a, b) => a.timestamp_seconds - b.timestamp_seconds);
+  const progress = duration ? time / duration : 0;
+  const versionCount = versions.length || (song.mp3_url ? 1 : 0);
+  const subtitle = `Shared${activeVersion ? ` · v${activeVersion.version_number}` : ""}`;
+
   return (
-    <div className="min-h-screen bg-[#09090b] text-white flex flex-col relative overflow-hidden">
-      {/* Ambient Background */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-emerald-500/8 blur-[150px]" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[400px] rounded-full bg-violet-500/5 blur-[120px]" />
-      </div>
-      
-      {/* Cover Art Glow - Dynamic */}
-      {song.cover_art_url && (
-        <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-          <div 
-            className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] blur-[100px] opacity-30 saturate-150"
-            style={{ 
-              backgroundImage: `url(${song.cover_art_url})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          />
-        </div>
-      )}
-
-      {/* Header */}
-      <header className="px-6 py-5 flex items-center justify-between bg-[#09090b]/70 backdrop-blur-2xl sticky top-0 z-30 border-b border-white/[0.04]">
-        <div className="flex items-center gap-4">
-          <div className="opacity-70 hover:opacity-100 transition-opacity">
-            <SessionsLogo to="/" />
-          </div>
-          <div className="h-5 w-px bg-white/10" />
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Live Preview</span>
-          </div>
-        </div>
-        <Link 
-          to="/auth" 
-          className="inline-flex items-center gap-2 text-sm font-semibold bg-white text-black px-5 py-2.5 rounded-full hover:bg-white/90 transition-all shadow-lg shadow-white/10"
-        >
-          Create Your Own
-          <ArrowRight className="w-3.5 h-3.5" />
-        </Link>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center px-6 py-12 md:py-16 relative z-10">
-        <div className="w-full max-w-3xl space-y-12">
-
-          {/* Hero Section */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center space-y-6"
-          >
-            {/* Cover Art */}
-            {song.cover_art_url ? (
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="relative mx-auto w-56 h-56 md:w-64 md:h-64"
-              >
-                {/* Glow */}
-                <div 
-                  className="absolute -inset-6 rounded-3xl blur-2xl opacity-50"
-                  style={{ 
-                    backgroundImage: `url(${song.cover_art_url})`,
-                    backgroundSize: "cover",
-                  }}
-                />
-                {/* Image */}
-                <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl shadow-black/50 ring-1 ring-white/10">
-                  <img src={song.cover_art_url} alt={song.title} className="w-full h-full object-cover" />
-                </div>
-              </motion.div>
-            ) : (
-              <div className="mx-auto w-56 h-56 md:w-64 md:h-64 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-center">
-                <Music2 className="w-16 h-16 text-white/10" />
-              </div>
-            )}
-
-            {/* Title & Meta */}
-            <div className="space-y-3">
-              <h1 
-                className="text-4xl md:text-5xl font-bold tracking-tight bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent"
-                style={{ fontFamily: "'Syne', sans-serif" }}
-              >
-                {song.title}
-              </h1>
-              <div className="flex items-center justify-center gap-4 text-sm text-white/40">
-                <span className="flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
-                  {formatDistanceToNow(new Date(song.created_at), { addSuffix: true })}
-                </span>
-                {notes.length > 0 && (
-                  <>
-                    <span className="w-1 h-1 rounded-full bg-white/20" />
-                    <span className="flex items-center gap-1.5">
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      {notes.length} note{notes.length !== 1 ? 's' : ''}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Metadata Pills */}
-            <div className="flex flex-wrap justify-center gap-2">
-              {/* Version Selector */}
-              {versions.length > 0 && (
-                <button 
-                  onClick={() => versions.length > 1 && setShowVersions(!showVersions)}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold transition-all ${versions.length > 1 ? 'hover:bg-white/10 cursor-pointer' : ''}`}
-                >
-                  <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                  <span className="text-white/70">v{activeVersion?.version_number || 1}</span>
-                  {activeVersion?.description && (
-                    <span className="text-white/40">· {activeVersion.description}</span>
-                  )}
-                  {versions.length > 1 && (
-                    <ChevronDown className={`w-3 h-3 text-white/40 transition-transform ${showVersions ? 'rotate-180' : ''}`} />
-                  )}
-                </button>
-              )}
-              {song.bpm && (
-                <span className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-white/50">
-                  {song.bpm} BPM
-                </span>
-              )}
-              {song.key && (
-                <span className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-white/50">
-                  {song.key}
-                </span>
-              )}
-              {song.mood_tags?.length > 0 && song.mood_tags.slice(0, 3).map(tag => (
-                <span key={tag} className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-semibold text-white/50">
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            {/* Version Dropdown */}
-            {showVersions && versions.length > 1 && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-4 mx-auto max-w-sm bg-[#0c0c0f]/95 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl"
-              >
-                {versions.map((ver) => (
-                  <button
-                    key={ver.id}
-                    onClick={() => {
-                      setActiveVersionId(ver.id);
-                      setShowVersions(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-4 py-3 border-b border-white/5 last:border-0 transition-all ${
-                      activeVersionId === ver.id 
-                        ? "bg-emerald-500/10 text-white" 
-                        : "hover:bg-white/5 text-white/60"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                        activeVersionId === ver.id ? "bg-emerald-500 text-black" : "bg-white/10 text-white/40"
-                      }`}>
-                        {ver.version_number}
-                      </div>
-                      <div className="text-left">
-                        <div className="text-sm font-medium">{ver.description || `Version ${ver.version_number}`}</div>
-                        <div className="text-[10px] text-white/30">
-                          {formatDistanceToNow(new Date(ver.created_at), { addSuffix: true })}
-                        </div>
-                      </div>
-                    </div>
-                    {activeVersionId === ver.id && (
-                      <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Playing</div>
-                    )}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </motion.div>
-
-          {/* Lyrics Section */}
-          {song.lyrics && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="space-y-4"
-            >
-              <h3 className="text-xs font-bold uppercase tracking-widest text-white/30 text-center">Lyrics</h3>
-              <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 md:p-8">
-                <pre className="text-sm text-white/70 whitespace-pre-wrap font-sans leading-relaxed max-h-80 overflow-y-auto scrollbar-thin">
-                  {song.lyrics}
-                </pre>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Feedback CTA */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-center py-6"
-          >
-            <p className="text-xs text-white/30">
-              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-white/5 text-white/50 font-medium mr-1">Double-click</span>
-              on the waveform to add timestamped feedback
-            </p>
-          </motion.div>
-
-        </div>
-      </main>
-
-      {/* Audio Player */}
-      {audioSrc && (
-        <AudioPlayer
-          src={audioSrc}
-          timelineNotes={notes}
-          onTimeUpdate={setCurrentTime}
-          onRequestAddNote={(time) => setAddNoteTrigger(time)}
-          notesComponent={
-            <TimelineNotes
-              songId={song.id}
-              currentTime={currentTime}
-              notes={notes}
-              onCreateNote={handleCreateGuestNote}
-              triggerAddTime={addNoteTrigger}
-              onUpdateNote={async () => { toast.error("Guest editing not allowed"); }}
-              onDeleteNote={async () => { toast.error("Guest deletion not allowed"); }}
-            />
-          }
+    <SessionsShell vars={palette(hueForSong(song))}>
+      {audioUrl && (
+        <audio
+          ref={audioRef}
+          src={audioUrl}
+          preload="metadata"
+          onLoadedMetadata={(e) => {
+            const d = (e.target as HTMLAudioElement).duration;
+            if (isFinite(d) && d > 0) setDuration(d);
+          }}
+          onTimeUpdate={(e) => setTime((e.target as HTMLAudioElement).currentTime)}
+          onEnded={() => setPlaying(false)}
+          style={{ display: "none" }}
         />
       )}
 
-      {/* Footer */}
-      <footer className="relative z-10 text-center py-8 border-t border-white/[0.04]">
-        <p className="text-white/20 text-xs">
-          Shared via <span className="text-white/50 font-semibold">Sessions</span> — The OS for modern producers
-        </p>
-      </footer>
-    </div>
+      <div>
+        <header className="ws-hd drop">
+          <div className="ws-hd-l">
+            <SessionsLogo to="/" />
+            <span className="hd-div" />
+            <span className="live-badge">
+              <i />
+              Live preview
+            </span>
+          </div>
+          <div className="ws-hd-r">
+            <Link to="/auth" className="ws-cta">
+              Create your own <ArrowRight size={14} />
+            </Link>
+          </div>
+        </header>
+
+        <main className="ws-shell">
+          {/* identity */}
+          <section className="ws-hero">
+            <div className="ws-cover-static rise" style={{ "--d": "0.02s" } as React.CSSProperties}>
+              <CoverArt song={song} radius={16} />
+            </div>
+            <div className="ws-id">
+              <div className="ws-kick rise" style={{ "--d": "0.08s" } as React.CSSProperties}>
+                <StageMeter status={song.status} />
+                {versionCount > 0 && (
+                  <span className="kicker">v{activeVersion?.version_number ?? versionCount}</span>
+                )}
+              </div>
+              <h1 className="song-title display rise" style={{ "--d": "0.12s", cursor: "default" } as React.CSSProperties}>
+                {song.title}
+              </h1>
+              <div className="meta-row rise" style={{ "--d": "0.18s" } as React.CSSProperties}>
+                <span className="accent">{song.bpm ?? "—"} BPM</span>
+                <span>{song.key || "—"}</span>
+                <span>{fmt(duration)}</span>
+                <span>{notes.length} note{notes.length !== 1 ? "s" : ""}</span>
+                {song.mood_tags?.slice(0, 2).map((tag) => (
+                  <span key={tag}>{tag}</span>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* the deck */}
+          <section className="ws-deck glass rise" style={{ "--d": "0.22s" } as React.CSSProperties} ref={deckRef}>
+            <button className="deck-play" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
+              {playing ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" style={{ marginLeft: 2 }} />}
+            </button>
+            <div className="wave-hero">
+              <Waveform wave={wave} progress={progress} duration={duration} notes={notes} onSeek={seek} />
+            </div>
+            <div className="deck-side">
+              <div className="deck-time">
+                <b>{fmt(time)}</b> / {fmt(duration)}
+              </div>
+              <div className="deck-actions">
+                <button className="p-icbtn" onClick={armComposer} title="Leave feedback at playhead" aria-label="Add feedback">
+                  <Plus size={17} />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <div className="ws-grid">
+            <section className="rise" style={{ "--d": "0.3s" } as React.CSSProperties}>
+              <div className="sec-head2">
+                <div className="kicker">Lyrics</div>
+              </div>
+              <div className="lyrics">
+                {rows.length > 0 ? (
+                  <div>
+                    {rows.map((r, i) =>
+                      r.label ? (
+                        <div className="ly-label" key={i}>
+                          {r.text}
+                        </div>
+                      ) : r.text ? (
+                        <div className="ly-line" key={i} style={{ cursor: "default" }}>
+                          {r.text}
+                        </div>
+                      ) : (
+                        <div style={{ height: 14 }} key={i} />
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="ly-line" style={{ color: "var(--fg-3)", cursor: "default" }}>
+                    No lyrics shared for this track.
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <aside className="rise" style={{ "--d": "0.36s" } as React.CSSProperties}>
+              <div className="sec-head2">
+                <div className="kicker">Feedback</div>
+                <div className="count">{notes.length}</div>
+              </div>
+              <div className={"composer" + (composer.armed ? " armed" : "")}>
+                <span className="ts">{fmt(composer.t)}</span>
+                <input
+                  ref={inputRef}
+                  value={composer.text}
+                  placeholder="Leave a note at the playhead…"
+                  onChange={(e) => setComposer({ ...composer, text: e.target.value })}
+                  onKeyDown={commitGuestNote}
+                  onFocus={() => setComposer((c) => ({ ...c, armed: true }))}
+                  onBlur={() => setComposer((c) => ({ ...c, armed: false }))}
+                />
+              </div>
+              {sortedNotes.length === 0 && (
+                <div style={{ padding: "16px 4px", color: "var(--fg-3)", fontSize: 13, lineHeight: 1.5, display: "flex", alignItems: "center", gap: 8 }}>
+                  <MessageCircle size={15} style={{ flex: "none", opacity: 0.6 }} />
+                  No feedback yet — press <b style={{ color: "var(--fg-2)" }}>+</b> on the deck to drop the first note.
+                </div>
+              )}
+              {sortedNotes.length > 0 && (
+                <div className="note-feed">
+                  {sortedNotes.map((n) => (
+                    <div className="note" key={n.id} onClick={() => seek(n.timestamp_seconds)}>
+                      <div className="tstamp">{fmt(n.timestamp_seconds)}</div>
+                      <div className="ndot" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="ntext">{n.body}</div>
+                        <div className="nwho">
+                          {n.guest_name && <span className="guest-badge">guest</span>}
+                          {n.guest_name || "Owner"}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {versionCount > 1 && (
+                <>
+                  <div className="sec-head2 subhead">
+                    <div className="kicker">Versions</div>
+                    <div className="count">{versionCount}</div>
+                  </div>
+                  {versions.map((v) => (
+                    <div
+                      className={"ver act" + (v.id === activeVersionId ? " cur" : "")}
+                      key={v.id}
+                      onClick={() => setActiveVersionId(v.id)}
+                      title={v.id === activeVersionId ? undefined : `Play v${v.version_number}`}
+                    >
+                      <span className="vtag">v{v.version_number}</span>
+                      <span className="vname">{v.description || `version ${v.version_number}`}</span>
+                      {v.id === activeVersionId ? (
+                        <span className="vcur">playing</span>
+                      ) : (
+                        <span className="vdate">{(() => { try { return new Date(v.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch { return ""; } })()}</span>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+            </aside>
+          </div>
+        </main>
+
+        <GlassPlayer
+          song={song}
+          subtitle={subtitle}
+          wave={wave}
+          playing={playing}
+          onTogglePlay={togglePlay}
+          time={time}
+          duration={duration}
+          onSeek={seek}
+          notes={notes}
+          onAddNoteHere={armComposer}
+          onStems={() => toast("Stems aren't shared on public links")}
+          hidden={deckVisible}
+        />
+
+        <footer className="share-foot">
+          Shared via <Link to="/">Sessions</Link> — the workspace for modern producers
+        </footer>
+      </div>
+    </SessionsShell>
   );
 }

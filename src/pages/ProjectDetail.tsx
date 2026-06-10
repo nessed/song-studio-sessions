@@ -9,6 +9,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { SessionsShell } from "@/components/sessions/Room";
 import { CoverArt } from "@/components/sessions/CoverArt";
 import { ProjectPipeline } from "@/components/sessions/ProjectPipeline";
+import { useDialogs } from "@/components/sessions/Dialogs";
 import {
   palette,
   paletteStyle,
@@ -32,6 +33,7 @@ export default function ProjectDetail() {
   const { project, loading } = useProject(id);
   const { deleteProject, uploadCoverArt, updateProject } = useProjects();
   const { songs, loading: songsLoading, createSong, updateSong } = useSongs(id);
+  const { confirm, prompt } = useDialogs();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [titleEdit, setTitleEdit] = useState(false);
   const [titleDraft, setTitleDraft] = useState("");
@@ -85,14 +87,26 @@ export default function ProjectDetail() {
 
   const handleDelete = async () => {
     if (!id || !project) return;
-    if (!window.confirm(`Delete "${project.title}"? Songs will be unlinked but not deleted.`)) return;
+    const ok = await confirm({
+      title: `Delete "${project.title}"?`,
+      message: "Songs in this record will be unlinked, but not deleted.",
+      confirmText: "Delete record",
+      danger: true,
+    });
+    if (!ok) return;
     await deleteProject(id);
     navigate("/projects");
   };
 
   const handleAddSong = async () => {
-    const title = window.prompt("New song name");
-    if (!title || !title.trim() || !id) return;
+    if (!id) return;
+    const title = await prompt({
+      title: "New song",
+      message: "Give your new track a working title.",
+      placeholder: "Untitled",
+      confirmText: "Create song",
+    });
+    if (!title || !title.trim()) return;
     const song = await createSong(title.trim(), id);
     if (song) navigate(`/song/${song.id}`);
   };
