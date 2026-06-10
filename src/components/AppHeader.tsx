@@ -58,9 +58,9 @@ export function AppHeader() {
 
         <div className="flex items-center gap-2">
           <Link to="/settings" className="p-2 rounded-lg hover:bg-white/5 transition-colors">
-            {profile?.avatar_url ? (
+            {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
               <img
-                src={profile.avatar_url}
+                src={profile?.avatar_url || user?.user_metadata?.avatar_url}
                 alt=""
                 className="w-7 h-7 rounded-full object-cover"
               />

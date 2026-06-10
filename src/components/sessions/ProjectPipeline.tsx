@@ -69,7 +69,7 @@ function PipeNode({
   const startEdit = useCallback((e: React.PointerEvent) => {
     if (!onUpdateVibe) return;
     e.stopPropagation();
-    setDraft(song.mood_tags.join(" · "));
+    setDraft((song.mood_tags || []).join(" · "));
     setEditing(true);
   }, [onUpdateVibe, song.mood_tags]);
 
@@ -121,7 +121,7 @@ function PipeNode({
           />
         ) : (
           <>
-            <span className={song.mood_tags.length === 0 ? "pn-ph" : ""}>{vibeFor(song)}</span>
+            <span className={(!song.mood_tags || song.mood_tags.length === 0) ? "pn-ph" : ""}>{vibeFor(song)}</span>
             {onUpdateVibe && <span className="pn-edit-ic"><Pencil size={11} /></span>}
           </>
         )}

@@ -127,9 +127,9 @@ export default function Settings() {
                   onClick={() => fileInputRef.current?.click()}
                   className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden hover:border-white/20 transition-colors"
                 >
-                  {profile?.avatar_url ? (
+                  {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
                     <img
-                      src={profile.avatar_url}
+                      src={profile?.avatar_url || user?.user_metadata?.avatar_url}
                       alt="Avatar"
                       className="w-full h-full object-cover"
                     />

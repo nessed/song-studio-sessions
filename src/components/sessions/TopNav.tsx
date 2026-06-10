@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Search, Plus, Bell } from "lucide-react";
+import { toast } from "sonner";
 
 export type NavTab = "projects" | "songs" | "tasks";
 
@@ -48,9 +49,9 @@ export function TopNav({ tab, onTab, onNew, search, onSearch, initial = "N" }: T
         <Plus size={15} />
         New
       </button>
-      <button className="nav-ic" aria-label="Notifications">
+      <button className="nav-ic" aria-label="Notifications" onClick={() => toast("No new notifications")}>
         <Bell size={18} />
-        <span className="badge" />
+        {/* <span className="badge" /> */}
       </button>
       <button className="nav-av" onClick={() => navigate("/settings")} aria-label="Settings">
         {initial}
