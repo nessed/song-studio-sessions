@@ -384,6 +384,11 @@
 .tk.done .cbx { background: var(--accent-bright); box-shadow: none; color: var(--canvas); }
 .tk.done .ttext { color: var(--fg-3); text-decoration: line-through; text-decoration-color: var(--fg-3); }
 .tk.done .pdot { opacity: .3; }
+.tk { position: relative; }
+.tk-del { position: absolute; right: 36px; top: 50%; transform: translateY(-50%); opacity: 0; background: none; border: none; color: var(--fg-3); cursor: pointer; padding: 4px; transition: opacity .15s; line-height: 1; }
+.tk:hover .tk-del { opacity: 1; }
+.tk-del:hover { color: var(--fg-1); }
+.tk .ttext-inp { background: none; border: none; border-bottom: 1px solid var(--fg-3); outline: none; font: inherit; font-size: 14px; color: var(--fg-1); padding: 0 0 1px; width: 100%; }
 .qadd { display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-radius: 13px; background: rgba(255,255,255,0.025); border: 1px solid var(--line); transition: border-color .18s, background .18s; }
 .qadd:focus-within { border-color: var(--accent-line); background: var(--accent-dim); }
 .qadd input { flex: 1; background: none; border: none; outline: none; color: var(--fg); font-size: 13.5px; }
@@ -434,7 +439,11 @@
 @media (max-width: 880px) { .ws-grid { grid-template-columns: 1fr; gap: 40px; } .ws-cover-col { max-width: 440px; } }
 .ws-cover-col { display: flex; flex-direction: column; gap: 24px; }
 .title-block { display: flex; flex-direction: column; gap: 12px; }
-.song-title { font-size: clamp(38px, 5.6vw, 58px); }
+.song-title { font-size: clamp(38px, 5.6vw, 58px); cursor: text; }
+.song-title-inp { background: none; border: none; border-bottom: 1.5px solid var(--accent-line); outline: none; font: inherit; font-size: clamp(38px, 5.6vw, 58px); font-weight: inherit; letter-spacing: inherit; color: inherit; padding: 0 0 2px; width: 100%; display: block; }
+.ws-cover-btn { position: relative; display: block; cursor: pointer; border: none; background: none; padding: 0; width: 100%; text-align: left; }
+.ws-cover-rm { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.6); border: none; border-radius: 50%; width: 28px; height: 28px; display: grid; place-items: center; color: #fff; cursor: pointer; opacity: 0; transition: opacity .15s; z-index: 2; }
+.ws-cover-btn:hover .ws-cover-rm { opacity: 1; }
 .meta-row { display: flex; flex-wrap: wrap; align-items: center; font-family: var(--mono); font-size: 12.5px; color: var(--fg-2); }
 .meta-row span { padding: 0 12px; border-right: 1px solid var(--line-2); }
 .meta-row span:first-child { padding-left: 0; } .meta-row span:last-child { border-right: none; }
@@ -467,3 +476,106 @@
 .ver.cur .vname { color: var(--fg); }
 .ver .vcur { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-bright); }
 .ver .vdate { font-family: var(--mono); font-size: 11px; color: var(--fg-3); }
+
+/* ════════════════════════════════════════════════════════════════
+   ADDITIVE — Projects layer + Pipeline. Built in the existing
+   vocabulary: bare canvas, mono micro-labels, stage-tick language,
+   glass reserved for floating things. No new accent — hue per album.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ──── greeting (quietly remembers you) ──── */
+.greet { margin: 4px 0 26px; }
+.greet .gh { font-size: 27px; font-weight: 500; letter-spacing: -0.025em; color: var(--fg); }
+.greet .gh .nm { color: var(--fg); }
+.greet .resume { margin-top: 9px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; color: var(--fg-3); background: none; border: none; cursor: pointer; padding: 2px 0; transition: color .15s var(--ease); }
+.greet .resume:hover { color: var(--fg-2); }
+.greet .resume .rp { color: var(--accent-bright); }
+.greet .resume .arr { transition: transform .2s var(--ease); display: inline-flex; }
+.greet .resume:hover .arr { transform: translateX(3px); }
+
+/* ──── project card meter (album completion) ──── */
+/* a thin studio-readout bar — 7 stage segments, filled to the album's
+   average stage. reads like hardware, not a generic % bar. */
+.pmeter { display: flex; flex-direction: column; gap: 7px; }
+.pm-segs { display: flex; gap: 3px; align-items: center; }
+.pm-seg { flex: 1; height: 3px; border-radius: 2px; background: var(--line-2); overflow: hidden; position: relative; }
+.pm-seg .pm-fill { position: absolute; inset: 0; background: var(--accent); border-radius: 2px; transform-origin: left; }
+.pm-seg.cur .pm-fill { background: var(--accent-bright); box-shadow: 0 0 9px var(--accent-glow); }
+.pm-foot { display: flex; align-items: center; justify-content: space-between; }
+.pm-stage { font-family: var(--mono); font-size: 10.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--accent-bright); }
+.pm-frac { font-family: var(--mono); font-size: 10px; color: var(--fg-3); }
+
+/* project card reuses .card; this row carries song count + collaborators */
+.card .pcsub { display: flex; align-items: center; justify-content: space-between; margin-top: 11px; }
+.card .pkind { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 9px; display: block; }
+
+/* ──── project (album) header inside pipeline view ──── */
+.proj { max-width: 1220px; margin: 0 auto; padding: 8px 34px 90px; }
+.proj-back { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-3); background: none; border: none; cursor: pointer; padding: 6px 0; transition: color .15s var(--ease); margin-bottom: 22px; }
+.proj-back:hover { color: var(--fg-2); }
+.proj-back .arr { transition: transform .2s var(--ease); display: inline-flex; }
+.proj-back:hover .arr { transform: translateX(-3px); }
+.proj-headrow { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 8px; }
+.proj-head { display: flex; align-items: flex-end; gap: 26px; min-width: 0; }
+.proj-head .ph-cover { width: 132px; flex: none; }
+.proj-head .ph-meta { min-width: 0; padding-bottom: 4px; }
+.proj-head .ph-kind { font-family: var(--mono); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: var(--accent-bright); }
+.proj-head .ph-title { font-size: clamp(34px, 5vw, 54px); font-weight: 600; letter-spacing: -0.03em; line-height: .98; margin: 14px 0 16px; cursor: text; }
+.proj-head .ph-title-inp { background: none; border: none; border-bottom: 1.5px solid var(--accent-line); outline: none; font: inherit; font-size: clamp(34px, 5vw, 54px); font-weight: 600; letter-spacing: -0.03em; color: inherit; padding: 0 0 2px; width: 100%; display: block; margin: 14px 0 16px; }
+.proj-head .ph-row { display: flex; flex-wrap: wrap; align-items: center; font-family: var(--mono); font-size: 12px; color: var(--fg-2); }
+.proj-head .ph-row span { padding: 0 13px; border-right: 1px solid var(--line-2); white-space: nowrap; }
+.proj-head .ph-row span:first-child { padding-left: 0; } .proj-head .ph-row span:last-child { border-right: none; }
+.proj-head .ph-row .accent { color: var(--accent-bright); }
+
+/* ──── THE PIPELINE — signature view ──── */
+.pipe-head { display: flex; align-items: baseline; justify-content: space-between; margin: 46px 0 6px; }
+.pipe-head .ph-hint { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; color: var(--fg-3); }
+.pipe-scroll { overflow-x: auto; overflow-y: visible; padding: 30px 4px 40px; margin: 0 -4px; scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+.pipe-scroll::-webkit-scrollbar { height: 8px; }
+.pipe-scroll::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+.pipe { display: flex; align-items: stretch; width: max-content; min-width: 100%; touch-action: pan-y; }
+
+/* the connector segment — sits in flow between nodes */
+.pconn { width: 64px; flex: none; align-self: flex-start; height: 180px; margin-top: 14px; position: relative; display: grid; place-items: center; transition: opacity .2s var(--ease); }
+.pipe.is-dragging .pconn { opacity: .28; }
+.pconn svg { width: 100%; height: 100%; overflow: visible; display: block; }
+.pconn .ln-base { stroke: var(--line-2); stroke-width: 1.5; fill: none; }
+.pconn .ln-fill { stroke-width: 1.5; fill: none; stroke-linecap: round; transition: stroke .3s var(--ease); }
+.pconn .cdot { fill: var(--canvas); stroke-width: 1.5; }
+
+/* song node */
+.pnode { width: 208px; flex: none; cursor: grab; position: relative; border-radius: 16px; padding: 14px; transition: transform .26s var(--ease), box-shadow .22s var(--ease), opacity .22s var(--ease); background: linear-gradient(160deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012)); box-shadow: inset 0 0 0 1px var(--line); will-change: transform; }
+.pnode:hover { box-shadow: inset 0 0 0 1px var(--accent-line), 0 18px 40px -26px rgba(0,0,0,0.8); transform: translateY(-3px); }
+.pnode .pn-idx { position: absolute; top: 12px; right: 14px; font-family: var(--mono); font-size: 10px; color: var(--fg-3); letter-spacing: .08em; }
+.pnode .pn-cover { width: 100%; margin-bottom: 13px; pointer-events: none; }
+.pnode .pn-name { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pnode .pn-stage { margin-top: 10px; }
+.pnode .pn-vibe { margin-top: 11px; font-size: 12.5px; line-height: 1.45; color: var(--fg-2); text-wrap: pretty; min-height: 36px; }
+.pnode .pn-vibe.editable { cursor: text; position: relative; }
+.pnode .pn-vibe.editable .pn-edit-ic { position: absolute; top: 0; right: 0; opacity: 0; transition: opacity .15s; pointer-events: none; }
+.pnode .pn-vibe.editable:hover .pn-edit-ic { opacity: 0.45; }
+.pnode .pn-vibe .pn-ph { color: var(--fg-3); font-style: italic; }
+.pnode .pn-vibe-inp { width: 100%; background: none; border: none; border-bottom: 1px solid var(--fg-3); outline: none; font: inherit; font-size: 12.5px; line-height: 1.45; color: var(--fg-1); padding: 0 0 2px; resize: none; }
+.pnode.dragging { cursor: grabbing; z-index: 30; box-shadow: inset 0 0 0 1px var(--accent-line), 0 30px 70px -20px rgba(0,0,0,0.85), 0 0 0 4px var(--accent-dim); transform: scale(1.04); transition: box-shadow .2s var(--ease); }
+.pipe.is-dragging .pnode:not(.dragging) { cursor: grab; }
+.pipe.is-dragging .pnode:not(.dragging):hover { transform: none; box-shadow: inset 0 0 0 1px var(--line); }
+
+/* add-song node */
+.padd { width: 168px; flex: none; align-self: center; min-height: 150px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 11px; color: var(--fg-3); cursor: pointer; background: none; border: 1px dashed var(--line-2); transition: color .18s var(--ease), border-color .18s var(--ease), background .18s var(--ease); }
+.padd:hover { color: var(--accent-bright); border-color: var(--accent-line); background: var(--accent-dim); }
+.padd .pa-ic { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 1.5px currentColor; }
+.padd .pa-l { font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; }
+
+/* dissolve between views */
+.view-dissolve { animation: ss-dissolve .36s var(--ease); }
+@keyframes ss-dissolve { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .view-dissolve, .fade-in, .card.fade-in { animation: none !important; opacity: 1 !important; }
+}
+
+/* stage-grouped task header current-stage tick (workspace drawer) */
+.tsec-head .scur { width: 14px; height: 3px; border-radius: 2px; background: var(--accent-bright); box-shadow: 0 0 8px var(--accent-glow); }
+.drawer .qadd { margin-bottom: 6px; }
+
+/* pipeline empty state */
+.pipe-empty { padding: 50px 4px; color: var(--fg-3); font-size: 14px; }

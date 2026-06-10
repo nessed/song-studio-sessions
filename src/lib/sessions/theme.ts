@@ -85,6 +85,18 @@ export function statusLabel(status: SongStatus | string): string {
   return s ? s.label : String(status);
 }
 
+/* derive the room hue for a project/album (no `hue` column in the DB) */
+export function hueForProject(project: { id: string; title: string }): number {
+  return hashHue(project.id || project.title || "");
+}
+
+/* album completion = average stage across its songs, as a 0..(n-1) float.
+   Drives the project card meter and the pipeline's "overall" readout. */
+export function albumProgress(songs: { status: SongStatus | string }[]): number {
+  if (!songs.length) return 0;
+  return songs.reduce((a, s) => a + statusIndex(s.status), 0) / songs.length;
+}
+
 /* convert PaletteVars to an inline style object usable by React */
 export function paletteStyle(vars: PaletteVars): React.CSSProperties {
   return vars as React.CSSProperties;

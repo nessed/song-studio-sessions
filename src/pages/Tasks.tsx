@@ -63,7 +63,15 @@ export default function Tasks() {
 
   return (
     <SessionsShell vars={NEUTRAL}>
-      <TopNav tab="tasks" onTab={(t) => t === "songs" && navigate("/dashboard")} onNew={() => navigate("/dashboard")} initial={initial} />
+      <TopNav
+        tab="tasks"
+        onTab={(t) => {
+          if (t === "projects") navigate("/projects");
+          else if (t === "songs") navigate("/dashboard");
+        }}
+        onNew={() => navigate("/dashboard")}
+        initial={initial}
+      />
       <div className="tov fade-in">
         <div className="sec-row" style={{ margin: "14px 0 6px" }}>
           <div className="kicker">All tasks</div>

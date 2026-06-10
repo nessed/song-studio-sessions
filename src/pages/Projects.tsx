@@ -1,229 +1,203 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Play, Plus } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { useProjects } from "@/hooks/useProjects";
+import { useSongs } from "@/hooks/useSongs";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import { SessionThemeProvider } from "@/components/SessionThemeProvider";
-import { Plus, Folder, ArrowLeft, Trash2 } from "lucide-react";
-import { motion } from "framer-motion";
-import { toast } from "sonner";
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
+import { SessionsShell } from "@/components/sessions/Room";
+import { TopNav, NavTab } from "@/components/sessions/TopNav";
+import { CoverArt } from "@/components/sessions/CoverArt";
+import { ProjectMeter } from "@/components/sessions/ProjectMeter";
+import { Avatar } from "@/components/sessions/Avatar";
+import { NEUTRAL, palette, paletteStyle, hueForProject } from "@/lib/sessions/theme";
+import { Project, Song } from "@/lib/types";
+
+function rel(date: string) {
+  try {
+    return formatDistanceToNow(new Date(date), { addSuffix: false }) + " ago";
+  } catch {
+    return "recently";
+  }
+}
+
+function firstName(name: string | null | undefined, email: string | undefined) {
+  const source = (name || email || "there").trim();
+  const base = source.includes("@") ? source.split("@")[0] : source;
+  const word = base.split(/[\s._-]+/)[0] || base;
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
+function ProjectCard({
+  project,
+  songs,
+  initial,
+  onOpen,
+}: {
+  project: Project;
+  songs: Song[];
+  initial: string;
+  onOpen: (p: Project) => void;
+}) {
+  const kind = songs.length > 6 ? "LP" : "EP";
+  return (
+    <div
+      className="card fade-in"
+      style={paletteStyle(palette(hueForProject(project)))}
+      onClick={() => onOpen(project)}
+    >
+      <div className="art">
+        <CoverArt song={{ id: project.id, title: project.title, cover_art_url: project.cover_art_url }} />
+        <div className="ov">
+          <div className="play">
+            <Play size={16} fill="currentColor" style={{ marginLeft: 2 }} />
+          </div>
+        </div>
+      </div>
+      <div className="meta">
+        <span className="pkind">
+          {kind} · {songs.length} {songs.length === 1 ? "song" : "songs"}
+        </span>
+        <div className="crow">
+          <div className="ctitle">{project.title}</div>
+          <div className="cupd mono">{rel(project.updated_at)}</div>
+        </div>
+        <div className="cstage">
+          <ProjectMeter songs={songs} />
+        </div>
+        <div className="pcsub">
+          <div className="cmeta mono">album</div>
+          <div className="avs">
+            <Avatar ch={initial} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Projects() {
   const navigate = useNavigate();
-  const { projects, loading, createProject, deleteProject } = useProjects();
-  const [newTitle, setNewTitle] = useState("");
+  const { user } = useAuth();
+  const { profile } = useProfile();
+  const { projects, loading, createProject } = useProjects();
+  const { songs, loading: songsLoading } = useSongs();
+  const [draft, setDraft] = useState("");
+  const [search, setSearch] = useState("");
 
-  const handleCreate = async () => {
-    if (!newTitle.trim()) return;
-    const project = await createProject(newTitle.trim());
-    if (project) {
-      setNewTitle("");
-      navigate(`/project/${project.id}`);
+  const initial = (profile?.display_name || user?.email || "N").trim().charAt(0).toUpperCase();
+  const name = firstName(profile?.display_name, user?.email);
+
+  // group songs under their project
+  const songsByProject = useMemo(() => {
+    const map: Record<string, Song[]> = {};
+    songs.forEach((s) => {
+      if (s.project_id) (map[s.project_id] ||= []).push(s);
+    });
+    return map;
+  }, [songs]);
+
+  // resume on the most-recently-touched project
+  const resumeProject = useMemo(
+    () => [...projects].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0],
+    [projects]
+  );
+
+  const onTab = (t: NavTab) => {
+    if (t === "songs") navigate("/dashboard");
+    else if (t === "tasks") navigate("/tasks");
+  };
+
+  const open = (p: Project) => navigate(`/project/${p.id}`);
+
+  const submit = async (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && draft.trim()) {
+      const project = await createProject(draft.trim());
+      setDraft("");
+      if (project) navigate(`/project/${project.id}`);
     }
   };
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(`Delete "${title}" and all its songs?`)) return;
-    await deleteProject(id);
-    toast.success("Project deleted");
-  };
+  const filtered = useMemo(
+    () => projects.filter((p) => p.title.toLowerCase().includes(search.toLowerCase())),
+    [projects, search]
+  );
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleCreate();
-    }
-  };
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
-
-  const featuredCover = projects.find(p => p.cover_art_url)?.cover_art_url;
+  if (loading || songsLoading) return <LoadingScreen />;
 
   return (
-    <SessionThemeProvider coverUrl={featuredCover}>
-      <div className="min-h-screen bg-[#09090b] text-white relative overflow-hidden">
-        
-        {/* Ambient Background */}
-        <div className="fixed inset-0 pointer-events-none z-0">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[150px]" 
-            style={{ background: 'var(--accent-subtle, rgba(124,58,237,0.1))' }} 
-          />
+    <SessionsShell vars={NEUTRAL}>
+      <TopNav
+        tab="projects"
+        onTab={onTab}
+        onNew={() => document.getElementById("ss-create-project")?.focus()}
+        search={search}
+        onSearch={setSearch}
+        initial={initial}
+      />
+
+      <div className="lib fade-in">
+        <div className="greet">
+          <div className="gh">
+            Hi <span className="nm">{name}</span>
+          </div>
+          {resumeProject && (
+            <button className="resume" onClick={() => open(resumeProject)}>
+              Resume on <span className="rp">{resumeProject.title}</span> <span className="arr">→</span>
+            </button>
+          )}
         </div>
 
-        {/* Cover Art Glow */}
-        {featuredCover && (
-          <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-            <div 
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[500px] blur-[120px] opacity-20 saturate-150"
-              style={{ 
-                backgroundImage: `url(${featuredCover})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            />
+        <div className="lib-top">
+          <div className="create">
+            <span className="clabel kicker">Start a record</span>
+            <div className="create-inp">
+              <Plus size={20} style={{ color: "var(--fg-3)" }} />
+              <input
+                id="ss-create-project"
+                value={draft}
+                placeholder="Name your album or EP…"
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={submit}
+              />
+              <span className="enter">⏎</span>
+            </div>
+          </div>
+          <div className="lib-stat">
+            <div className="n">{projects.length}</div>
+            <div className="l kicker">records</div>
+          </div>
+        </div>
+
+        <div className="sec-row">
+          <div className="kicker">Albums &amp; EPs</div>
+          <div className="kicker" style={{ color: "var(--fg-2)" }}>
+            Recent
+          </div>
+        </div>
+
+        {filtered.length > 0 ? (
+          <div className="gallery">
+            {filtered.map((p) => (
+              <ProjectCard
+                key={p.id}
+                project={p}
+                songs={songsByProject[p.id] || []}
+                initial={initial}
+                onOpen={open}
+              />
+            ))}
+          </div>
+        ) : (
+          <div style={{ padding: "40px 4px", color: "var(--fg-3)", fontSize: 14 }}>
+            {projects.length === 0
+              ? "No records yet — name one above to start an album."
+              : "No records match your search."}
           </div>
         )}
-
-        {/* Header */}
-        <header className="sticky top-0 z-30 px-4 sm:px-6 py-4 flex items-center justify-between bg-[#09090b]/95 backdrop-blur-xl border-b border-white/[0.04]">
-          <Link
-            to="/dashboard"
-            className="flex items-center gap-2 text-white/50 hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm font-medium">Dashboard</span>
-          </Link>
-          
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] text-white/40">
-              {projects.length} Project{projects.length !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          
-          {/* Hero Section */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8 sm:mb-12"
-          >
-            <h1 
-              className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-3 sm:mb-4" 
-              style={{ fontFamily: "'Syne', sans-serif" }}
-            >
-              Projects
-            </h1>
-            <p className="text-base sm:text-lg text-white/40">
-              {projects.length === 0 
-                ? "Create your first album or EP to organize your songs." 
-                : "Your albums, EPs, and collections."}
-            </p>
-          </motion.div>
-
-          {/* Create new */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.4 }}
-            className="mb-8 sm:mb-12"
-          >
-            <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] overflow-hidden">
-              <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2">
-                <input
-                  type="text"
-                  placeholder="New project name..."
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 text-sm bg-transparent text-white placeholder:text-white/30 focus:outline-none"
-                />
-                <button
-                  onClick={handleCreate}
-                  disabled={!newTitle.trim()}
-                  className="px-4 sm:px-6 py-2.5 sm:py-3 text-sm font-semibold bg-white text-black rounded-xl hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">Create</span>
-                </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Projects grid */}
-          {projects.length > 0 ? (
-            <div className="grid gap-6 sm:gap-8 grid-cols-2 lg:grid-cols-3">
-              {projects.map((project, i) => (
-                <ContextMenu key={project.id}>
-                  <ContextMenuTrigger>
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.15 + i * 0.05, duration: 0.3 }}
-                    >
-                      <Link to={`/project/${project.id}`} className="group block">
-                        {/* Image with glow */}
-                        <div className="relative">
-                          {project.cover_art_url && (
-                            <div 
-                              className="absolute -inset-4 rounded-3xl blur-2xl opacity-40 group-hover:opacity-60 transition-opacity hidden sm:block"
-                              style={{ 
-                                backgroundImage: `url(${project.cover_art_url})`,
-                                backgroundSize: "cover",
-                              }}
-                            />
-                          )}
-                          
-                          <div className="relative aspect-square rounded-xl sm:rounded-2xl overflow-hidden transition-all duration-300 group-hover:scale-[1.02] ring-1 ring-white/10 bg-white/[0.02]">
-                            {project.cover_art_url ? (
-                              <img
-                                src={project.cover_art_url}
-                                alt={project.title}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Folder className="w-10 h-10 sm:w-16 sm:h-16 text-white/10" />
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Title */}
-                        <h3 className="mt-3 sm:mt-5 text-sm sm:text-lg tracking-tight text-white font-medium group-hover:text-white/80 transition-colors truncate">
-                          {project.title}
-                        </h3>
-                        
-                        {/* Tags - hidden on mobile */}
-                        {project.mood_tags.length > 0 && (
-                          <div className="hidden sm:flex flex-wrap gap-2 mt-2">
-                            {project.mood_tags.slice(0, 3).map(tag => (
-                              <span key={tag} className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-white/40">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </Link>
-                    </motion.div>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent className="bg-[#0c0c0f]/95 backdrop-blur-xl border-white/10">
-                    <ContextMenuItem 
-                      onClick={() => handleDelete(project.id, project.title)}
-                      className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete Project
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
-              ))}
-            </div>
-          ) : (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="text-center py-16 sm:py-24 rounded-2xl bg-white/[0.02] border border-white/[0.06]"
-            >
-              <Folder className="w-14 h-14 sm:w-20 sm:h-20 text-white/10 mx-auto mb-4 sm:mb-6" />
-              <h3 className="text-lg sm:text-xl font-semibold text-white/60 mb-2">No projects yet</h3>
-              <p className="text-sm text-white/30 px-4">
-                Create your first project above to get started.
-              </p>
-            </motion.div>
-          )}
-        </main>
       </div>
-    </SessionThemeProvider>
+    </SessionsShell>
   );
 }

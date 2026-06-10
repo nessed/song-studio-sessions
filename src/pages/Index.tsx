@@ -36,7 +36,7 @@ function MiniWave({ hue, n = 46, played = 0.42 }: { hue: number; n?: number; pla
 export default function Index() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const start = () => navigate(user ? "/dashboard" : "/auth");
+  const start = () => navigate(user ? "/projects" : "/auth");
   const signIn = () => navigate("/auth");
   const nm = useMemo(() => buildWave(58, 44), []);
 

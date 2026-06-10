@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Calendar, Sparkles, X } from "lucide-react";
+import { Check, Calendar, Sparkles, X, Trash2 } from "lucide-react";
 import { CoverArt } from "./CoverArt";
 import { StageMeter } from "./StageMeter";
 import { paletteStyle, palette, hueForSong } from "@/lib/sessions/theme";
@@ -40,17 +40,51 @@ const prioOf = (t: Task): TaskPriority => (t.priority as TaskPriority) || "mediu
 export function TaskCard({
   t,
   onToggle,
+  onDelete,
+  onEdit,
   showSec,
 }: {
   t: Task;
   onToggle: (t: Task) => void;
+  onDelete?: (t: Task) => void;
+  onEdit?: (t: Task, title: string) => void;
   showSec?: boolean;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const startEdit = (e: React.MouseEvent) => {
+    if (!onEdit) return;
+    e.stopPropagation();
+    setDraft(t.title);
+    setEditing(true);
+  };
+
+  const commit = () => {
+    setEditing(false);
+    if (onEdit && draft.trim() && draft.trim() !== t.title) onEdit(t, draft.trim());
+  };
+
   return (
     <div className={"tk" + (t.done ? " done" : "")}>
       <span className="pdot" style={{ background: PRIO_COLOR[prioOf(t)] }} />
       <div className="tbody">
-        <div className="ttext">{t.title}</div>
+        {editing ? (
+          <input
+            autoFocus
+            className="ttext-inp"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { e.preventDefault(); commit(); }
+              if (e.key === "Escape") setEditing(false);
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <div className="ttext" onClick={startEdit}>{t.title}</div>
+        )}
         {(t.due_date || (showSec && t.section)) && (
           <div className="tmeta">
             {showSec && t.section && <span className="tsec">{t.section}</span>}
@@ -63,6 +97,15 @@ export function TaskCard({
           </div>
         )}
       </div>
+      {onDelete && (
+        <button
+          className="tk-del"
+          onClick={(e) => { e.stopPropagation(); onDelete(t); }}
+          aria-label="Delete task"
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
       <button className="cbx" onClick={() => onToggle(t)} aria-label="Toggle done">
         <Check size={12} strokeWidth={2.4} />
       </button>
@@ -76,9 +119,11 @@ interface TaskDrawerProps {
   onToggle: (t: Task) => void;
   onCreate: (section: SongSection, title: string) => void;
   onClose: () => void;
+  onDelete?: (t: Task) => void;
+  onEdit?: (t: Task, title: string) => void;
 }
 
-export function TaskDrawer({ song, tasks, onToggle, onCreate, onClose }: TaskDrawerProps) {
+export function TaskDrawer({ song, tasks, onToggle, onCreate, onClose, onDelete, onEdit }: TaskDrawerProps) {
   const [draft, setDraft] = useState("");
 
   const add = (e: React.KeyboardEvent) => {
@@ -136,7 +181,7 @@ export function TaskDrawer({ song, tasks, onToggle, onCreate, onClose }: TaskDra
                 <span className="scount">{items.length}</span>
               </div>
               {items.map((t) => (
-                <TaskCard key={t.id} t={t} onToggle={onToggle} />
+                <TaskCard key={t.id} t={t} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
               ))}
             </div>
           );
@@ -149,7 +194,7 @@ export function TaskDrawer({ song, tasks, onToggle, onCreate, onClose }: TaskDra
               <span className="scount">{done.length}</span>
             </div>
             {done.map((t) => (
-              <TaskCard key={t.id} t={t} onToggle={onToggle} />
+              <TaskCard key={t.id} t={t} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
             ))}
           </div>
         )}

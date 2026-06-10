@@ -37,7 +37,7 @@ export default function Auth() {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) toast.error(error.message || "Failed to sign in");
-        else navigate("/dashboard", { replace: true });
+        else navigate("/projects", { replace: true });
       } else {
         const { error } = await signUp(email, password, displayName);
         if (error) {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronRight, ChevronDown, List, Share2, Check, Plus } from "lucide-react";
+import { ArrowLeft, ChevronRight, ChevronDown, List, Share2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { useSong, useSongs } from "@/hooks/useSongs";
 import { useSongNotes } from "@/hooks/useSongNotes";
@@ -73,12 +73,14 @@ export default function SongDetail() {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { song, loading } = useSong(id);
-  const { updateSong } = useSongs();
+  const { updateSong, uploadCoverArt } = useSongs();
   const { notes, createNote } = useSongNotes(id);
   const { versions, currentVersion } = useSongVersions(id);
-  const { tasks, createTask, updateTask } = useTasks(id);
+  const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
 
   const [status, setStatus] = useState<SongStatus>("idea");
+  const [titleEdit, setTitleEdit] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
   const [duration, setDuration] = useState(FALLBACK_DUR);
@@ -86,6 +88,7 @@ export default function SongDetail() {
   const [drawer, setDrawer] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const rafRef = useRef<number>();
   const lastTick = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -166,6 +169,29 @@ export default function SongDetail() {
     if (id) updateSong(id, { status: s });
   };
 
+  const startTitleEdit = () => {
+    setTitleDraft(song?.title || "");
+    setTitleEdit(true);
+  };
+  const commitTitle = () => {
+    setTitleEdit(false);
+    if (id && titleDraft.trim() && titleDraft.trim() !== song?.title)
+      updateSong(id, { title: titleDraft.trim() });
+  };
+
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    const url = await uploadCoverArt(id, file);
+    if (url) toast.success("Cover updated");
+    e.target.value = "";
+  };
+  const handleCoverRemove = () => {
+    if (!id) return;
+    updateSong(id, { cover_art_url: null });
+    toast.success("Cover removed");
+  };
+
   const toggleTask = (t: Task) => updateTask(t.id, { done: !t.done });
   const addTask = (section: Task["section"], title: string) => createTask(section, title);
 
@@ -244,9 +270,35 @@ export default function SongDetail() {
         <main className="ws-shell">
           <div className="ws-grid">
             <div className="ws-cover-col">
-              <CoverArt song={song} />
+              <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+              <button className="ws-cover-btn" onClick={() => coverInputRef.current?.click()} aria-label="Change cover art">
+                <CoverArt song={song} />
+                {song.cover_art_url && (
+                  <button
+                    className="ws-cover-rm"
+                    onClick={(e) => { e.stopPropagation(); handleCoverRemove(); }}
+                    aria-label="Remove cover art"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </button>
               <div className="title-block">
-                <h1 className="song-title display">{song.title}</h1>
+                {titleEdit ? (
+                  <input
+                    autoFocus
+                    className="song-title-inp display"
+                    value={titleDraft}
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    onBlur={commitTitle}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); commitTitle(); }
+                      if (e.key === "Escape") setTitleEdit(false);
+                    }}
+                  />
+                ) : (
+                  <h1 className="song-title display" onClick={startTitleEdit}>{song.title}</h1>
+                )}
                 <div className="meta-row">
                   <span className="accent">{song.bpm ?? "—"} BPM</span>
                   <span>{song.key || "—"}</span>
@@ -369,6 +421,8 @@ export default function SongDetail() {
             onToggle={toggleTask}
             onCreate={addTask}
             onClose={() => setDrawer(false)}
+            onDelete={(t) => deleteTask(t.id)}
+            onEdit={(t, title) => updateTask(t.id, { title })}
           />
         )}
       </div>

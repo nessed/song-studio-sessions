@@ -97,7 +97,10 @@ export default function Dashboard() {
     <SessionsShell vars={NEUTRAL}>
       <TopNav
         tab="songs"
-        onTab={(t) => t === "tasks" && navigate("/tasks")}
+        onTab={(t) => {
+          if (t === "projects") navigate("/projects");
+          else if (t === "tasks") navigate("/tasks");
+        }}
         onNew={() => {
           const el = document.getElementById("ss-create-input");
           el?.focus();
