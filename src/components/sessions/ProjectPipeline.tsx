@@ -9,6 +9,8 @@ const NODE_W = 208;
 const CONN_W = 64;
 const STEP = NODE_W + CONN_W; // horizontal distance between consecutive nodes
 const STAGE_TOTAL = SONG_STATUSES.length;
+const SETTLE_MS = 420; // matches .pslot.settling transition
+const MAX_TILT = 6;
 
 /* A one-line "vibe" descriptor so the artist can read the album's trajectory
    at a glance. Real songs carry mood tags; fall back to a stage-aware phrase. */
@@ -48,17 +50,17 @@ function Connector({ leftStatus, curve }: { leftStatus: SongStatus | string; cur
 
 function PipeNode({
   song,
-  idx,
-  dragStyle,
+  displayIdx,
   dragging,
+  tilt,
   onPointerDown,
   onUpdateVibe,
 }: {
   song: Song;
-  idx: number;
-  dragStyle: CSSProperties;
+  displayIdx: number;
   dragging: boolean;
-  onPointerDown: (e: React.PointerEvent, idx: number) => void;
+  tilt: number;
+  onPointerDown: (e: React.PointerEvent) => void;
   onUpdateVibe?: (song: Song, tags: string[]) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -83,10 +85,15 @@ function PipeNode({
   return (
     <div
       className={"pnode" + (dragging ? " dragging" : "")}
-      style={{ ...paletteStyle(palette(hueForSong(song))), ...dragStyle }}
-      onPointerDown={(e) => onPointerDown(e, idx)}
+      style={{
+        ...paletteStyle(palette(hueForSong(song))),
+        ...(dragging
+          ? { transform: `translateY(-7px) scale(1.045) rotate(${tilt.toFixed(2)}deg)` }
+          : {}),
+      }}
+      onPointerDown={onPointerDown}
     >
-      <span className="pn-idx mono">{String(idx + 1).padStart(2, "0")}</span>
+      <span className="pn-idx mono">{String(displayIdx + 1).padStart(2, "0")}</span>
       <div className="pn-cover">
         <CoverArt song={song} radius={11} />
       </div>
@@ -123,11 +130,13 @@ function PipeNode({
   );
 }
 
-interface DragState {
+interface MoveState {
   fromIdx: number;
   dx: number;
   target: number;
   moved: number;
+  tilt: number;
+  phase: "drag" | "settle";
 }
 
 interface ProjectPipelineProps {
@@ -140,7 +149,9 @@ interface ProjectPipelineProps {
 }
 
 /* THE signature view — songs as a horizontal pipeline connected by progress
-   connectors. Transform-only drag reorder (no reflow → guaranteed smooth). */
+   connectors. Transform-only drag reorder (no reflow → guaranteed smooth):
+   the lifted card tilts with pointer velocity, neighbors spring out of the
+   way, and on release the card glides into its slot before the order commits. */
 export function ProjectPipeline({
   songs,
   connector = "clean",
@@ -150,10 +161,11 @@ export function ProjectPipeline({
   onUpdateVibe,
 }: ProjectPipelineProps) {
   const n = songs.length;
-  const [drag, setDrag] = useState<DragState | null>(null);
+  const [move, setMove] = useState<MoveState | null>(null);
 
   // live refs so the lifetime-scoped listeners never read stale state
-  const dragRef = useRef<(DragState & { startX: number }) | null>(null);
+  const moveRef = useRef<(MoveState & { startX: number; lastX: number; lastT: number }) | null>(null);
+  const settleTimer = useRef<ReturnType<typeof setTimeout>>();
   const songsRef = useRef(songs);
   songsRef.current = songs;
   const cbRef = useRef({ onOpenSong, onReorder });
@@ -161,8 +173,12 @@ export function ProjectPipeline({
 
   const onPointerDown = (e: React.PointerEvent, idx: number) => {
     if (e.button != null && e.button !== 0) return;
-    dragRef.current = { fromIdx: idx, startX: e.clientX, dx: 0, target: idx, moved: 0 };
-    setDrag({ fromIdx: idx, dx: 0, target: idx, moved: 0 });
+    if (moveRef.current) return; // ignore while a previous drag is settling
+    moveRef.current = {
+      fromIdx: idx, startX: e.clientX, lastX: e.clientX, lastT: performance.now(),
+      dx: 0, target: idx, moved: 0, tilt: 0, phase: "drag",
+    };
+    setMove({ fromIdx: idx, dx: 0, target: idx, moved: 0, tilt: 0, phase: "drag" });
   };
 
   // listeners attached ONCE for the component lifetime — they no-op unless a
@@ -170,30 +186,51 @@ export function ProjectPipeline({
   // no add/remove churn.
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
-      const st = dragRef.current;
-      if (!st) return;
+      const st = moveRef.current;
+      if (!st || st.phase !== "drag") return;
+      const now = performance.now();
       const dx = e.clientX - st.startX;
       const moved = Math.max(st.moved, Math.abs(dx));
       let target = st.fromIdx + Math.round(dx / STEP);
       target = Math.max(0, Math.min(songsRef.current.length - 1, target));
+      // pointer velocity → card tilt, low-passed so it feels weighted
+      const dt = Math.max(1, now - st.lastT);
+      const vx = (e.clientX - st.lastX) / dt; // px per ms
+      const targetTilt = Math.max(-MAX_TILT, Math.min(MAX_TILT, vx * 14));
+      st.tilt = st.tilt + (targetTilt - st.tilt) * 0.3;
+      st.lastX = e.clientX;
+      st.lastT = now;
       st.dx = dx;
       st.target = target;
       st.moved = moved;
-      setDrag({ fromIdx: st.fromIdx, dx, target, moved });
+      setMove({ fromIdx: st.fromIdx, dx, target, moved, tilt: st.tilt, phase: "drag" });
     };
     const onUp = () => {
-      const st = dragRef.current;
-      if (!st) return;
-      dragRef.current = null;
+      const st = moveRef.current;
+      if (!st || st.phase !== "drag") return;
       if (st.moved < 6) {
+        moveRef.current = null;
+        setMove(null);
         cbRef.current.onOpenSong(songsRef.current[st.fromIdx]);
-      } else if (st.target !== st.fromIdx) {
-        const next = songsRef.current.slice();
-        const [moving] = next.splice(st.fromIdx, 1);
-        next.splice(st.target, 0, moving);
-        cbRef.current.onReorder(next);
+        return;
       }
-      setDrag(null);
+      // settle: glide into the destination slot, then commit the new order
+      const settleDx = (st.target - st.fromIdx) * STEP;
+      st.phase = "settle";
+      st.dx = settleDx;
+      st.tilt = 0;
+      setMove({ fromIdx: st.fromIdx, dx: settleDx, target: st.target, moved: st.moved, tilt: 0, phase: "settle" });
+      settleTimer.current = setTimeout(() => {
+        const fin = moveRef.current;
+        moveRef.current = null;
+        setMove(null);
+        if (fin && fin.target !== fin.fromIdx) {
+          const next = songsRef.current.slice();
+          const [moving] = next.splice(fin.fromIdx, 1);
+          next.splice(fin.target, 0, moving);
+          cbRef.current.onReorder(next);
+        }
+      }, SETTLE_MS);
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -202,17 +239,34 @@ export function ProjectPipeline({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
+      if (settleTimer.current) clearTimeout(settleTimer.current);
     };
   }, []);
 
-  // transform for each node given the current drag
-  const styleFor = (i: number): CSSProperties => {
-    if (!drag) return {};
-    const { fromIdx, dx, target } = drag;
-    if (i === fromIdx) return { transform: `translateX(${dx}px) scale(1.04)` };
+  // slot transform for each index given the current move
+  const slotStyle = (i: number): CSSProperties => {
+    if (!move) return {};
+    const { fromIdx, dx, target } = move;
+    if (i === fromIdx) return { transform: `translateX(${dx}px)` };
     if (target > fromIdx && i > fromIdx && i <= target) return { transform: `translateX(${-STEP}px)` };
     if (target < fromIdx && i < fromIdx && i >= target) return { transform: `translateX(${STEP}px)` };
     return { transform: "translateX(0px)" };
+  };
+
+  const slotClass = (i: number): string => {
+    if (!move) return "pslot";
+    if (i === move.fromIdx) return "pslot lifted" + (move.phase === "settle" ? " settling" : "");
+    return "pslot shift";
+  };
+
+  // index each card reports while the order is in flux
+  const displayIdx = (i: number): number => {
+    if (!move || move.moved < 6) return i;
+    const { fromIdx, target } = move;
+    if (i === fromIdx) return target;
+    if (target > fromIdx && i > fromIdx && i <= target) return i - 1;
+    if (target < fromIdx && i < fromIdx && i >= target) return i + 1;
+    return i;
   };
 
   if (n === 0) {
@@ -235,18 +289,20 @@ export function ProjectPipeline({
 
   return (
     <div className="pipe-scroll">
-      <div className={"pipe" + (drag ? " is-dragging" : "")}>
+      <div className={"pipe" + (move ? " is-dragging" : "")}>
         {songs.map((song, i) => (
           <Fragment key={song.id}>
             {i > 0 && <Connector leftStatus={songs[i - 1].status} curve={connector === "curve"} />}
-            <PipeNode
-              song={song}
-              idx={i}
-              dragStyle={styleFor(i)}
-              dragging={!!drag && drag.fromIdx === i}
-              onPointerDown={onPointerDown}
-              onUpdateVibe={onUpdateVibe}
-            />
+            <div className={slotClass(i)} style={slotStyle(i)}>
+              <PipeNode
+                song={song}
+                displayIdx={displayIdx(i)}
+                dragging={!!move && move.fromIdx === i && move.phase === "drag"}
+                tilt={move && move.fromIdx === i ? move.tilt : 0}
+                onPointerDown={(e) => onPointerDown(e, i)}
+                onUpdateVibe={onUpdateVibe}
+              />
+            </div>
           </Fragment>
         ))}
         <Connector leftStatus={songs[n - 1].status} curve={connector === "curve"} />

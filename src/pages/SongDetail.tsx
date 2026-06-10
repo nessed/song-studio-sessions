@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronRight, ChevronDown, List, Share2, Check, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, ChevronDown, List, Share2, Check, X, Play, Pause, Plus, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { useSong, useSongs } from "@/hooks/useSongs";
 import { useSongNotes } from "@/hooks/useSongNotes";
@@ -12,7 +12,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { SessionsShell } from "@/components/sessions/Room";
 import { CoverArt } from "@/components/sessions/CoverArt";
 import { StageMeter } from "@/components/sessions/StageMeter";
-import { GlassPlayer } from "@/components/sessions/GlassPlayer";
+import { GlassPlayer, Waveform } from "@/components/sessions/GlassPlayer";
 import { TaskDrawer } from "@/components/sessions/Tasks";
 import { palette, hueForSong, buildWave, fmt } from "@/lib/sessions/theme";
 import { SONG_STATUSES, SongStatus, Song, Task } from "@/lib/types";
@@ -31,7 +31,7 @@ function StatusPill({ value, onChange }: { value: SongStatus; onChange: (s: Song
     return () => document.removeEventListener("mousedown", h);
   }, []);
   return (
-    <div className="statwrap" ref={ref}>
+    <div className={"statwrap" + (open ? " open" : "")} ref={ref}>
       <button className="status-ctl" onClick={() => setOpen((o) => !o)}>
         <StageMeter status={value} frac />
         <ChevronDown size={13} className="chev" />
@@ -86,12 +86,14 @@ export default function SongDetail() {
   const [duration, setDuration] = useState(FALLBACK_DUR);
   const [composer, setComposer] = useState({ t: 0, text: "", armed: false });
   const [drawer, setDrawer] = useState(false);
+  const [deckVisible, setDeckVisible] = useState(true);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const rafRef = useRef<number>();
   const lastTick = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const deckRef = useRef<HTMLElement>(null);
 
   const audioUrl = currentVersion?.file_url || song?.mp3_url || null;
   const wave = useMemo(() => buildWave(song ? hueForSong(song) : 1), [song]);
@@ -135,6 +137,17 @@ export default function SongDetail() {
     return () => window.removeEventListener("keydown", h);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing, audioUrl]);
+
+  /* the floating player docks in only once the deck leaves the viewport */
+  useEffect(() => {
+    const el = deckRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => setDeckVisible(entry.isIntersecting), {
+      threshold: 0.2,
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [loading, song]);
 
   const togglePlay = useCallback(() => {
     if (audioUrl && audioRef.current) {
@@ -225,6 +238,7 @@ export default function SongDetail() {
   const sortedNotes = [...notes].sort((a, b) => a.timestamp_seconds - b.timestamp_seconds);
   const rows = lyricRows(song.lyrics);
   const versionCount = versions.length || (song.mp3_url ? 1 : 0);
+  const progress = duration ? time / duration : 0;
 
   return (
     <SessionsShell vars={palette(hueForSong(song))}>
@@ -243,8 +257,8 @@ export default function SongDetail() {
         />
       )}
 
-      <div className="fade-in">
-        <header className="ws-hd">
+      <div>
+        <header className="ws-hd drop">
           <div className="ws-hd-l">
             <button className="ws-back" onClick={() => navigate("/dashboard")} aria-label="Back">
               <ArrowLeft size={17} />
@@ -268,75 +282,115 @@ export default function SongDetail() {
         </header>
 
         <main className="ws-shell">
-          <div className="ws-grid">
-            <div className="ws-cover-col">
-              <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
-              <button className="ws-cover-btn" onClick={() => coverInputRef.current?.click()} aria-label="Change cover art">
-                <CoverArt song={song} />
-                {song.cover_art_url && (
-                  <button
-                    className="ws-cover-rm"
-                    onClick={(e) => { e.stopPropagation(); handleCoverRemove(); }}
-                    aria-label="Remove cover art"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </button>
-              <div className="title-block">
-                {titleEdit ? (
-                  <input
-                    autoFocus
-                    className="song-title-inp display"
-                    value={titleDraft}
-                    onChange={(e) => setTitleDraft(e.target.value)}
-                    onBlur={commitTitle}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") { e.preventDefault(); commitTitle(); }
-                      if (e.key === "Escape") setTitleEdit(false);
-                    }}
-                  />
-                ) : (
-                  <h1 className="song-title display" onClick={startTitleEdit}>{song.title}</h1>
-                )}
-                <div className="meta-row">
-                  <span className="accent">{song.bpm ?? "—"} BPM</span>
-                  <span>{song.key || "—"}</span>
-                  <span>{fmt(duration)}</span>
-                  <span>{profile?.display_name || "You"}</span>
-                </div>
+          {/* identity — the song is the headline, metadata recedes */}
+          <section className="ws-hero">
+            <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+            <button
+              className="ws-cover-btn rise"
+              style={{ "--d": "0.02s" } as React.CSSProperties}
+              onClick={() => coverInputRef.current?.click()}
+              aria-label="Change cover art"
+            >
+              <CoverArt song={song} radius={16} />
+              {song.cover_art_url && (
+                <button
+                  className="ws-cover-rm"
+                  onClick={(e) => { e.stopPropagation(); handleCoverRemove(); }}
+                  aria-label="Remove cover art"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </button>
+            <div className="ws-id">
+              <div className="ws-kick rise" style={{ "--d": "0.08s" } as React.CSSProperties}>
+                <StageMeter status={status} />
+                {versionCount > 0 && <span className="kicker">v{currentVersion?.version_number ?? versionCount}</span>}
               </div>
-              <div>
-                <div className="sec-head2">
-                  <div className="kicker">Lyrics</div>
-                </div>
-                <div className="lyrics">
-                  {rows.length > 0 ? (
-                    <div>
-                      {rows.map((r, i) =>
-                        r.label ? (
-                          <div className="ly-label" key={i}>
-                            {r.text}
-                          </div>
-                        ) : r.text ? (
-                          <div className="ly-line" key={i}>
-                            {r.text}
-                          </div>
-                        ) : (
-                          <div style={{ height: 12 }} key={i} />
-                        )
-                      )}
-                    </div>
-                  ) : (
-                    <div className="ly-line" style={{ color: "var(--fg-3)" }}>
-                      (empty — start writing)
-                    </div>
-                  )}
-                </div>
+              {titleEdit ? (
+                <input
+                  autoFocus
+                  className="song-title-inp display"
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onBlur={commitTitle}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); commitTitle(); }
+                    if (e.key === "Escape") setTitleEdit(false);
+                  }}
+                />
+              ) : (
+                <h1
+                  className="song-title display rise"
+                  style={{ "--d": "0.12s" } as React.CSSProperties}
+                  onClick={startTitleEdit}
+                >
+                  {song.title}
+                </h1>
+              )}
+              <div className="meta-row rise" style={{ "--d": "0.18s" } as React.CSSProperties}>
+                <span className="accent">{song.bpm ?? "—"} BPM</span>
+                <span>{song.key || "—"}</span>
+                <span>{fmt(duration)}</span>
+                <span>{profile?.display_name || "You"}</span>
               </div>
             </div>
+          </section>
 
-            <div>
+          {/* the deck — transport + performed waveform, the room's centerpiece */}
+          <section className="ws-deck glass rise" style={{ "--d": "0.22s" } as React.CSSProperties} ref={deckRef}>
+            <button className="deck-play" onClick={togglePlay} aria-label={playing ? "Pause" : "Play"}>
+              {playing ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" style={{ marginLeft: 2 }} />}
+            </button>
+            <div className="wave-hero">
+              <Waveform wave={wave} progress={progress} duration={duration} notes={notes} onSeek={seek} />
+            </div>
+            <div className="deck-side">
+              <div className="deck-time">
+                <b>{fmt(time)}</b> / {fmt(duration)}
+              </div>
+              <div className="deck-actions">
+                <button className="p-icbtn" onClick={armComposer} title="Note at playhead" aria-label="Add note">
+                  <Plus size={17} />
+                </button>
+                <button className="p-icbtn" onClick={() => toast("Stem mixer coming soon")} title="Stems" aria-label="Stems">
+                  <SlidersHorizontal size={17} />
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <div className="ws-grid">
+            <section className="rise" style={{ "--d": "0.3s" } as React.CSSProperties}>
+              <div className="sec-head2">
+                <div className="kicker">Lyrics</div>
+              </div>
+              <div className="lyrics">
+                {rows.length > 0 ? (
+                  <div>
+                    {rows.map((r, i) =>
+                      r.label ? (
+                        <div className="ly-label" key={i}>
+                          {r.text}
+                        </div>
+                      ) : r.text ? (
+                        <div className="ly-line" key={i}>
+                          {r.text}
+                        </div>
+                      ) : (
+                        <div style={{ height: 14 }} key={i} />
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="ly-line" style={{ color: "var(--fg-3)" }}>
+                    (empty — start writing)
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <aside className="rise" style={{ "--d": "0.36s" } as React.CSSProperties}>
               <div className="sec-head2">
                 <div className="kicker">Notes</div>
                 <div className="count">{notes.length}</div>
@@ -354,24 +408,28 @@ export default function SongDetail() {
                 />
               </div>
               {sortedNotes.length === 0 && (
-                <div style={{ padding: "16px 4px", color: "var(--fg-3)", fontSize: 13 }}>
-                  No notes yet — press <b style={{ color: "var(--fg-2)" }}>+</b> on the player to drop one at the
+                <div style={{ padding: "16px 4px", color: "var(--fg-3)", fontSize: 13, lineHeight: 1.5 }}>
+                  No notes yet — press <b style={{ color: "var(--fg-2)" }}>+</b> on the deck to drop one at the
                   playhead.
                 </div>
               )}
-              {sortedNotes.map((n) => (
-                <div className="note" key={n.id} onClick={() => seek(n.timestamp_seconds)}>
-                  <div className="tstamp">{fmt(n.timestamp_seconds)}</div>
-                  <div className="ndot" />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="ntext">{n.body}</div>
-                    <div className="nwho">
-                      {n.guest_name && <span className="guest-badge">guest</span>}
-                      {n.guest_name || "You"}
+              {sortedNotes.length > 0 && (
+                <div className="note-feed">
+                  {sortedNotes.map((n) => (
+                    <div className="note" key={n.id} onClick={() => seek(n.timestamp_seconds)}>
+                      <div className="tstamp">{fmt(n.timestamp_seconds)}</div>
+                      <div className="ndot" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="ntext">{n.body}</div>
+                        <div className="nwho">
+                          {n.guest_name && <span className="guest-badge">guest</span>}
+                          {n.guest_name || "You"}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
 
               <div className="sec-head2 subhead">
                 <div className="kicker">Versions</div>
@@ -396,7 +454,7 @@ export default function SongDetail() {
                   {song.mp3_url ? <span className="vcur">current</span> : <span className="vdate">upload a take</span>}
                 </div>
               )}
-            </div>
+            </aside>
           </div>
         </main>
 
@@ -412,6 +470,7 @@ export default function SongDetail() {
           notes={notes}
           onAddNoteHere={armComposer}
           onStems={() => toast("Stem mixer coming soon")}
+          hidden={deckVisible}
         />
 
         {drawer && (

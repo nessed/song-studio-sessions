@@ -22,9 +22,16 @@ function rel(date: string) {
   }
 }
 
-function SongCard({ song, initial, onOpen }: { song: Song; initial: string; onOpen: (s: Song) => void }) {
+function SongCard({ song, initial, index, onOpen }: { song: Song; initial: string; index: number; onOpen: (s: Song) => void }) {
   return (
-    <div className="card fade-in" onClick={() => onOpen(song)} style={paletteStyle(palette(hueForSong(song)))}>
+    <div
+      className="card rise"
+      onClick={() => onOpen(song)}
+      style={{
+        ...paletteStyle(palette(hueForSong(song))),
+        "--d": `${0.1 + Math.min(index, 11) * 0.05}s`,
+      } as React.CSSProperties}
+    >
       <div className="art">
         <CoverArt song={song} />
         <div className="ov">
@@ -142,8 +149,8 @@ export default function Dashboard() {
             </div>
             {filtered.length > 0 ? (
               <div className="gallery">
-                {filtered.map((s) => (
-                  <SongCard key={s.id} song={s} initial={initial} onOpen={open} />
+                {filtered.map((s, i) => (
+                  <SongCard key={s.id} song={s} initial={initial} index={i} onOpen={open} />
                 ))}
               </div>
             ) : (

@@ -80,8 +80,10 @@ export default function Tasks() {
           </div>
         </div>
         {groups.length > 0 ? (
-          groups.map((s) => (
-            <SongTaskGroup key={s.id} song={s} tasks={tasksBySong[s.id]} onToggle={toggle} onOpen={openSong} />
+          groups.map((s, i) => (
+            <div key={s.id} className="rise" style={{ "--d": `${Math.min(i, 8) * 0.06}s` } as React.CSSProperties}>
+              <SongTaskGroup song={s} tasks={tasksBySong[s.id]} onToggle={toggle} onOpen={openSong} />
+            </div>
           ))
         ) : (
           <div style={{ padding: "40px 4px", color: "var(--fg-3)", fontSize: 14 }}>

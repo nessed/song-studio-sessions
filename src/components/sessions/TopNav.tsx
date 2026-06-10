@@ -21,7 +21,7 @@ const TABS: [NavTab, string][] = [
 export function TopNav({ tab, onTab, onNew, search, onSearch, initial = "N" }: TopNavProps) {
   const navigate = useNavigate();
   return (
-    <nav className="nav">
+    <nav className="nav drop">
       <div className="nav-brand" onClick={() => onTab("projects")} style={{ cursor: "pointer" }}>
         <span className="dot" />
         <b>Sessions</b>

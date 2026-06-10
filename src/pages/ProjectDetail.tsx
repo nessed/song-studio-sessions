@@ -60,6 +60,16 @@ export default function ProjectDetail() {
   const readyCount = order.filter((s) => s.status === "release_prep").length;
   const kind = order.length > 6 ? "LP" : "EP";
 
+  // how the record spreads across the stages — quiet readout over the pipeline
+  const census = useMemo(() => {
+    const counts = new Map<string, number>();
+    order.forEach((s) => counts.set(s.status, (counts.get(s.status) || 0) + 1));
+    return SONG_STATUSES.filter((st) => counts.has(st.value)).map((st) => ({
+      label: st.label,
+      count: counts.get(st.value)!,
+    }));
+  }, [order]);
+
   const commitTitle = () => {
     setTitleEdit(false);
     if (id && titleDraft.trim() && titleDraft.trim() !== project?.title)
@@ -109,7 +119,7 @@ export default function ProjectDetail() {
       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
 
       <div className="proj view-dissolve" style={paletteStyle(vars)}>
-        <div className="proj-headrow">
+        <div className="proj-headrow rise" style={{ "--d": "0s" } as React.CSSProperties}>
           <button className="proj-back" onClick={() => navigate("/projects")}>
             <span className="arr">←</span> All projects
           </button>
@@ -118,7 +128,7 @@ export default function ProjectDetail() {
           </button>
         </div>
 
-        <div className="proj-head">
+        <div className="proj-head rise" style={{ "--d": "0.06s" } as React.CSSProperties}>
           <button
             className="ph-cover"
             onClick={() => fileInputRef.current?.click()}
@@ -166,18 +176,31 @@ export default function ProjectDetail() {
           </div>
         </div>
 
-        <div className="pipe-head">
+        <div className="pipe-head rise" style={{ "--d": "0.14s" } as React.CSSProperties}>
           <div className="kicker">Pipeline</div>
           {order.length > 0 && <div className="ph-hint">drag to reorder · click to open</div>}
         </div>
 
-        <ProjectPipeline
-          songs={order}
-          onOpenSong={(s) => navigate(`/song/${s.id}`)}
-          onReorder={setOrder}
-          onAddSong={handleAddSong}
-          onUpdateVibe={(s, tags) => updateSong(s.id, { mood_tags: tags })}
-        />
+        {census.length > 1 && (
+          <div className="pipe-census rise" style={{ "--d": "0.18s" } as React.CSSProperties}>
+            {census.map((c) => (
+              <span className="pc" key={c.label}>
+                <i />
+                <b>{c.count}</b> {c.label}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="rise" style={{ "--d": "0.22s" } as React.CSSProperties}>
+          <ProjectPipeline
+            songs={order}
+            onOpenSong={(s) => navigate(`/song/${s.id}`)}
+            onReorder={setOrder}
+            onAddSong={handleAddSong}
+            onUpdateVibe={(s, tags) => updateSong(s.id, { mood_tags: tags })}
+          />
+        </div>
       </div>
     </SessionsShell>
   );

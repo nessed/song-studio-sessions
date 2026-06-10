@@ -18,7 +18,7 @@ type HoverState = { frac: number; time: number; note: SongNote | null } | null;
 
 const noteWho = (n: SongNote) => n.guest_name || "You";
 
-function Waveform({ wave, progress, duration, notes, onSeek }: WaveformProps) {
+export function Waveform({ wave, progress, duration, notes, onSeek }: WaveformProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<HoverState>(null);
   const nowIdx = Math.round(progress * (wave.length - 1));
@@ -119,6 +119,9 @@ interface GlassPlayerProps {
   notes: SongNote[];
   onAddNoteHere: () => void;
   onStems?: () => void;
+  /* when true the player rests below the viewport edge (used while the
+     in-page deck is visible) and glides up once the deck scrolls away */
+  hidden?: boolean;
 }
 
 export function GlassPlayer({
@@ -133,10 +136,11 @@ export function GlassPlayer({
   notes,
   onAddNoteHere,
   onStems,
+  hidden = false,
 }: GlassPlayerProps) {
   const progress = duration ? time / duration : 0;
   return (
-    <div className="player-wrap">
+    <div className={"player-wrap" + (hidden ? " hide" : "")}>
       <div className="player glass">
         <div className="p-cover">
           <CoverArt song={song} radius={13} />

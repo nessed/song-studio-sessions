@@ -1,11 +1,12 @@
-import { useMemo } from "react";
+import { CSSProperties, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Play, Check, Sparkles, Share2 } from "lucide-react";
+import { ArrowRight, Play, Check, Share2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { SessionsShell } from "@/components/sessions/Room";
 import { CoverArt } from "@/components/sessions/CoverArt";
 import { StageMeter } from "@/components/sessions/StageMeter";
 import { Avatar } from "@/components/sessions/Avatar";
+import { Reveal } from "@/components/sessions/Reveal";
 import { palette, paletteStyle, buildWave } from "@/lib/sessions/theme";
 import { SongStatus } from "@/lib/types";
 
@@ -20,6 +21,8 @@ const ROOMS: MockSong[] = [
   { id: "understory", title: "Understory", status: "writing", hue: 152 },
   { id: "salt-air", title: "Salt Air", status: "mastering", hue: 194 },
 ];
+
+const d = (s: number) => ({ "--d": `${s}s` } as CSSProperties);
 
 function MiniWave({ hue, n = 46, played = 0.42 }: { hue: number; n?: number; played?: number }) {
   const w = useMemo(() => buildWave(hue, n), [hue, n]);
@@ -42,8 +45,8 @@ export default function Index() {
 
   return (
     <SessionsShell vars={palette(58)}>
-      <div className="lp fade-in">
-        <nav className="lp-nav">
+      <div className="lp">
+        <nav className="lp-nav drop" style={d(0)}>
           <div className="nb">
             <span className="dot" />
             <b>Sessions</b>
@@ -67,18 +70,18 @@ export default function Index() {
         <div className="lp-wrap">
           <div className="lp-hero">
             <div>
-              <div className="kicker">For people who make music together</div>
-              <h1 className="lp-h1">
+              <div className="kicker rise" style={d(0.05)}>For people who make music together</div>
+              <h1 className="lp-h1 rise" style={d(0.12)}>
                 Everything that goes into a song,
                 <br />
                 in <span className="em">one place.</span>
               </h1>
-              <p className="lp-sub">
+              <p className="lp-sub rise" style={d(0.2)}>
                 Making a song means juggling recordings, lyrics, edits, feedback and a dozen versions across
                 your phone, Dropbox, Docs and chats. Sessions puts all of it in one workspace, tracks how far
                 along each song is, and lets the people you work with leave feedback on the exact spot they mean.
               </p>
-              <div className="lp-actions">
+              <div className="lp-actions rise" style={d(0.28)}>
                 <span className="lp-cta lp-cta-lg" onClick={start}>
                   Start your first song
                   <ArrowRight size={16} />
@@ -88,17 +91,17 @@ export default function Index() {
                   See how it works
                 </span>
               </div>
-              <div className="lp-trust">
-                <Sparkles size={14} style={{ color: "var(--accent-bright)" }} />
+              <div className="lp-trust rise" style={d(0.36)}>
+                <span className="tdot" />
                 <span className="l">No card needed. Set up a song in under a minute.</span>
               </div>
             </div>
 
-            <div className="lp-shot">
+            <div className="lp-shot rise" style={d(0.18)}>
               <div className="cover-frame">
                 <CoverArt song={HERO} hue={HERO.hue} radius={18} />
               </div>
-              <div className="float-note glass">
+              <div className="float-note glass bob">
                 <div className="fn-top">
                   <span className="fn-ts">0:42</span>
                   <span className="guest-badge">guest</span>
@@ -106,7 +109,7 @@ export default function Index() {
                 </div>
                 <div className="fn-text">love this harmony stack — keep it</div>
               </div>
-              <div className="float-player">
+              <div className="float-player bob2">
                 <div className="mini-player glass">
                   <div className="mp-cover">
                     <CoverArt song={HERO} hue={HERO.hue} radius={12} />
@@ -122,31 +125,31 @@ export default function Index() {
           </div>
 
           <div className="lp-stats">
-            <div className="lp-stat">
+            <Reveal className="lp-stat" delay={0}>
               <div className="n">
                 Every stage <span className="em">tracked</span>
               </div>
               <div className="l">see what's done and what's left</div>
-            </div>
-            <div className="lp-stat">
+            </Reveal>
+            <Reveal className="lp-stat" delay={0.08}>
               <div className="n">
                 One <span className="em">workspace</span>
               </div>
               <div className="l">recordings, lyrics, feedback, versions</div>
-            </div>
-            <div className="lp-stat">
+            </Reveal>
+            <Reveal className="lp-stat" delay={0.16}>
               <div className="n">
                 Notes on the <span className="em">second</span>
               </div>
               <div className="l">no more "the part around 1:20"</div>
-            </div>
+            </Reveal>
           </div>
         </div>
 
         {/* rooms band */}
         <div className="lp-rooms">
           <div className="lp-wrap">
-            <div className="lp-sechead">
+            <Reveal className="lp-sechead">
               <div className="kicker">The idea</div>
               <h2>Always know what's left.</h2>
               <p>
@@ -154,18 +157,20 @@ export default function Index() {
                 where each one is, so you can look at your whole project and instantly see what's done and what
                 still needs work.
               </p>
-            </div>
+            </Reveal>
             <div className="rooms-strip">
-              {ROOMS.map((s) => (
-                <div className="room-cell" key={s.id} style={paletteStyle(palette(s.hue))}>
-                  <CoverArt song={s} hue={s.hue} radius={13} />
-                  <div className="rc-meta">
-                    <div className="rc-title">{s.title}</div>
-                    <div className="rc-stage">
-                      <StageMeter status={s.status} label={false} />
+              {ROOMS.map((s, i) => (
+                <Reveal key={s.id} delay={i * 0.07}>
+                  <div className="room-cell" style={paletteStyle(palette(s.hue))}>
+                    <CoverArt song={s} hue={s.hue} radius={13} />
+                    <div className="rc-meta">
+                      <div className="rc-title">{s.title}</div>
+                      <div className="rc-stage">
+                        <StageMeter status={s.status} label={false} />
+                      </div>
                     </div>
                   </div>
-                </div>
+                </Reveal>
               ))}
             </div>
           </div>
@@ -176,7 +181,7 @@ export default function Index() {
           <div className="lp-features">
             {/* 1 notes */}
             <div className="feat">
-              <div className="feat-text">
+              <Reveal className="feat-text" from="left">
                 <div className="num">01</div>
                 <h3>Point to the exact moment you mean.</h3>
                 <p>
@@ -197,8 +202,8 @@ export default function Index() {
                     Everyone stays on the same up-to-date version
                   </div>
                 </div>
-              </div>
-              <div className="feat-mock glass" style={paletteStyle(palette(58))}>
+              </Reveal>
+              <Reveal className="feat-mock glass" from="right" delay={0.08} style={paletteStyle(palette(58))}>
                 <div className="mock-head">
                   <span className="mh-l">Slow Light · notes</span>
                   <span className="mh-l">5</span>
@@ -225,12 +230,12 @@ export default function Index() {
                     <div className="wh">You</div>
                   </div>
                 </div>
-              </div>
+              </Reveal>
             </div>
 
             {/* 2 tasks */}
             <div className="feat rev">
-              <div className="feat-text">
+              <Reveal className="feat-text" from="right">
                 <div className="num">02</div>
                 <h3>A to-do list that understands the work.</h3>
                 <p>
@@ -251,13 +256,13 @@ export default function Index() {
                     Lives next to the song, never in the way
                   </div>
                 </div>
-              </div>
-              <div className="feat-mock glass" style={paletteStyle(palette(212))}>
+              </Reveal>
+              <Reveal className="feat-mock glass" from="left" delay={0.08} style={paletteStyle(palette(212))}>
                 <div className="tm-add">
-                  <Sparkles size={14} style={{ color: "var(--accent-bright)" }} />
                   <span className="tx">
                     re-cut vocal <span className="hl">!high</span> <span className="hl">due fri</span>
                   </span>
+                  <span className="mh-l" style={{ marginLeft: "auto" }}>⏎</span>
                 </div>
                 <div className="tm-row">
                   <span className="pd" style={{ background: "var(--accent-bright)" }} />
@@ -277,12 +282,12 @@ export default function Index() {
                     <Check size={12} />
                   </span>
                 </div>
-              </div>
+              </Reveal>
             </div>
 
             {/* 3 versions */}
             <div className="feat">
-              <div className="feat-text">
+              <Reveal className="feat-text" from="left">
                 <div className="num">03</div>
                 <h3>Never lose a version again.</h3>
                 <p>
@@ -303,8 +308,8 @@ export default function Index() {
                     See each song's progress at a glance
                   </div>
                 </div>
-              </div>
-              <div className="feat-mock glass" style={paletteStyle(palette(152))}>
+              </Reveal>
+              <Reveal className="feat-mock glass" from="right" delay={0.08} style={paletteStyle(palette(152))}>
                 <div className="mock-head">
                   <span className="mh-l">Understory · versions</span>
                   <StageMeter status="writing" label={false} />
@@ -329,34 +334,38 @@ export default function Index() {
                   <span className="lk">sessions.fm/s/u7x2a9</span>
                   <span className="cp">Copy</span>
                 </div>
-              </div>
+              </Reveal>
             </div>
           </div>
         </div>
 
         {/* quote */}
         <div className="lp-wrap lp-quote">
-          <blockquote>
-            "I stopped losing songs in voice-memo hell. Now an idea has somewhere to live until it's actually
-            finished."
-          </blockquote>
-          <div className="qby">
-            <Avatar ch="J" s={32} />
-            <div style={{ textAlign: "left" }}>
-              <div className="qn">Jonah Reyes</div>
-              <div className="qr">producer · 4× release on Sessions</div>
+          <Reveal>
+            <blockquote>
+              "I stopped losing songs in voice-memo hell. Now an idea has somewhere to live until it's actually
+              finished."
+            </blockquote>
+            <div className="qby">
+              <Avatar ch="J" s={32} />
+              <div style={{ textAlign: "left" }}>
+                <div className="qn">Jonah Reyes</div>
+                <div className="qr">producer · 4× release on Sessions</div>
+              </div>
             </div>
-          </div>
+          </Reveal>
         </div>
 
         {/* final */}
         <div className="lp-wrap lp-final">
-          <h2>Finish the song.</h2>
-          <p>One place to start an idea, work on it with others, and actually get it done.</p>
-          <span className="lp-cta lp-cta-lg" onClick={start} style={{ height: 50, padding: "0 26px", fontSize: 15 }}>
-            Start free
-            <ArrowRight size={16} />
-          </span>
+          <Reveal>
+            <h2>Finish the song.</h2>
+            <p>One place to start an idea, work on it with others, and actually get it done.</p>
+            <span className="lp-cta lp-cta-lg" onClick={start} style={{ height: 50, padding: "0 26px", fontSize: 15 }}>
+              Start free
+              <ArrowRight size={16} />
+            </span>
+          </Reveal>
         </div>
 
         <footer className="lp-foot">

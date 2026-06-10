@@ -34,18 +34,23 @@ function ProjectCard({
   project,
   songs,
   initial,
+  index,
   onOpen,
 }: {
   project: Project;
   songs: Song[];
   initial: string;
+  index: number;
   onOpen: (p: Project) => void;
 }) {
   const kind = songs.length > 6 ? "LP" : "EP";
   return (
     <div
-      className="card fade-in"
-      style={paletteStyle(palette(hueForProject(project)))}
+      className="card rise"
+      style={{
+        ...paletteStyle(palette(hueForProject(project))),
+        "--d": `${0.12 + Math.min(index, 11) * 0.05}s`,
+      } as React.CSSProperties}
       onClick={() => onOpen(project)}
     >
       <div className="art">
@@ -138,8 +143,8 @@ export default function Projects() {
         initial={initial}
       />
 
-      <div className="lib fade-in">
-        <div className="greet">
+      <div className="lib">
+        <div className="greet rise" style={{ "--d": "0s" } as React.CSSProperties}>
           <div className="gh">
             Hi <span className="nm">{name}</span>
           </div>
@@ -150,7 +155,7 @@ export default function Projects() {
           )}
         </div>
 
-        <div className="lib-top">
+        <div className="lib-top rise" style={{ "--d": "0.05s" } as React.CSSProperties}>
           <div className="create">
             <span className="clabel kicker">Start a record</span>
             <div className="create-inp">
@@ -171,7 +176,7 @@ export default function Projects() {
           </div>
         </div>
 
-        <div className="sec-row">
+        <div className="sec-row rise" style={{ "--d": "0.09s" } as React.CSSProperties}>
           <div className="kicker">Albums &amp; EPs</div>
           <div className="kicker" style={{ color: "var(--fg-2)" }}>
             Recent
@@ -180,12 +185,13 @@ export default function Projects() {
 
         {filtered.length > 0 ? (
           <div className="gallery">
-            {filtered.map((p) => (
+            {filtered.map((p, i) => (
               <ProjectCard
                 key={p.id}
                 project={p}
                 songs={songsByProject[p.id] || []}
                 initial={initial}
+                index={i}
                 onOpen={open}
               />
             ))}

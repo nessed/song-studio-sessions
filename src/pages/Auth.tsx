@@ -55,7 +55,7 @@ export default function Auth() {
 
   return (
     <SessionsShell vars={NEUTRAL}>
-      <div className="auth fade-in">
+      <div className="auth">
         <div className="auth-aside" style={paletteStyle(palette(58))}>
           <div className="fan" aria-hidden="true">
             {FAN.map((s, i) => (
@@ -66,17 +66,18 @@ export default function Auth() {
                   transform: `translate(${OFFS[i].x}px, ${OFFS[i].y}px) rotate(${OFFS[i].r}deg)`,
                   zIndex: i,
                   opacity: 0.55 + i * 0.18,
-                }}
+                  "--d": `${0.15 + i * 0.12}s`,
+                } as React.CSSProperties}
               >
                 <CoverArt song={s} hue={s.hue} radius={18} />
               </div>
             ))}
           </div>
-          <div style={{ position: "relative", zIndex: 2 }} className="auth-brand">
+          <div style={{ position: "relative", zIndex: 2 }} className="auth-brand drop">
             <span className="dot" />
             <b style={{ fontSize: 18, fontWeight: 600 }}>Sessions</b>
           </div>
-          <div className="auth-quote">
+          <div className="auth-quote rise" style={{ "--d": "0.3s" } as React.CSSProperties}>
             <p>The space between a voice memo and a finished record. Kept quiet, on purpose.</p>
             <div className="by kicker">Boutique workspace for songwriters</div>
           </div>
@@ -84,17 +85,19 @@ export default function Auth() {
 
         <div className="auth-form-wrap">
           <form className="auth-form" onSubmit={handleSubmit}>
-            <div className="auth-brand">
+            <div className="auth-brand rise" style={{ "--d": "0s" } as React.CSSProperties}>
               <span className="dot" />
               <b>Sessions</b>
             </div>
-            <div className="auth-h">{isLogin ? "Welcome back" : "Create a studio"}</div>
-            <div className="auth-sub">
+            <div className="auth-h rise" style={{ "--d": "0.06s" } as React.CSSProperties}>
+              {isLogin ? "Welcome back" : "Create a studio"}
+            </div>
+            <div className="auth-sub rise" style={{ "--d": "0.1s" } as React.CSSProperties}>
               {isLogin ? "Pick up where the song left off." : "Start your first session in under a minute."}
             </div>
 
             {!isLogin && (
-              <div className="field">
+              <div className="field rise" style={{ "--d": "0.12s" } as React.CSSProperties}>
                 <label>Name</label>
                 <div className="inp">
                   <User size={17} />
@@ -109,7 +112,7 @@ export default function Auth() {
               </div>
             )}
 
-            <div className="field">
+            <div className="field rise" style={{ "--d": "0.14s" } as React.CSSProperties}>
               <label>Email</label>
               <div className="inp">
                 <Mail size={17} />
@@ -123,7 +126,7 @@ export default function Auth() {
                 />
               </div>
             </div>
-            <div className="field">
+            <div className="field rise" style={{ "--d": "0.18s" } as React.CSSProperties}>
               <label>Password</label>
               <div className="inp">
                 <Lock size={17} />
@@ -139,7 +142,12 @@ export default function Auth() {
               </div>
             </div>
 
-            <button className="auth-submit" type="submit" disabled={loading}>
+            <button
+              className="auth-submit rise"
+              style={{ "--d": "0.22s" } as React.CSSProperties}
+              type="submit"
+              disabled={loading}
+            >
               {loading ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />

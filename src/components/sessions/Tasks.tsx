@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Calendar, Sparkles, X, Trash2 } from "lucide-react";
+import { Check, Calendar, Plus, X, Trash2 } from "lucide-react";
 import { CoverArt } from "./CoverArt";
 import { StageMeter } from "./StageMeter";
 import { paletteStyle, palette, hueForSong } from "@/lib/sessions/theme";
@@ -138,6 +138,7 @@ export function TaskDrawer({ song, tasks, onToggle, onCreate, onClose, onDelete,
   const open = tasks.filter((t) => !t.done);
   const done = tasks.filter((t) => t.done);
   const sections = [...new Set(open.map((t) => t.section))];
+  let row = 0; // running index for the entrance stagger
 
   return (
     <>
@@ -150,19 +151,39 @@ export function TaskDrawer({ song, tasks, onToggle, onCreate, onClose, onDelete,
         }}
       >
         <div className="drawer-head">
+          <div className="dthumb">
+            <CoverArt song={song} radius={12} />
+          </div>
           <div className="dh-l">
-            <h3>Tasks</h3>
-            <span className="dh-n">{open.length} open</span>
+            <h3>{song.title}</h3>
+            <span className="dh-n">
+              {open.length} open · {done.length} done
+            </span>
           </div>
           <button className="x-btn" onClick={onClose} aria-label="Close">
             <X size={17} />
           </button>
         </div>
+
+        {tasks.length > 0 && (
+          <div className="dprog">
+            <span className="lbl">session</span>
+            <span className="bar">
+              <i style={{ width: `${Math.round((done.length / tasks.length) * 100)}%` }} />
+            </span>
+            <span className="lbl">
+              {done.length}/{tasks.length}
+            </span>
+          </div>
+        )}
+
         <div className="qadd">
-          <Sparkles size={15} style={{ color: "var(--accent-bright)", flex: "none" }} />
+          <span className="qplus">
+            <Plus size={15} />
+          </span>
           <input
             value={draft}
-            placeholder="re-cut vocal !high due fri"
+            placeholder={'Add a task — try "re-cut vocal !high due fri"'}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={add}
           />
@@ -178,10 +199,13 @@ export function TaskDrawer({ song, tasks, onToggle, onCreate, onClose, onDelete,
                 <span className="kicker" style={{ color: "var(--fg-2)" }}>
                   {sec}
                 </span>
+                <span className="sline" />
                 <span className="scount">{items.length}</span>
               </div>
               {items.map((t) => (
-                <TaskCard key={t.id} t={t} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
+                <div key={t.id} style={{ "--d": `${Math.min(row++, 10) * 0.035}s` } as React.CSSProperties}>
+                  <TaskCard t={t} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
+                </div>
               ))}
             </div>
           );
@@ -191,10 +215,13 @@ export function TaskDrawer({ song, tasks, onToggle, onCreate, onClose, onDelete,
           <div>
             <div className="tsec-head">
               <span className="kicker">Done</span>
+              <span className="sline" />
               <span className="scount">{done.length}</span>
             </div>
             {done.map((t) => (
-              <TaskCard key={t.id} t={t} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
+              <div key={t.id} style={{ "--d": `${Math.min(row++, 10) * 0.035}s` } as React.CSSProperties}>
+                <TaskCard t={t} onToggle={onToggle} onDelete={onDelete} onEdit={onEdit} />
+              </div>
             ))}
           </div>
         )}
