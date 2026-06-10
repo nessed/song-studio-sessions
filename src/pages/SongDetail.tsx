@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, ChevronRight, ChevronDown, List, Share2, Check, X, Play, Pause, Plus, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, ChevronRight, ChevronDown, List, Share2, Check, X, Play, Pause, Plus, SlidersHorizontal, Upload, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSong, useSongs } from "@/hooks/useSongs";
 import { useSongNotes } from "@/hooks/useSongNotes";
-import { useSongVersions } from "@/hooks/useSongVersions";
+import { useSongVersions, SongVersion } from "@/hooks/useSongVersions";
 import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
@@ -57,6 +57,10 @@ function StatusPill({ value, onChange }: { value: SongStatus; onChange: (s: Song
   );
 }
 
+const HASH_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const makeShareHash = () =>
+  Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => HASH_CHARS[b % HASH_CHARS.length]).join("");
+
 /* split freeform lyrics into label/line rows */
 function lyricRows(lyrics: string | null): { label: boolean; text: string }[] {
   if (!lyrics || !lyrics.trim()) return [];
@@ -75,7 +79,7 @@ export default function SongDetail() {
   const { song, loading } = useSong(id);
   const { updateSong, uploadCoverArt } = useSongs();
   const { notes, createNote } = useSongNotes(id);
-  const { versions, currentVersion } = useSongVersions(id);
+  const { versions, currentVersion, uploadVersion, setCurrentVersion, deleteVersion, isUploading, uploadProgress } = useSongVersions(id);
   const { tasks, createTask, updateTask, deleteTask } = useTasks(id);
 
   const [status, setStatus] = useState<SongStatus>("idea");
@@ -90,6 +94,7 @@ export default function SongDetail() {
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
   const rafRef = useRef<number>();
   const lastTick = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +106,13 @@ export default function SongDetail() {
   useEffect(() => {
     if (song) setStatus(song.status);
   }, [song]);
+
+  /* switching takes (or losing audio) restarts the transport */
+  useEffect(() => {
+    setPlaying(false);
+    setTime(0);
+    setDuration(FALLBACK_DUR);
+  }, [audioUrl]);
 
   /* simulated playback when there's no real audio file yet */
   useEffect(() => {
@@ -208,12 +220,53 @@ export default function SongDetail() {
   const toggleTask = (t: Task) => updateTask(t.id, { done: !t.done });
   const addTask = (section: Task["section"], title: string) => createTask(section, title);
 
-  const share = () => {
-    if (song?.share_hash) {
+  const share = async () => {
+    if (!song || !id) return;
+    if (song.is_public && song.share_hash) {
       navigator.clipboard?.writeText(`${window.location.origin}/s/${song.share_hash}`);
       toast.success("Share link copied");
-    } else {
-      toast("Publish this song from settings to get a share link");
+      return;
+    }
+    const hash = song.share_hash || makeShareHash();
+    const res = await updateSong(id, { is_public: true, share_hash: hash });
+    if (res?.error) {
+      toast.error("Couldn't publish song");
+      return;
+    }
+    navigator.clipboard?.writeText(`${window.location.origin}/s/${hash}`);
+    toast.success("Published — link copied");
+  };
+
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setPlaying(false);
+    try {
+      await uploadVersion(file, file.name.replace(/\.[^/.]+$/, ""));
+      toast.success("Take uploaded");
+    } catch {
+      toast.error("Upload failed — try again");
+    }
+  };
+
+  const switchVersion = async (v: SongVersion) => {
+    if (v.is_current) return;
+    try {
+      await setCurrentVersion(v.id);
+      toast.success(`v${v.version_number} is now current`);
+    } catch {
+      toast.error("Couldn't switch version");
+    }
+  };
+
+  const removeVersion = async (v: SongVersion) => {
+    if (!window.confirm(`Delete v${v.version_number}? This can't be undone.`)) return;
+    try {
+      await deleteVersion(v.id);
+      toast.success(`v${v.version_number} deleted`);
+    } catch {
+      toast.error("Couldn't delete version");
     }
   };
 
@@ -285,6 +338,7 @@ export default function SongDetail() {
           {/* identity — the song is the headline, metadata recedes */}
           <section className="ws-hero">
             <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+            <input ref={audioInputRef} type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
             <button
               className="ws-cover-btn rise"
               style={{ "--d": "0.02s" } as React.CSSProperties}
@@ -350,6 +404,15 @@ export default function SongDetail() {
                 <b>{fmt(time)}</b> / {fmt(duration)}
               </div>
               <div className="deck-actions">
+                <button
+                  className="p-icbtn"
+                  onClick={() => audioInputRef.current?.click()}
+                  disabled={isUploading}
+                  title={isUploading ? "Uploading…" : "Upload a take"}
+                  aria-label="Upload a take"
+                >
+                  {isUploading ? <span className="upl-pct">{uploadProgress}%</span> : <Upload size={17} />}
+                </button>
                 <button className="p-icbtn" onClick={armComposer} title="Note at playhead" aria-label="Add note">
                   <Plus size={17} />
                 </button>
@@ -437,18 +500,32 @@ export default function SongDetail() {
               </div>
               {versions.length > 0 ? (
                 versions.map((v) => (
-                  <div className={"ver" + (v.is_current ? " cur" : "")} key={v.id}>
+                  <div
+                    className={"ver act" + (v.is_current ? " cur" : "")}
+                    key={v.id}
+                    onClick={() => switchVersion(v)}
+                    title={v.is_current ? undefined : `Make v${v.version_number} current`}
+                  >
                     <span className="vtag">v{v.version_number}</span>
                     <span className="vname">{v.description || `${song.title.toLowerCase().replace(/\s+/g, "-")}_v${v.version_number}`}</span>
                     {v.is_current ? (
                       <span className="vcur">current</span>
                     ) : (
-                      <span className="vdate">{(() => { try { return new Date(v.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch { return ""; } })()}</span>
+                      <>
+                        <span className="vdate">{(() => { try { return new Date(v.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" }); } catch { return ""; } })()}</span>
+                        <button
+                          className="vdel"
+                          onClick={(e) => { e.stopPropagation(); removeVersion(v); }}
+                          aria-label={`Delete v${v.version_number}`}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </>
                     )}
                   </div>
                 ))
               ) : (
-                <div className="ver cur">
+                <div className="ver act cur" onClick={() => audioInputRef.current?.click()}>
                   <span className="vtag">v1</span>
                   <span className="vname">{song.mp3_url ? "current upload" : "no audio yet"}</span>
                   {song.mp3_url ? <span className="vcur">current</span> : <span className="vdate">upload a take</span>}

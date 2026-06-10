@@ -53,3 +53,6 @@ Feel free to remove this file if you decide not to use agents.
   - _Bad:_ "No audio."
   - _Good:_ Render an `UploadBar` component that matches the Player's dimensions (prevents layout shift).
 - **Inputs:** Use "Ghost Inputs" (`bg-transparent border-none`) that blend into the canvas.
+
+## 5. Communication & Tone Rules
+- NEVER use the word "vibe" under any circumstances.
