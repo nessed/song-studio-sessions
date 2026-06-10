@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Calendar, Plus, X, Trash2 } from "lucide-react";
+import { Check, Calendar, Plus, X, Trash2, ChevronDown, ExternalLink } from "lucide-react";
 import { CoverArt } from "./CoverArt";
 import { StageMeter } from "./StageMeter";
 import { paletteStyle, palette, hueForSong } from "@/lib/sessions/theme";
@@ -242,22 +242,37 @@ export function SongTaskGroup({
   onToggle: (t: Task) => void;
   onOpen: (song: Song) => void;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
   const open = tasks.filter((t) => !t.done);
+  const done = tasks.length - open.length;
   return (
-    <div className="tov-group" style={paletteStyle(palette(hueForSong(song)))}>
+    <div className={"tov-group" + (collapsed ? " collapsed" : "")} style={paletteStyle(palette(hueForSong(song)))}>
       <div className="tov-gh">
-        <div className="gthumb">
-          <CoverArt song={song} radius={9} />
-        </div>
-        <div className="gt" style={{ cursor: "pointer" }} onClick={() => onOpen(song)}>
-          {song.title}
-        </div>
-        <div className="gmeta" style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span>{open.length} open</span>
-          <StageMeter status={song.status} label={false} />
-        </div>
+        <button
+          className="tov-gh-btn"
+          onClick={() => setCollapsed((v) => !v)}
+          aria-expanded={!collapsed}
+        >
+          <div className="gthumb">
+            <CoverArt song={song} radius={9} />
+          </div>
+          <div className="gt">
+            {song.title}
+          </div>
+          <div className="gmeta" style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span>{open.length} open</span>
+            {done > 0 && <span>{done} done</span>}
+            <StageMeter status={song.status} label={false} />
+            <span className="gfold" aria-hidden="true">
+              <ChevronDown size={15} />
+            </span>
+          </div>
+        </button>
+        <button className="gopen" onClick={() => onOpen(song)} aria-label={`Open ${song.title}`}>
+          <ExternalLink size={14} />
+        </button>
       </div>
-      {tasks.map((t) => (
+      {!collapsed && tasks.map((t) => (
         <TaskCard key={t.id} t={t} onToggle={onToggle} showSec />
       ))}
     </div>

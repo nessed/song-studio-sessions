@@ -608,11 +608,18 @@
 /* global tasks overview */
 .tov { max-width: 920px; margin: 0 auto; padding: 8px 34px 90px; }
 .tov-group { margin-bottom: 18px; padding: 8px 18px 12px; border-radius: 18px; }
-.tov-gh { display: flex; align-items: center; gap: 13px; padding: 14px 0 10px; }
+.tov-group.collapsed { padding-bottom: 8px; }
+.tov-gh { display: flex; align-items: center; gap: 10px; padding: 14px 0 10px; }
+.tov-gh-btn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 13px; padding: 0; background: none; border: none; color: inherit; text-align: left; cursor: pointer; }
 .tov-gh .gt { font-size: 16px; font-weight: 600; letter-spacing: -0.012em; transition: color .18s; }
-.tov-gh .gt:hover { color: var(--accent-bright); }
+.tov-gh-btn:hover .gt { color: var(--accent-bright); }
 .tov-gh .gmeta { font-family: var(--mono); font-size: 11px; color: var(--fg-3); margin-left: auto; }
 .tov-gh .gthumb { width: 36px; height: 36px; border-radius: 10px; overflow: hidden; flex: none; }
+.tov-gh .gfold { display: inline-flex; color: var(--fg-3); transition: transform .22s var(--spring), color .18s var(--ease); }
+.tov-gh-btn:hover .gfold { color: var(--accent-bright); }
+.tov-group.collapsed .gfold { transform: rotate(-90deg); }
+.tov-gh .gopen { width: 30px; height: 30px; display: grid; place-items: center; flex: none; border: none; border-radius: 9px; background: none; color: var(--fg-3); cursor: pointer; transition: color .18s var(--ease), background .18s var(--ease); }
+.tov-gh .gopen:hover { color: var(--fg-2); background: rgba(255,255,255,0.05); }
 
 /* ════════════════════════════════════════════════════════════════
    Projects layer + Pipeline. Bare canvas, mono micro-labels,
