@@ -51,6 +51,12 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const getCurrentAudioTime = () => {
+    const audio = audioRef.current;
+    if (!audio || !Number.isFinite(audio.currentTime)) return 0;
+    return Math.max(0, Math.min(audio.duration || duration || audio.currentTime, audio.currentTime));
+  };
+
   const updateUI = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -161,6 +167,7 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
        progressBarRef.current.style.clipPath = `inset(0 ${rightChop}% 0 0)`;
     }
     if (timeDisplayRef.current) timeDisplayRef.current.innerText = formatTime(audio.currentTime);
+    onTimeUpdate?.(audio.currentTime);
   };
 
   const handleWaveformDoubleClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -450,8 +457,7 @@ export function AudioPlayer({ src, onTimeUpdate, notesComponent, timelineNotes =
             {/* Add note */}
             <button
               onClick={() => {
-                  const audio = audioRef.current;
-                  if (audio) onRequestAddNote?.(audio.currentTime);
+                  onRequestAddNote?.(getCurrentAudioTime());
               }}
               className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg border border-white/10 bg-white/5 text-white/40 flex items-center justify-center hover:bg-violet-500/15 hover:border-violet-500/30 hover:text-violet-400 transition-all"
               title="Add note at current time"

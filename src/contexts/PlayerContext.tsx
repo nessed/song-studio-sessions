@@ -36,6 +36,7 @@ interface PlayerCtx {
   setNotes: (notes: SongNote[]) => void;
   togglePlay: () => void;
   seek: (t: number) => void;
+  getCurrentTime: () => number;
   setDeckVisible: (v: boolean) => void;
 }
 
@@ -168,6 +169,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [audioUrl, duration],
   );
 
+  const getCurrentTime = useCallback(() => {
+    const el = audioRef.current;
+    const liveTime = el && audioUrl ? el.currentTime : time;
+    if (!Number.isFinite(liveTime)) return 0;
+    return Math.max(0, Math.min(duration, liveTime));
+  }, [audioUrl, duration, time]);
+
   return (
     <Ctx.Provider
       value={{
@@ -186,6 +194,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         setNotes,
         togglePlay,
         seek,
+        getCurrentTime,
         setDeckVisible,
       }}
     >

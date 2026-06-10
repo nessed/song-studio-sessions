@@ -174,8 +174,14 @@ export default function SharedSongView() {
     [duration, audioUrl]
   );
 
+  const getComposerTime = () => {
+    const liveTime = audioUrl && audioRef.current ? audioRef.current.currentTime : time;
+    if (!Number.isFinite(liveTime)) return 0;
+    return Math.round(Math.max(0, Math.min(duration, liveTime)));
+  };
+
   const armComposer = () => {
-    setComposer((c) => ({ ...c, t: Math.round(time), armed: true }));
+    setComposer((c) => ({ ...c, t: getComposerTime(), armed: true }));
     requestAnimationFrame(() => inputRef.current?.focus());
   };
 

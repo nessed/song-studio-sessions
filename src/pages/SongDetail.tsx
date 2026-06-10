@@ -152,9 +152,11 @@ export default function SongDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player.song?.id, song?.id, loading]);
 
-  // keep addNoteRef fresh every render (armComposer reads `player.time` directly)
+  const getComposerTime = () => Math.round(player.getCurrentTime());
+
+  // keep addNoteRef fresh every render
   const armComposer = () => {
-    setComposer((c) => ({ ...c, t: Math.round(player.time), armed: true }));
+    setComposer((c) => ({ ...c, t: getComposerTime(), armed: true }));
     requestAnimationFrame(() => inputRef.current?.focus());
   };
   if (player.song?.id === song?.id) player.addNoteRef.current = armComposer;
